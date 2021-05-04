@@ -13,7 +13,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		}
 	}
 
-	public interface IOriginalPlaylistPlaybackContext : IPlaylistPlaybackContext, IOriginalPlaybackContext<FullPlaylist, FullTrack>
+	public interface IOriginalPlaylistPlaybackContext : IPlaylistPlaybackContext, IOriginalPlaybackContext<FullTrack>
 	{
 
 	}

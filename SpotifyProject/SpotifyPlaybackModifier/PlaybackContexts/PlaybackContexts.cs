@@ -11,28 +11,32 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 	public static class PlaybackContexts
 	{
-		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalPlaybackContext<FullAlbum, SimpleTrack>>> SimpleAlbumContextConstructor =
+		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalAlbumPlaybackContext>> SimpleAlbumContextConstructor =
 			async (config, albumId) => await ExistingAlbumPlaybackContext.FromSimpleAlbum(config, albumId);
-		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalPlaybackContext<FullPlaylist, FullTrack>>> SimplePlaylistContextConstructor =
+		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalPlaylistPlaybackContext>> SimplePlaylistContextConstructor =
 			async (config, playlistId) => await ExistingPlaylistPlaybackContext.FromSimplePlaylist(config, playlistId);
-		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalPlaybackContext<FullArtist, SimpleTrackAndAlbumWrapper>>> SimpleArtistContextConstructor =
+		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalArtistPlaybackContext>> SimpleArtistContextConstructor =
 			async (config, artistId) => await ExistingArtistPlaybackContext.FromSimpleArtist(config, artistId,
 				GlobalCommandLine.Store.GetOptionValue<IEnumerable<string>>(CommandLineOptions.Names.ArtistAlbumIncludeGroups)
 					.Select(value => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(value, true)).Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2));
+		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalAllLikedTracksPlaybackContext>> SimpleAllLikedSongsContextConstructor =
+			(config, playlistId) => Task.FromResult<IOriginalAllLikedTracksPlaybackContext>(new ExistingAllLikedTracksPlaybackContext(config));
+
 
 		private static readonly Dictionary<PlaybackContextType, object> SimplePlaybackContextConstructors =
 			new Dictionary<PlaybackContextType, object>
 		{
 			{ PlaybackContextType.Album, SimpleAlbumContextConstructor },
 			{ PlaybackContextType.Playlist,  SimplePlaylistContextConstructor},
-			{ PlaybackContextType.Artist, SimpleArtistContextConstructor }
+			{ PlaybackContextType.Artist, SimpleArtistContextConstructor },
+			{ PlaybackContextType.AllLikedTracks, SimpleAllLikedSongsContextConstructor }
 		};
 
-		public static bool TryGetExistingContextConstructorForType<SpotifyItemT, TrackT>(PlaybackContextType type, out Func<SpotifyConfiguration, string, Task<IOriginalPlaybackContext<SpotifyItemT, TrackT>>> constructor)
+		public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out Func<SpotifyConfiguration, string, Task<ContextT>> constructor) where ContextT : IOriginalPlaybackContext<TrackT>
 		{
 			constructor = null;
 			return SimplePlaybackContextConstructors.TryGetValue(type, out var constructorObj)
-				&& (constructor = constructorObj as Func<SpotifyConfiguration, string, Task<IOriginalPlaybackContext<SpotifyItemT, TrackT>>>) != default;
+				&& (constructor = constructorObj as Func<SpotifyConfiguration, string, Task<ContextT>>) != default;
 		}
 	}
 }

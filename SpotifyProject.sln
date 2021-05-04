@@ -6,7 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProject", "SpotifyProject\SpotifyProject.csproj", "{C42E62D3-5B86-41BD-B79B-862E1837F596}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProject", "SpotifyProject\SpotifyProject.csproj", "{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,9 +14,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C42E62D3-5B86-41BD-B79B-862E1837F596}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C42E62D3-5B86-41BD-B79B-862E1837F596}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C42E62D3-5B86-41BD-B79B-862E1837F596}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C42E62D3-5B86-41BD-B79B-862E1837F596}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

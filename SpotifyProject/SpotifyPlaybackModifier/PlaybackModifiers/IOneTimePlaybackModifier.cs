@@ -22,8 +22,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 				var currentMs = Environment.TickCount;
 				var currentlyPlaying = await Spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = SpotifyConfiguration.Market });
 				var elapsedMs = Environment.TickCount - currentMs;
-				uriToSetPlayTo = ((FullTrack)currentlyPlaying.Item).Uri;
-				positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : 0;
+				if (currentlyPlaying != null)
+				{
+					uriToSetPlayTo = ((FullTrack)currentlyPlaying.Item).Uri;
+					positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : 0;
+				}
 			}
 			await SetCurrentPlaybackContext(transformedContext, uriToSetPlayTo, positionToPlayAtMs);
 		}

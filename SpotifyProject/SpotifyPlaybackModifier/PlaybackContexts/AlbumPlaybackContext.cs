@@ -31,7 +31,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 	}
 
 	public class ReorderedAlbumPlaybackContext<OriginalContextT> : AlbumPlaybackContext, IReorderedPlaybackContext<SimpleTrack, OriginalContextT>
-		where OriginalContextT : IStaticPlaybackContext<FullAlbum, SimpleTrack>
+		where OriginalContextT : IAlbumPlaybackContext
 	{
 		public ReorderedAlbumPlaybackContext(OriginalContextT baseContext, IEnumerable<SimpleTrack> reorderedTracks) : base(baseContext.SpotifyConfiguration, baseContext.SpotifyContext)
 		{

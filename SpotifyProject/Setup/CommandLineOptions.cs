@@ -24,6 +24,7 @@ namespace SpotifyProject.Setup
 			public const string TrackQueueSizeLimit = "TrackQueueSizeLimit";
 			public const string MaintainCurrentlyPlaying = "MaintainCurrentlyPlaying";
 			public const string LogLevel = "LogLevel";
+			public const string AskUser = "AskUser";
 		}
 
 		private readonly static Dictionary<string, CommandLineOption> _config = new Dictionary<string, CommandLineOption>
@@ -37,6 +38,7 @@ namespace SpotifyProject.Setup
 			{ Names.TrackQueueSizeLimit, new CommandLineOption{Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue", Type = CommandOptionType.SingleValue, ValueGetter = option => int.Parse(option.Value()), IsRequired = true } },
 			{ Names.MaintainCurrentlyPlaying, new CommandLineOption{Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
 			{ Names.LogLevel, new CommandLineOption{Flag = "-l|--logLevel", Desc = "The lowest logging level to output", Type = CommandOptionType.SingleValue, ValueGetter = option => Enum.Parse<LogLevel>(option.Value(), true) } },
+			{ Names.AskUser, new CommandLineOption{Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
 		};
 
 		public static Dictionary<string, CommandOption> AddCommandLineOptions(CommandLineApplication app, bool makeGlobal = true)

@@ -14,7 +14,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		}
 	}
 
-	public interface IOriginalArtistPlaybackContext : IArtistPlaybackContext, IOriginalPlaybackContext<FullArtist, SimpleTrackAndAlbumWrapper>
+	public interface IOriginalArtistPlaybackContext : IArtistPlaybackContext, IOriginalPlaybackContext<SimpleTrackAndAlbumWrapper>
 	{
 	}
 }

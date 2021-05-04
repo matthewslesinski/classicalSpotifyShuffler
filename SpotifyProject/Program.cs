@@ -76,7 +76,10 @@ namespace SpotifyProject
                 Logger.Information("Starting Spotify Project");
 				var spotify = await AuthenticateToSpotify();
 				var reorderer = new SpotifyPlaybackReorderer(spotify, _defaultToAlbumShuffle);
-				await reorderer.ShuffleCurrentPlayback();
+                if (GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.AskUser))
+                    await reorderer.ShuffleUserProvidedContext();
+                else
+				    await reorderer.ShuffleCurrentPlayback();
 				Logger.Information("Terminating successfully");
                 Environment.Exit(0);
             }

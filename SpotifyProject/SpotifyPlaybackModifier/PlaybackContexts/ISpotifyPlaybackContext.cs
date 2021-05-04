@@ -25,7 +25,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		Album,
 		Artist,
 		Playlist,
-		AllLikedSongs,
+		AllLikedTracks,
 		CustomQueue
 	}
 }
