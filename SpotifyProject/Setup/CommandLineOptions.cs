@@ -12,7 +12,7 @@ namespace SpotifyProject.Setup
 
 	public static class CommandLineOptions
 	{
-		
+
 		public static class Names
 		{
 			public const string ClientInfoPath = "ClientInfoPath";
@@ -37,7 +37,7 @@ namespace SpotifyProject.Setup
 			{ Names.ArtistAlbumIncludeGroups, new CommandLineOption{Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums", Type = CommandOptionType.SingleValue, ValueGetter = option => option.Value().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() } },
 			{ Names.TrackQueueSizeLimit, new CommandLineOption{Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue", Type = CommandOptionType.SingleValue, ValueGetter = option => int.Parse(option.Value()), IsRequired = true } },
 			{ Names.MaintainCurrentlyPlaying, new CommandLineOption{Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.LogLevel, new CommandLineOption{Flag = "-l|--logLevel", Desc = "The lowest logging level to output", Type = CommandOptionType.SingleValue, ValueGetter = option => Enum.Parse<LogLevel>(option.Value(), true) } },
+			{ Names.LogLevel, new CommandLineOption{Flag = "-l|--logLevel", Desc = "The lowest logging level to output. A good default value to provide is \"Info\"", Type = CommandOptionType.SingleValue, ValueGetter = option => Enum.Parse<LogLevel>(option.Value(), true), IsRequired = true } },
 			{ Names.AskUser, new CommandLineOption{Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
 		};
 
@@ -56,12 +56,22 @@ namespace SpotifyProject.Setup
 				.Select(kvp => new KeyNotFoundException($"A value for command line argument {kvp.Key} is required but nothing was provided")).ToList();
 			if (exceptions.Any())
 			{
-				var exception = exceptions.Count() > 1 ? (Exception) new AggregateException(exceptions) : exceptions.First();
+				var exception = exceptions.Count() > 1 ? (Exception)new AggregateException(exceptions) : exceptions.First();
 				throw exception;
 			}
 		}
 
-		public static T GetOptionValue<T>(this Dictionary<string, CommandOption> options, string optionName) => (T)_config[optionName].ValueGetter(options[optionName]);
+		public static T GetOptionValue<T>(this Dictionary<string, CommandOption> options, string optionName) {
+			try
+			{
+				return (T)_config[optionName].ValueGetter(options[optionName]);
+			}
+			catch (Exception e)
+			{
+				Console.Error.WriteLine($"There was a problem retrieving the command line argument for {optionName}: {e}");
+				return default;
+			}
+		}
 
 
 		private class CommandLineOption
@@ -70,7 +80,7 @@ namespace SpotifyProject.Setup
 			internal string Desc { get; set; }
 			internal CommandOptionType Type { get; set; } = CommandOptionType.SingleValue;
 			internal bool IsRequired { get; set; } = false;
-			internal Func<CommandOption, object> ValueGetter { get; set; } = option => option.Value();
+			internal Func<CommandOption, object> ValueGetter { get; set; } = option => option.HasValue() ?  option.Value() : default;
 		}
 	}
 }
