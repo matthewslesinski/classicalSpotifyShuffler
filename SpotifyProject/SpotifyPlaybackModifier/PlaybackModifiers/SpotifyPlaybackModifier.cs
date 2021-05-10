@@ -36,13 +36,27 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		public async Task SetCurrentPlaybackContext(OutputContextT context, string uriToPlay = null, int positionMs = 0)
 		{
-			Logger.Information($"Setting {context.PlaybackOrder.Count()} tracks");
-			await Spotify.Player.SetShuffle(new PlayerShuffleRequest(false));
-			var trackUris = context.PlaybackOrder
+			var uris = context.PlaybackOrder
 				.Where(track => !GetIsLocalTrack(track))
-				.Select(GetUriFromTrack).Take(GlobalCommandLine.Store.GetOptionValue<int>(CommandLineOptions.Names.TrackQueueSizeLimit))
-				.ToList();
-			var useUri = uriToPlay != null && trackUris.Contains(uriToPlay);
+				.Select(GetUriFromTrack).ToList();
+			var trackLimit = GlobalCommandLine.Store.GetOptionValue<int>(CommandLineOptions.Names.TrackQueueSizeLimit);
+			var limitUris = trackLimit < uris.Count();
+			var useUri = uriToPlay != null && uris.Contains(uriToPlay);
+			Logger.Information($"Setting {(limitUris ? $"{trackLimit} out of {uris.Count()}" : uris.Count().ToString())} tracks");
+
+			List<string> trackUris;
+
+			if (limitUris && useUri)
+			{
+				var index = uris.IndexOf(uriToPlay);
+				var amountToTakeBefore = trackLimit / 2;
+				var amountToTakeAfter = (trackLimit + 1) / 2;
+				var startIndex = index < amountToTakeBefore ? 0 : (index > uris.Count - amountToTakeAfter ? uris.Count - trackLimit : index - amountToTakeBefore);
+				trackUris = uris.GetRange(startIndex, trackLimit);
+			}
+			else
+				trackUris = uris;
+
 			var playbackRequest = new PlayerResumePlaybackRequest
 			{
 				Uris = trackUris,
@@ -50,6 +64,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 				PositionMs = useUri ? positionMs : 0
 			};
 			await Spotify.Player.ResumePlayback(playbackRequest);
+			await Spotify.Player.SetShuffle(new PlayerShuffleRequest(false));
 		}
 	}
 }

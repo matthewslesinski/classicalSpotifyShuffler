@@ -119,7 +119,7 @@ namespace SpotifyProject
         {
             try
             {
-                Logger.Information($"Attempting to modify context of type {contextType} and with id {contextId}");
+                Logger.Information($"Attempting to modify context of type {contextType}{(string.IsNullOrWhiteSpace(contextId) ? "" : $" and with id {contextId}")}");
                 if (!PlaybackTransformations.TryGetTransformation<OriginalContextT, TrackT>(contextType, out var transformations))
                 {
                     Logger.Warning($"There was no transformation set found for the context type {contextType}");

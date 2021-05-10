@@ -8,6 +8,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		string Name { get; }
 		string AlbumName { get; }
 		string Uri { get; }
+		bool IsLocal { get; }
 		(int discNumber, int trackNumber) AlbumIndex { get; }
 	}
 
@@ -19,6 +20,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	public interface ISimpleTrackLinkingInfo : ITrackLinkingInfo<SimpleTrack> {
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
+		bool ITrackLinkingInfo.IsLocal => false;
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
 	}
 
@@ -27,6 +29,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
 		string ITrackLinkingInfo.AlbumName => OriginalTrack.Album.Name;
+		bool ITrackLinkingInfo.IsLocal => OriginalTrack.IsLocal;
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.TrackNumber, OriginalTrack.TrackNumber);
 	}
 
