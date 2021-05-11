@@ -38,7 +38,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		bool ITrackLinkingInfo.IsLocal => OriginalTrack.IsLocal;
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.Artists.Select(artist => artist.Name);
-		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.TrackNumber, OriginalTrack.TrackNumber);
+		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
 	}
 
 }

@@ -26,6 +26,7 @@ namespace SpotifyProject.Setup
 			public const string LogLevel = "LogLevel";
 			public const string AskUser = "AskUser";
 			public const string TransformationName = "TransformationName";
+			public const string RandomSeed = nameof(RandomSeed);
 		}
 
 		private readonly static Dictionary<string, CommandLineOption> _config = new Dictionary<string, CommandLineOption>
@@ -40,7 +41,8 @@ namespace SpotifyProject.Setup
 			{ Names.MaintainCurrentlyPlaying, new CommandLineOption{Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
 			{ Names.LogLevel, new CommandLineOption{Flag = "-l|--logLevel", Desc = "The lowest logging level to output. A good default value to provide is \"Info\"", Type = CommandOptionType.SingleValue, ValueGetter = option => Enum.Parse<LogLevel>(option.Value(), true), IsRequired = true } },
 			{ Names.AskUser, new CommandLineOption{Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.TransformationName, new CommandLineOption{Flag = "--transformation", Desc = "The name of the transformation to be used."} }
+			{ Names.TransformationName, new CommandLineOption{Flag = "--transformation", Desc = "The name of the transformation to be used."} },
+			{ Names.RandomSeed, new CommandLineOption{Flag = "--randomSeed", Desc = "The seed to use for random numbers.", ValueGetter = option => option.HasValue() ? int.Parse(option.Value()) : (int?) null } }
 		};
 
 		public static Dictionary<string, CommandOption> AddCommandLineOptions(CommandLineApplication app, bool makeGlobal = true)

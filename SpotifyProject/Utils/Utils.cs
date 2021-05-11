@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using SpotifyProject.Setup;
 
 namespace SpotifyProject.Utils
 {
@@ -81,7 +82,7 @@ namespace SpotifyProject.Utils
 			}
 		}
 
-		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => comparer);
+		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => x, comparer);
 
 		public static async IAsyncEnumerable<R> RunInParallel<T, R>(this IEnumerable<T> sequence, Func<T, Task<R>> mapper, [EnumeratorCancellation] CancellationToken cancel = default)
 		{
@@ -107,10 +108,11 @@ namespace SpotifyProject.Utils
 	public static class ThreadSafeRandom
 	{
 		[ThreadStatic] private static Random Local;
+		private static readonly int? _hardSeed = GlobalCommandLine.Store.GetOptionValue<int?>(CommandLineOptions.Names.RandomSeed);
 
 		public static Random Generator
 		{
-			get { return Local ??= new Random(unchecked(Environment.TickCount * 31 + Thread.CurrentThread.ManagedThreadId)); }
+			get { return Local ??= new Random(_hardSeed ?? unchecked(Environment.TickCount * 31 + Thread.CurrentThread.ManagedThreadId)); }
 		}
 	}
 }
