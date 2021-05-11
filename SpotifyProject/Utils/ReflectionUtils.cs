@@ -11,33 +11,38 @@ namespace SpotifyProject.Utils
 
 		public static Func<T, R> RetrieveGetterByPropertyName<R>(string propertyName, bool throwOnDoesntExist = true)
 		{
-			return RetrieveGetterByPropertyName(propertyName, throwOnDoesntExist ? (Func<T, R>) null : t => default);
+			var numProperties = TryRetrieveGetterByPropertyName<R>(propertyName, out var func);
+			if (numProperties != 1 && throwOnDoesntExist)
+				throw new ArgumentException($"Ambiguous property name for property {propertyName} on type {typeof(T).FullName}. There were {numProperties} options found.");
+			return func ?? (t => default);
 		}
 
 		public static Func<T, R> RetrieveGetterByPropertyName<R>(string propertyName, Func<T, R> defaultGetter)
 		{
-			if (string.IsNullOrWhiteSpace(propertyName) && defaultGetter != null)
-				return defaultGetter;
+			return TryRetrieveGetterByPropertyName<R>(propertyName, out var func) == 1 ? func : defaultGetter;
+		}
+
+		private static int TryRetrieveGetterByPropertyName<R>(string propertyName, out Func<T, R> getter)
+		{
+			getter = null;
+			if (string.IsNullOrWhiteSpace(propertyName))
+				return 0;
 			if (_gettersByPropertyName.TryGetValue(propertyName, out var getterObject))
-				return (Func<T, R>) getterObject;
-			else
 			{
-				Func<T, R> result;
-				var type = typeof(T);
-				var propertyInfos = _propertiesByName[propertyName];
-				if (defaultGetter != null && propertyInfos.Count() != 1) {
-					return defaultGetter;
-				} else
-				{
-					ParameterExpression input = Expression.Parameter(type);
-					if (propertyInfos.Count() != 1)
-						throw new ArgumentException($"Ambiguous property name for property {propertyName} on type {type.FullName}. There were {propertyInfos.Count()} options found.");
-					var expr = Expression.Convert(Expression.Property(input, propertyInfos.First()), typeof(R));
-					result = Expression.Lambda<Func<T, R>>(expr, input).Compile();
-				}
-				_gettersByPropertyName[propertyName] = result;
-				return result;
+				getter = (Func<T, R>) getterObject;
+				return 1;
 			}
+			Func<T, R> result;
+			var type = typeof(T);
+			var propertyInfos = _propertiesByName[propertyName].ToList();
+			if (propertyInfos.Count() != 1)
+				return propertyInfos.Count();
+			ParameterExpression input = Expression.Parameter(type);
+			var expr = Expression.Convert(Expression.Property(input, propertyInfos.First()), typeof(R));
+			result = Expression.Lambda<Func<T, R>>(expr, input).Compile();
+			_gettersByPropertyName[propertyName] = getter = result;
+			return 1;
+			
 		}
 
 		private static IEnumerable<PropertyInfo> GetAllPublicProperties()
