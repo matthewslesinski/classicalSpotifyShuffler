@@ -26,7 +26,9 @@ namespace SpotifyProject
 		{
             Task<bool> TryHandleUserInput(string input)
 			{
-                if (input.StartsWith("spotify:"))
+                if (TryParseUriFromLink(input, out var uri))
+                    input = uri;
+                if (input.StartsWith(SpotifyConstants.SpotifyUriPrefix))
                     return ModifyContext(input);
                 if (Enum.TryParse<PlaybackContextType>(input, true, out var contextType) && contextType == PlaybackContextType.AllLikedTracks)
                     return ModifyContext<IOriginalAllLikedTracksPlaybackContext, FullTrack>(contextType, null);
@@ -80,6 +82,15 @@ namespace SpotifyProject
                 await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id);            
         }
 
+        private bool TryParseUriFromLink(string contextLink, out string contextUri)
+		{
+            contextUri = default;
+            if (!SpotifyDependentUtils.TryParseSpotifyContextLink(contextLink, out var typeString, out var contextId))
+                return false;
+            contextUri = $"{SpotifyConstants.SpotifyUriPrefix}{typeString}:{contextId}";
+            return true;
+        }
+
         private bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
 		{
             contextType = default;
@@ -130,6 +141,7 @@ namespace SpotifyProject
                     Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
                     return false;
                 }
+                var maintainCurrentlyPlaying = GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.MaintainCurrentlyPlaying);
                 var transformationName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.TransformationName);
                 var transformation = ReflectionUtils<IPlaybackTransformationsStore<OriginalContextT, TrackT>>
                     .RetrieveGetterByPropertyName<ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>>(transformationName, false)
@@ -145,8 +157,8 @@ namespace SpotifyProject
                         ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>>
                     (_configuration, transformation, trackUriGetter, trackIsLocalGetter);
 
-                await modifier.RunOnce(initialContext, GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.MaintainCurrentlyPlaying));
-                Logger.Information("Should be something new playing");
+                await modifier.RunOnce(initialContext, maintainCurrentlyPlaying);
+                Logger.Information(maintainCurrentlyPlaying ? "The playback queue should be different" : "Should be something new playing");
                 return true;
             }
             catch (Exception e)

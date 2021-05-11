@@ -21,6 +21,20 @@ namespace SpotifyProject.Utils
 			return (tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.CreatedAt, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope).GetHashCode();
 		}
 
+		public static bool TryParseSpotifyContextLink(string contextLink, out string type, out string id)
+		{
+			type = null;
+			id = null;
+			if (!contextLink.StartsWith(SpotifyConstants.OpenSpotifyUrl))
+				return false;
+			var allParts = contextLink.Split('/', StringSplitOptions.RemoveEmptyEntries);
+			type = allParts[^2];
+			var idPart = allParts[^1];
+			var questionIndex = idPart.IndexOf('?');
+			id = questionIndex >= 0 ? idPart.Substring(0, questionIndex) : idPart;
+			return true;
+		}
+
 		public static bool TryParseSpotifyUri(string uri, out string type, out string id, out string[] allParts)
 		{
 			allParts = uri.Split(SpotifyConstants.UriPartDivider, StringSplitOptions.RemoveEmptyEntries);
@@ -31,8 +45,8 @@ namespace SpotifyProject.Utils
 				allParts = null;
 				return false;
 			}
-			type = allParts[allParts.Length - 2];
-			id = allParts[allParts.Length - 1];
+			type = allParts[^2];
+			id = allParts[^1];
 			return true;
 		}
 	}

@@ -12,7 +12,8 @@ namespace SpotifyProject.Utils
 			Scopes.UserReadPlaybackPosition, Scopes.UserReadPlaybackState, Scopes.UserReadPrivate, Scopes.UserReadRecentlyPlayed, Scopes.UserTopRead
 		};
 
-		public static readonly char UriPartDivider = ':';
-
+		public const char UriPartDivider = ':';
+		public const string OpenSpotifyUrl = "https://open.spotify.com";
+		public const string SpotifyUriPrefix = "spotify:";
 	}
 }
