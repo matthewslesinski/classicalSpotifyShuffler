@@ -45,6 +45,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 		ITrackReorderingPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffleByWork { get; }
+
+		ITrackReorderingPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> LukesShuffle { get; }
 	}
 
 	public class PlaybackTransformations<ContextT, TrackT> : IPlaybackTransformationsStore<ContextT, TrackT> where ContextT : ISpotifyPlaybackContext<TrackT>
@@ -61,6 +64,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			SimpleShuffleByWork =new SimpleWorkShuffle<ContextT,
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(
 				contextConstructor, new NaiveTrackLinker<ContextT, TrackT>(new[] { "op", "k", "bwv", "woo", "d", "bb", "hwv", "s", "sz", "l" }, new[] { "/", ":", "-" }));
+
+			LukesShuffle = new SimpleWorkShuffle<ContextT,
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(
+				contextConstructor, new LukesTrackLinker<ContextT, TrackT>());
 		}
 
 
@@ -69,9 +76,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 		public ITrackReorderingPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffle { get; }
-
+		
 		public ITrackReorderingPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffleByWork { get; }
+
+		public ITrackReorderingPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> LukesShuffle { get; }
 
 	}
 

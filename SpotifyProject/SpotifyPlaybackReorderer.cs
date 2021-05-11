@@ -130,7 +130,10 @@ namespace SpotifyProject
                     Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
                     return false;
                 }
-                var transformation = transformations.SimpleShuffleByWork;
+                var transformationName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.TransformationName);
+                var transformation = ReflectionUtils<IPlaybackTransformationsStore<OriginalContextT, TrackT>>
+                    .RetrieveGetterByPropertyName<ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>>(transformationName, false)
+                    ?.Invoke(transformations) ?? transformations.SimpleShuffleByWork;
                 var initialContext = await initialContextConstructor(_configuration, contextId);
                 await initialContext.FullyLoad();
                 var trackUriGetter = ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri));

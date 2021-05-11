@@ -16,6 +16,8 @@ namespace SpotifyProject.Utils
 
 		public static Func<T, R> RetrieveGetterByPropertyName<R>(string propertyName, Func<T, R> defaultGetter)
 		{
+			if (string.IsNullOrWhiteSpace(propertyName) && defaultGetter != null)
+				return defaultGetter;
 			if (_gettersByPropertyName.TryGetValue(propertyName, out var getterObject))
 				return (Func<T, R>) getterObject;
 			else

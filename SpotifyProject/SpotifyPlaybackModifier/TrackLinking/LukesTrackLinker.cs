@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
-	public class LukesTrackLinker<ContextT, TrackT, WorkT> : SimpleTrackLinker<ContextT, TrackT>
+	public class LukesTrackLinker<ContextT, TrackT> : SimpleTrackLinker<ContextT, TrackT>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
 
