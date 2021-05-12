@@ -16,12 +16,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			_contextConstructor = contextConstructor;
 		}
 
-		public OutputContextT ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
+		OutputContextT ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
 		{
 			return _contextConstructor(inputContext, newTrackOrder);
 		}
 
-		public IEnumerable<TrackT> Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks)
+		IEnumerable<TrackT> ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks)
 		{
 			return tracks.RandomShuffle();
 		}

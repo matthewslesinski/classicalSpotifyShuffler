@@ -16,9 +16,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			return newOrder.SelectMany(grouping => grouping);
 		}
 
-		IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks);
+		protected IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks);
 
-		IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works);
+		protected IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works);
 
 	}
 }

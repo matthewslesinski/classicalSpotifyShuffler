@@ -7,11 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
-	public class LukesTrackLinker<ContextT, TrackT> : SimpleTrackLinker<ContextT, TrackT>
+	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinkerByWorkName<ContextT, TrackT>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-
-		protected override string GetWorkNameForTrack(ITrackLinkingInfo trackInfo)
+		string ISimpleTrackLinkerByWorkName<ContextT, TrackT>.GetWorkNameForTrack(ITrackLinkingInfo trackInfo)
 		{
 			TrackLinkingInfoInput input = new TrackLinkingInfoInput(trackInfo);
 			return NativeMethods.GetWorkFromCPlusPlus(input);

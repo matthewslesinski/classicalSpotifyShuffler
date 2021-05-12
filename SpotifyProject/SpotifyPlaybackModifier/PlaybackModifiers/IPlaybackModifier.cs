@@ -13,6 +13,6 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 	{
 
 		Task SetCurrentPlaybackContext(OutputContextT context, string uriToPlay = null, int positionMs = 0);
-		TransformT Transformer { get; }
+		protected TransformT Transformer { get; }
 	}
 }

@@ -15,8 +15,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			return ConstructNewContext(playbackContext, newTracks);
 		}
 
-		OutputContextT ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder);
+		protected OutputContextT ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder);
 
-		IEnumerable<TrackT> Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks);
+		protected IEnumerable<TrackT> Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks);
 	}
 }

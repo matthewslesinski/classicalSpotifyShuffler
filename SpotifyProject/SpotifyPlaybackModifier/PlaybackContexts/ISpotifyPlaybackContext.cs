@@ -10,13 +10,13 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 	{
 		PlaybackContextType ContextType { get; }
 		bool TryGetSpotifyId(out string contextId);
-		ITrackLinkingInfo GetMetadataForTrack(TrackT track);
+		ITrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track);
 	}
 
 
 	public interface IProcessedTrackPlaybackContext<TrackT, InfoT> : ISpotifyPlaybackContext<InfoT> where InfoT : ITrackLinkingInfo<TrackT>
 	{
-		ITrackLinkingInfo ISpotifyPlaybackContext<InfoT>.GetMetadataForTrack(InfoT track) => track;
+		ITrackLinkingInfo<InfoT> ISpotifyPlaybackContext<InfoT>.GetMetadataForTrack(InfoT track) => new TrackLinkingInfoWrapper<TrackT, InfoT>(track);
 	}
 
 	public enum PlaybackContextType

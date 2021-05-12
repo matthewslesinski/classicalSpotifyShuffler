@@ -7,7 +7,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
 	public interface ISimplePlaybackContext<SpotifyItemT, TrackT> : IStaticPlaybackContext<SpotifyItemT, TrackT>, IOriginalPlaybackContext<TrackT>
 	{
-		IPaginatable<TrackT> GetTracksFromSpotifyContext(SpotifyItemT spotifyContext);
+		protected IPaginatable<TrackT> GetTracksFromSpotifyContext(SpotifyItemT spotifyContext);
 
 		async Task IOriginalPlaybackContext<TrackT>.FullyLoad()
 		{

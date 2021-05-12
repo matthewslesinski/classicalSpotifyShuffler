@@ -18,12 +18,13 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 		private readonly Func<TrackT, bool> _trackIsLocalAccessor;
 		public SpotifyPlaybackModifier(SpotifyConfiguration spotifyConfiguration, TransformT transformation, Func<TrackT, string> trackUriAccessor, Func<TrackT, bool> trackIsLocalAccessor) : base(spotifyConfiguration)
 		{
-			Transformer = transformation;
+			_transformer = transformation;
 			_trackUriAccessor = trackUriAccessor;
 			_trackIsLocalAccessor = trackIsLocalAccessor;
 		}
 
-		public TransformT Transformer { get; }
+		TransformT IPlaybackModifier<TrackT, InputContextT, OutputContextT, TransformT>.Transformer => _transformer;
+		private readonly TransformT _transformer;
 
 		protected virtual string GetUriFromTrack(TrackT track) => _trackUriAccessor(track);
 

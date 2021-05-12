@@ -41,4 +41,16 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
 	}
 
+	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : ITrackLinkingInfo<InfoT>
+		where InfoT : ITrackLinkingInfo<OriginalTrackT>
+	{
+		string ITrackLinkingInfo.Name => OriginalTrack.Name;
+		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
+		string ITrackLinkingInfo.AlbumName => OriginalTrack.AlbumName;
+		bool ITrackLinkingInfo.IsLocal => OriginalTrack.IsLocal;
+		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
+		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.ArtistNames;
+		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => OriginalTrack.AlbumIndex;
+	}
+
 }

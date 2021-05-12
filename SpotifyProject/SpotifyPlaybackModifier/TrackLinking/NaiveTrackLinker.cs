@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
-	public class NaiveTrackLinker<ContextT, TrackT> : SimpleTrackLinker<ContextT, TrackT>
+	public class NaiveTrackLinker<ContextT, TrackT> : ISimpleTrackLinkerByWorkName<ContextT, TrackT>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
 		private readonly IEnumerable<string> _dividers;
@@ -19,7 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			_tokenizer = tokenizer ?? new SimpleTrackTokenizer(dividers.Select(divider => Convert.ToChar(divider)));
 		}
 
-		protected override string GetWorkNameForTrack(ITrackLinkingInfo trackInfo)
+		string ISimpleTrackLinkerByWorkName<ContextT, TrackT>.GetWorkNameForTrack(ITrackLinkingInfo trackInfo)
 		{
 			var trackName = string.Join(" ", _tokenizer.Tokenize(trackInfo.Name.ToLower()).Select(match => match.token));
 			var matches = _tokenizer.Tokenize(trackName);

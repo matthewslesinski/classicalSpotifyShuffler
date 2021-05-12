@@ -34,4 +34,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		public SimpleTrack OriginalTrack { get; }
 		public string AlbumName => _containingAlbumName;
 	}
+
+	public class TrackLinkingInfoWrapper<TrackT, InfoT> : ITrackLinkingInfoWrapper<TrackT, InfoT>
+		where InfoT : ITrackLinkingInfo<TrackT>
+	{
+		public TrackLinkingInfoWrapper(InfoT trackInfo)
+		{
+			OriginalTrack = trackInfo;
+		}
+
+		public InfoT OriginalTrack { get; }
+	}
 }
