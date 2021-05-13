@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SpotifyProject.Utils;
+using System;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
@@ -7,25 +8,38 @@ using System.Runtime.InteropServices;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
-	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinkerByWorkName<ContextT, TrackT>
+	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, int>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-		string ISimpleTrackLinkerByWorkName<ContextT, TrackT>.GetWorkNameForTrack(ITrackLinkingInfo trackInfo)
+		IEnumerable<IGrouping<int, ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, int>.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata)
 		{
-			TrackLinkingInfoInput input = new TrackLinkingInfoInput(trackInfo);
-			return NativeMethods.GetWorkFromCPlusPlus(input);
+			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
+			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
+			var labels = new int[trackMetadataArr.Length];
+			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length);
+			return labels.Zip(trackMetadataArr)
+				.GroupBy(pair => pair.First, pair => pair.Second);
 		}
+
+		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
+			=> new DumbWork<TrackT>(work, tracksInWork);
 	}
 
 	internal static class NativeMethods
 	{
-		[DllImport("<LukesDll.dylib>", EntryPoint = "LukesMethod", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-		internal static extern string GetWorkFromCPlusPlus(TrackLinkingInfoInput trackNames);
+		[DllImport("libworkIdentifier.dylib", EntryPoint = "groupTracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		internal static extern void GroupTracks(
+			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+			TrackLinkingInfoInput[] trackNames,
+			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+			int[] labels, 
+			int numTracks);
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct TrackLinkingInfoInput
-	{
+	{ 
+		private const int MaxArtists = 10;
 		public TrackLinkingInfoInput(ITrackLinkingInfo trackInfo)
 		{
 			UniqueUri = trackInfo.Uri;
@@ -34,7 +48,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			DiscNumber = trackInfo.AlbumIndex.discNumber;
 			TrackNumberOnDisc = trackInfo.AlbumIndex.trackNumber;
 			DurationMs = trackInfo.DurationMs;
-			ArtistNames = trackInfo.ArtistNames.ToArray();
+			ArtistNames = new string[MaxArtists];
+			ArtistNames.Fill(trackInfo.ArtistNames);
 			NumArtists = ArtistNames.Length;
 		}
 
@@ -44,7 +59,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		public int DiscNumber { get; }
 		public int TrackNumberOnDisc { get; }
 		public int DurationMs { get; }
-		public string[] ArtistNames { get; }
+
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxArtists)]
+		public string[] ArtistNames;
 		public int NumArtists { get; }
 	}
 }
