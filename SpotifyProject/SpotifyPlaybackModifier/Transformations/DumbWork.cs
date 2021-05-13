@@ -31,12 +31,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
         public override int GetHashCode()
         {
-            return Key.GetHashCode();
+            return Id;
         }
 
         public override string ToString()
         {
-            return $"{Id}";
+            return $"[{string.Join(", ", Tracks.Select(track => ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<int>(nameof(SimpleTrack.TrackNumber))))}]";
         }
 
         public IEnumerator<TrackT> GetEnumerator()

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SpotifyProject.Utils;
+using System;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
@@ -16,14 +17,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
 			var labels = new int[trackMetadataArr.Length];
 			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length);
-			return Enumerable.Range(0, trackMetadataArr.Length)
-				.GroupBy(ind => labels[ind], ind => trackMetadataArr[ind]);
+			return labels.Zip(trackMetadataArr)
+				.GroupBy(pair => pair.First, pair => pair.Second);
 		}
 
 		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
-		{
-			return new DumbWork<TrackT>(work, tracksInWork);
-		}
+			=> new DumbWork<TrackT>(work, tracksInWork);
 	}
 
 	internal static class NativeMethods
@@ -64,21 +63,5 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		[MarshalAs(UnmanagedType.ByValArray, SizeConst = MAX_ARTISTS)]
 		public string[] ArtistNames;
 		public int NumArtists { get; }
-	}
-	
-	internal static class ArrayExtensions
-	{
-		public static void Fill<T>(this T[] arr, IEnumerable<T> enumerable)
-		{
-			var i = 0;
-			foreach (var item in enumerable)
-			{
-				if (i == arr.Length)
-				{
-					throw new ArgumentException($"Enumerable exceeded array length {arr.Length}");
-				}
-				arr[i++] = item;
-			}
-		}
 	}
 }
