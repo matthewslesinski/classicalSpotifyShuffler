@@ -39,7 +39,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct TrackLinkingInfoInput
 	{ 
-		private const int MAX_ARTISTS = 10;
+		private const int MaxArtists = 10;
 		public TrackLinkingInfoInput(ITrackLinkingInfo trackInfo)
 		{
 			UniqueUri = trackInfo.Uri;
@@ -48,7 +48,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			DiscNumber = trackInfo.AlbumIndex.discNumber;
 			TrackNumberOnDisc = trackInfo.AlbumIndex.trackNumber;
 			DurationMs = trackInfo.DurationMs;
-			ArtistNames = new string[MAX_ARTISTS];
+			ArtistNames = new string[MaxArtists];
 			ArtistNames.Fill(trackInfo.ArtistNames);
 			NumArtists = ArtistNames.Length;
 		}
@@ -60,7 +60,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		public int TrackNumberOnDisc { get; }
 		public int DurationMs { get; }
 
-		[MarshalAs(UnmanagedType.ByValArray, SizeConst = MAX_ARTISTS)]
+		[MarshalAs(UnmanagedType.ByValArray, SizeConst = MaxArtists)]
 		public string[] ArtistNames;
 		public int NumArtists { get; }
 	}
