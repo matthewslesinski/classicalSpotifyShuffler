@@ -14,7 +14,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
-			var labels = NativeMethods.groupTracks(infoInputArr, infoInputArr.Length).ToArray(infoInputArr.Length);
+			var labels = new int[trackMetadataArr.Length];
+			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length);
 			return Enumerable.Range(0, trackMetadataArr.Length)
 				.GroupBy(ind => labels[ind], ind => trackMetadataArr[ind]);
 		}
@@ -27,10 +28,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 
 	internal static class NativeMethods
 	{
-		[DllImport("libworkIdentifier.dylib", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
-		internal static extern IntPtr groupTracks(
-			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]
-			TrackLinkingInfoInput[] trackNames, 
+		[DllImport("libworkIdentifier.dylib", EntryPoint = "groupTracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		internal static extern void GroupTracks(
+			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+			TrackLinkingInfoInput[] trackNames,
+			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
+			int[] labels, 
 			int numTracks);
 	}
 
@@ -62,17 +65,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		public string[] ArtistNames;
 		public int NumArtists { get; }
 	}
-
-	internal static class IntPtrExtensions
-    {
-        public static int[] ToArray(this IntPtr ptr, int size)
-        {
-            var res = new int[size];
-            Marshal.Copy(ptr, res, 0, size);
-            return res;
-        }
-    }
-
+	
 	internal static class ArrayExtensions
 	{
 		public static void Fill<T>(this T[] arr, IEnumerable<T> enumerable)
