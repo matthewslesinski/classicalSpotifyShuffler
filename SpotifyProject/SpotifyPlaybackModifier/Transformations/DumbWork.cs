@@ -36,7 +36,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
         public override string ToString()
         {
-            return $"[{string.Join(", ", Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<int>(nameof(SimpleTrack.TrackNumber))))}]";
+            return $"Group {Id}, {Tracks.Count()} tracks: [{string.Join("; ", Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<int>(nameof(SimpleTrack.Name))))}]";
         }
 
         public IEnumerator<TrackT> GetEnumerator()
