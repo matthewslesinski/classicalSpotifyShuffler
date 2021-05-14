@@ -17,7 +17,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
 			var labels = new int[trackMetadataArr.Length];
-			NativeMethods.GroupTracks(infoInputArr, infoInputArr.Length, labels, LogByLevelWrapper);
+			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length, LogByLevelWrapper);
 			return labels.Zip(trackMetadataArr)
 				.GroupBy(pair => pair.First, pair => pair.Second);
 		}
@@ -39,9 +39,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		internal static extern void GroupTracks(
 			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
 			TrackLinkingInfoInput[] trackNames,
-			int numTracks,
 			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
 			int[] labels, 
+			int numTracks,
 			LoggingCallback logCallback);
 	}
 
