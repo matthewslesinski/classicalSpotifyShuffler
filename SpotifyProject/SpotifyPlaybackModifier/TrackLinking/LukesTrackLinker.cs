@@ -25,15 +25,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
 			=> new DumbWork<TrackT>(work, tracksInWork);
 
-		private static void LogByLevelWrapper(int logLevel, string msg)
+		private static void LogByLevelWrapper(LogLevel logLevel, string msg)
 		{
-			Logger.LogLevelMappings[(LogLevel)logLevel](msg, Array.Empty<object>());
+			Logger.LogLevelMappings[logLevel](msg, Array.Empty<object>());
 		}
 	}
 
 	internal static class NativeMethods
 	{
-		public delegate void LoggingCallback(int logLevel, string msg);
+		public delegate void LoggingCallback(LogLevel logLevel, string msg);
 
 		[DllImport("libworkIdentifier.dylib", EntryPoint = "groupTracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
 		internal static extern void GroupTracks(
