@@ -33,5 +33,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
+    <None Include="..\..\work-identifier\libworkIdentifier.dylib">
+      <Link>libworkIdentifier.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

@@ -39,7 +39,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct TrackLinkingInfoInput
 	{ 
-		private const int MaxArtists = 10;
+		private const int MaxArtists = 25;
 		public TrackLinkingInfoInput(ITrackLinkingInfo trackInfo)
 		{
 			UniqueUri = trackInfo.Uri;
