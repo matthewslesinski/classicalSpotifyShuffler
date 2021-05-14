@@ -33,7 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\..\work-identifier\libworkIdentifier.dylib">
+    <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
