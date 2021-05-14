@@ -11,29 +11,38 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, int>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
+
 		IEnumerable<IGrouping<int, ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, int>.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata)
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
 			var labels = new int[trackMetadataArr.Length];
-			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length);
+			NativeMethods.GroupTracks(infoInputArr, infoInputArr.Length, labels, LogByLevelWrapper);
 			return labels.Zip(trackMetadataArr)
 				.GroupBy(pair => pair.First, pair => pair.Second);
 		}
 
 		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
 			=> new DumbWork<TrackT>(work, tracksInWork);
+
+		private static void LogByLevelWrapper(int logLevel, string msg)
+		{
+			Logger.LogLevelMappings[(LogLevel)logLevel](msg, Array.Empty<object>());
+		}
 	}
 
 	internal static class NativeMethods
 	{
+		public delegate void LoggingCallback(int logLevel, string msg);
+
 		[DllImport("libworkIdentifier.dylib", EntryPoint = "groupTracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
 		internal static extern void GroupTracks(
 			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
 			TrackLinkingInfoInput[] trackNames,
+			int numTracks,
 			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
 			int[] labels, 
-			int numTracks);
+			LoggingCallback logCallback);
 	}
 
 	[StructLayout(LayoutKind.Sequential)]

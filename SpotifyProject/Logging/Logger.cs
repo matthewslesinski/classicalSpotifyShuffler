@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using SpotifyProject.Setup;
 
 namespace SpotifyProject
@@ -37,8 +39,16 @@ namespace SpotifyProject
                 Console.Error.WriteLine(message);
         }
 
+        public static readonly ReadOnlyDictionary<LogLevel, Action<string, object[]>> LogLevelMappings = new ReadOnlyDictionary<LogLevel, Action<string, object[]>>(new Dictionary<LogLevel, Action<string, object[]>>
+        {
+            { LogLevel.Verbose, Verbose },
+            { LogLevel.Info, Information },
+            { LogLevel.Warning, Warning },
+            { LogLevel.Error, Error }
+        });
+
         public static bool TemporarilySuppressLogging { private get; set; }
-        public static LogLevel _minLogLevel = GlobalCommandLine.Store.GetOptionValue<LogLevel>(CommandLineOptions.Names.LogLevel);
+        private static readonly LogLevel _minLogLevel = GlobalCommandLine.Store.GetOptionValue<LogLevel>(CommandLineOptions.Names.LogLevel);
     }
 
     public enum LogLevel
