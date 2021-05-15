@@ -5,6 +5,9 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 using System.Linq;
 using System.Runtime.InteropServices;
+using SpotifyProject.Setup;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
@@ -16,6 +19,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
+			var recordTrackInfoLocation = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.MetadataRecordFile);
+			if (recordTrackInfoLocation != default)
+				RecordTrackInfo(recordTrackInfoLocation, infoInputArr);
 			var labels = new int[trackMetadataArr.Length];
 			NativeMethods.GroupTracks(infoInputArr, labels, infoInputArr.Length, LogByLevelWrapper);
 			return labels.Zip(trackMetadataArr)
@@ -25,10 +31,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
 			=> new DumbWork<TrackT>(work, tracksInWork);
 
-		private static void LogByLevelWrapper(LogLevel logLevel, string msg)
-		{
-			Logger.LogLevelMappings[logLevel](msg, Array.Empty<object>());
-		}
+		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.LogLevelMappings[logLevel](msg, Array.Empty<object>());
+
+		private static void RecordTrackInfo(string outputLocation, IEnumerable<TrackLinkingInfoInput> trackInfos) =>
+			File.WriteAllLines(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)));
 	}
 
 	internal static class NativeMethods
