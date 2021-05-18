@@ -41,7 +41,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	{
 		public delegate void LoggingCallback(LogLevel logLevel, string msg);
 
-		[DllImport("libworkIdentifier.dylib", EntryPoint = "groupTracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+		[DllImport("libworkIdentifier.dylib", EntryPoint = "group_tracks", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
 		internal static extern void GroupTracks(
 			[MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]
 			TrackLinkingInfoInput[] trackNames,
@@ -65,7 +65,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			DurationMs = trackInfo.DurationMs;
 			ArtistNames = new string[MaxArtists];
 			ArtistNames.Fill(trackInfo.ArtistNames);
-			NumArtists = ArtistNames.Length;
+			NumArtists = trackInfo.ArtistNames.Count();
 		}
 
 		public string UniqueUri { get; }
