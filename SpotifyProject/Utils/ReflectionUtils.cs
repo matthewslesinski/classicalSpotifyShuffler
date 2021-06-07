@@ -41,12 +41,17 @@ namespace SpotifyProject.Utils
 
 		private static IEnumerable<PropertyInfo> GetAllPublicProperties()
 		{
-			var allProperties = GetAllBaseTypes().SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance)).Distinct();
-			var baseTypes = ReflectionUtils.GetBaseTypes(allProperties.Select(property => property.DeclaringType));
-			return allProperties.Where(property => baseTypes.Contains(property.DeclaringType));
+			return GetAllImplementedTypes().SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance)).Distinct()
+				.GroupBy(property => property.Name)
+				.Select(propertyGroup =>
+				{
+					var baseTypes = ReflectionUtils.GetBaseTypes(propertyGroup.Select(property => property.DeclaringType));
+					return propertyGroup.Where(property => baseTypes.Contains(property.DeclaringType));
+				})
+				.SelectMany(group => group);
 		}
 
-		private static IEnumerable<Type> GetAllBaseTypes()
+		private static IEnumerable<Type> GetAllImplementedTypes()
 		{
 			var startingType = typeof(T);
 			var parents = Utils.TraverseBreadthFirst(startingType, t => t.BaseType != null ? new[] { t.BaseType }.Concat(t.GetInterfaces()) : t.GetInterfaces());
