@@ -56,10 +56,6 @@ namespace SpotifyProject.Utils
 		private readonly static ILookup<string, PropertyInfo> _propertiesByName = GetAllPublicProperties().ToLookup(p => p.Name);
 
 		private readonly static Dictionary<string, object> _gettersByPropertyName = new Dictionary<string, object>();
-
-		private readonly static IComparer<PropertyInfo> _propertyDefinitionPriority = ComparerUtils.ComparingBy<PropertyInfo, MethodInfo>(property => property.GetGetMethod(),
-			ComparerUtils.ComparingBy<MethodInfo>(getter => getter.GetBaseDefinition().DeclaringType.IsInterface)
-				.ThenBy(getter => !getter.IsAbstract));
 	}
 
 	public static class ReflectionUtils
