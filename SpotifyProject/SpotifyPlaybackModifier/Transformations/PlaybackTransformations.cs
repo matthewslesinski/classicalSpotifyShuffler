@@ -37,17 +37,17 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 	public interface IPlaybackTransformationsStore<ContextT, TrackT> where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
 
-		ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SameOrder { get; }
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SameOrder { get; }
 
-		ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffle { get; }
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }
 
-		ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffleByWork { get; }
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffleByWork { get; }
 
-		ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> LukesShuffle { get; }
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> LukesShuffle { get; }
 	}
 
 	public class PlaybackTransformations<ContextT, TrackT> : IPlaybackTransformationsStore<ContextT, TrackT> where ContextT : ISpotifyPlaybackContext<TrackT>
@@ -71,17 +71,17 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 		}
 
 
-		public ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SameOrder { get; }
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SameOrder { get; }
 
-		public ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffle { get; }
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }
 		
-		public ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> SimpleShuffleByWork { get; }
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffleByWork { get; }
 
-		public ITrackReorderingPlaybackTransformation<ContextT,
-			IReorderedPlaybackContext<TrackT, ContextT>, TrackT> LukesShuffle { get; }
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> LukesShuffle { get; }
 
 	}
 

@@ -5,15 +5,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
 	public interface IAllLikedTracksPlaybackContext : ISpotifyPlaybackContext<FullTrack>
 	{
-		PlaybackContextType ISpotifyPlaybackContext<FullTrack>.ContextType => PlaybackContextType.AllLikedTracks;
-		bool ISpotifyPlaybackContext<FullTrack>.TryGetSpotifyId(out string contextId)
+		PlaybackContextType ISpotifyPlaybackContext.ContextType => PlaybackContextType.AllLikedTracks;
+		bool ISpotifyPlaybackContext.TryGetSpotifyId(out string contextId)
 		{
 			contextId = null;
 			return false;
 		}
 	}
 
-	public interface IOriginalAllLikedTracksPlaybackContext : IAllLikedTracksPlaybackContext, IOriginalPlaybackContext<FullTrack>
+	public interface IOriginalAllLikedTracksPlaybackContext : IAllLikedTracksPlaybackContext, IOriginalPlaybackContext
 	{
 	}
 }

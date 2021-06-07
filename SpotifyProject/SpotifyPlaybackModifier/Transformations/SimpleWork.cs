@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using SpotifyAPI.Web;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
@@ -11,15 +12,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 	{
 		public string Name { get; }
 		public string AlbumName { get; }
-		public IEnumerable<TrackT> Tracks { get; }
-
+		public IEnumerable<TrackT> Tracks => _trackLinkingInfos.Select(trackMetaData => trackMetaData.OriginalTrack);
+		private readonly IEnumerable<ITrackLinkingInfo<TrackT>> _trackLinkingInfos;
 		public (string name, string albumName) Key => (Name, AlbumName);
 
-		public SimpleWork(string name, string albumName, IEnumerable<TrackT> tracks)
+		public SimpleWork(string name, string albumName, IEnumerable<ITrackLinkingInfo<TrackT>> tracks)
 		{
 			AlbumName = albumName;
 			Name = name;
-			Tracks = tracks;
+			_trackLinkingInfos = tracks;
 		}
 
 		public override bool Equals(object obj)
@@ -27,8 +28,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			return obj is SimpleWork<TrackT> o
 				&& Equals(Name, o.Name)
 				&& Equals(AlbumName, o.AlbumName)
-				&& Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri)))
-				.SequenceEqual(o.Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri))));
+				&& _trackLinkingInfos.Select(trackInfo => trackInfo.Uri)
+						.SequenceEqual(o._trackLinkingInfos.Select(trackInfo => trackInfo.Uri));
 		}
 
 		public override int GetHashCode()

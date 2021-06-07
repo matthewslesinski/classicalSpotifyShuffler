@@ -9,6 +9,7 @@ using System.Linq;
 using System;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Setup;
+using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 
 namespace SpotifyProject
 {
@@ -126,39 +127,34 @@ namespace SpotifyProject
             return result;
         }
 
-        private async Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext<TrackT>
+        private async Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
         {
             try
             {
                 Logger.Information($"Attempting to modify context of type {contextType}{(string.IsNullOrWhiteSpace(contextId) ? "" : $" and with id {contextId}")}");
-                if (!PlaybackTransformations.TryGetTransformation<OriginalContextT, TrackT>(contextType, out var transformations))
-                {
-                    Logger.Warning($"There was no transformation set found for the context type {contextType}");
-                    return false;
-                }
                 if (!PlaybackContexts.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
                 {
                     Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
                     return false;
                 }
-                var maintainCurrentlyPlaying = GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.MaintainCurrentlyPlaying);
+                if (!PlaybackTransformations.TryGetTransformation<OriginalContextT, TrackT>(contextType, out var transformations))
+                {
+                    Logger.Warning($"There was no transformation set found for the context type {contextType}");
+                    return false;
+                }
+
                 var transformationName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.TransformationName);
-                var transformation = ReflectionUtils<IPlaybackTransformationsStore<OriginalContextT, TrackT>>
-                    .RetrieveGetterByPropertyName<ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>>(transformationName, false)
-                    ?.Invoke(transformations) ?? transformations.SimpleShuffleByWork;
+                var transformation = transformations.TryGetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName, out var namedTransformation)
+                    ? namedTransformation : transformations.SimpleShuffleByWork;
+                var playbackSetters = new SpotifyUpdaters<TrackT>(_configuration);
+                var playbackSetterName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.PlaybackSetterName);
+                var playbackSetter = playbackSetters.TryGetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName, out var namedSetter)
+                    ? namedSetter : playbackSetters.QueuePlaybackSetter;
                 var initialContext = await initialContextConstructor(_configuration, contextId);
-                await initialContext.FullyLoad();
-                var trackUriGetter = ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri));
-                var trackIsLocalGetter = ReflectionUtils<TrackT>.RetrieveGetterByPropertyName(nameof(FullTrack.IsLocal), track => false);
 
-                IOneTimePlaybackModifier<TrackT, OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>,
-                    ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>> modifier =
-                    new OneTimeSpotifyPlaybackModifier<TrackT, OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>,
-                        ITrackReorderingPlaybackTransformation<OriginalContextT, IReorderedPlaybackContext<TrackT, OriginalContextT>, TrackT>>
-                    (_configuration, transformation, trackUriGetter, trackIsLocalGetter);
+                var modifier = new OneTimeSpotifyPlaybackModifier<TrackT, OriginalContextT, ISpotifyPlaybackContext<TrackT>>(_configuration, transformation, playbackSetter);
 
-                await modifier.RunOnce(initialContext, maintainCurrentlyPlaying);
-                Logger.Information(maintainCurrentlyPlaying ? "The playback queue should be different" : "Should be something new playing");
+                await modifier.Run(initialContext);
                 return true;
             }
             catch (Exception e)

@@ -32,7 +32,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			{ PlaybackContextType.AllLikedTracks, SimpleAllLikedSongsContextConstructor }
 		};
 
-		public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out Func<SpotifyConfiguration, string, Task<ContextT>> constructor) where ContextT : IOriginalPlaybackContext<TrackT>
+		public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out Func<SpotifyConfiguration, string, Task<ContextT>> constructor)
+			where ContextT : IOriginalPlaybackContext
 		{
 			constructor = null;
 			return SimplePlaybackContextConstructors.TryGetValue(type, out var constructorObj)

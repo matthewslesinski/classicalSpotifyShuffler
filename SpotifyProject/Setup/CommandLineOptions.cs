@@ -15,19 +15,21 @@ namespace SpotifyProject.Setup
 
 		public static class Names
 		{
-			public const string ClientInfoPath = "ClientInfoPath";
-			public const string TokenPath = "TokenPath";
-			public const string RedirectUri = "RedirectUri";
-			public const string SuppressAuthenticationLogging = "SuppressAuthenticationLogging";
-			public const string DefaultToAlbumShuffle = "DefaultToAlbumShuffle";
-			public const string ArtistAlbumIncludeGroups = "ArtistAlbumIncludeGroups";
-			public const string TrackQueueSizeLimit = "TrackQueueSizeLimit";
-			public const string MaintainCurrentlyPlaying = "MaintainCurrentlyPlaying";
-			public const string LogLevel = "LogLevel";
-			public const string AskUser = "AskUser";
-			public const string TransformationName = "TransformationName";
+			public const string ClientInfoPath = nameof(ClientInfoPath);
+			public const string TokenPath = nameof(TokenPath);
+			public const string RedirectUri = nameof(RedirectUri);
+			public const string SuppressAuthenticationLogging = nameof(SuppressAuthenticationLogging);
+			public const string DefaultToAlbumShuffle = nameof(DefaultToAlbumShuffle);
+			public const string ArtistAlbumIncludeGroups = nameof(ArtistAlbumIncludeGroups);
+			public const string TrackQueueSizeLimit = nameof(TrackQueueSizeLimit);
+			public const string MaintainCurrentlyPlaying = nameof(MaintainCurrentlyPlaying);
+			public const string LogLevel = nameof(LogLevel);
+			public const string AskUser = nameof(AskUser);
+			public const string TransformationName = nameof(TransformationName);
 			public const string RandomSeed = nameof(RandomSeed);
 			public const string MetadataRecordFile = nameof(MetadataRecordFile);
+			public const string PlaybackSetterName = nameof(PlaybackSetterName);
+			public const string SupplyUserInput = nameof(SupplyUserInput);
 		}
 
 		private readonly static Dictionary<string, CommandLineOption> _config = new Dictionary<string, CommandLineOption>
@@ -44,7 +46,9 @@ namespace SpotifyProject.Setup
 			{ Names.AskUser, new CommandLineOption{Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
 			{ Names.TransformationName, new CommandLineOption{Flag = "--transformation", Desc = "The name of the transformation to be used."} },
 			{ Names.RandomSeed, new CommandLineOption{Flag = "--randomSeed", Desc = "The seed to use for random numbers.", ValueGetter = option => option.HasValue() ? int.Parse(option.Value()) : (int?) null } },
-			{ Names.MetadataRecordFile, new CommandLineOption{Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } }
+			{ Names.MetadataRecordFile, new CommandLineOption{Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },
+			{ Names.PlaybackSetterName, new CommandLineOption{Flag = "--playbackSetter", Desc = "The name of the playback setter to be used."} },
+			{ Names.SupplyUserInput, new CommandLineOption{Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal.", Type = CommandOptionType.MultipleValue, ValueGetter = option => option.Values } }
 		};
 
 		public static Dictionary<string, CommandOption> AddCommandLineOptions(CommandLineApplication app, bool makeGlobal = true)

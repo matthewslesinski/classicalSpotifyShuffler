@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-	public interface IOriginalPlaybackContext<TrackT> : ISpotifyPlaybackContext<TrackT>
+	public interface IOriginalPlaybackContext : ISpotifyPlaybackContext
 	{
 		Task FullyLoad();
 	}

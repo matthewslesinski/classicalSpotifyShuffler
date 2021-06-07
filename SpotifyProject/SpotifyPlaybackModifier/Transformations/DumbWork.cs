@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using SpotifyAPI.Web;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
@@ -11,22 +12,23 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
     public class DumbWork<TrackT> : ITrackGrouping<int, TrackT>
     {
         public int Id { get; }
-        public IEnumerable<TrackT> Tracks { get; }
+        public IEnumerable<TrackT> Tracks => _trackLinkingInfos.Select(trackMetaData => trackMetaData.OriginalTrack);
+        private readonly IEnumerable<ITrackLinkingInfo<TrackT>> _trackLinkingInfos;
 
         public int Key => Id;
 
-        public DumbWork(int id, IEnumerable<TrackT> tracks)
+        public DumbWork(int id, IEnumerable<ITrackLinkingInfo<TrackT>> tracks)
         {
             Id = id;
-            Tracks = tracks;
+            _trackLinkingInfos = tracks;
         }
 
         public override bool Equals(object obj)
         {
             return obj is DumbWork<TrackT> o
                    && Equals(Id, o.Id)
-                   && Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri)))
-                       .SequenceEqual(o.Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<string>(nameof(SimpleTrack.Uri))));
+                   && _trackLinkingInfos.Select(trackInfo => trackInfo.Uri)
+                        .SequenceEqual(o._trackLinkingInfos.Select(trackInfo => trackInfo.Uri));
         }
 
         public override int GetHashCode()
@@ -36,7 +38,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
         public override string ToString()
         {
-            return $"Group {Id}, {Tracks.Count()} tracks: [{string.Join("; ", Tracks.Select(ReflectionUtils<TrackT>.RetrieveGetterByPropertyName<int>(nameof(SimpleTrack.Name))))}]";
+            return $"Group {Id}, {_trackLinkingInfos.Count()} tracks: [{string.Join("; ", _trackLinkingInfos.Select(trackInfo => trackInfo.Name))}]";
         }
 
         public IEnumerator<TrackT> GetEnumerator()

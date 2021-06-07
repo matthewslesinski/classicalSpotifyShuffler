@@ -8,7 +8,8 @@ using SpotifyProject.Utils;
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
 	public class SimpleWorkShuffle<InputContextT, OutputContextT, TrackT, WorkT> : IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>
-		where InputContextT : ISpotifyPlaybackContext<TrackT> where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
+		where InputContextT : ISpotifyPlaybackContext<TrackT>
+		where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
 	{
 		private readonly Func<InputContextT, IEnumerable<TrackT>, OutputContextT> _contextConstructor;
 		private readonly ITrackLinker<InputContextT, TrackT, WorkT> _trackLinker;

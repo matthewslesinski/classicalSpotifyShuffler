@@ -28,7 +28,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 				.GroupBy(pair => pair.First, pair => pair.Second);
 		}
 
-		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<TrackT> tracksInWork)
+		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<ITrackLinkingInfo<TrackT>> tracksInWork)
 			=> new DumbWork<TrackT>(work, tracksInWork);
 
 		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.LogLevelMappings[logLevel](msg, Array.Empty<object>());

@@ -30,6 +30,7 @@
     <Folder Include="Setup\" />
     <Folder Include="SpotifyPlaybackModifier\TrackLinking\" />
     <Folder Include="SpotifyAdditions\" />
+    <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />

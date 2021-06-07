@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using SpotifyProject.Setup;
 
 namespace SpotifyProject
 {
@@ -46,8 +49,15 @@ namespace SpotifyProject
 
 	public class ConsoleUserInterface : UserInterface
 	{
+		private readonly ConcurrentQueue<string> _presuppliedInput = new ConcurrentQueue<string>(GlobalCommandLine.Store.GetOptionValue<IEnumerable<string>>(CommandLineOptions.Names.SupplyUserInput));
+
 		public override string ReadNextUserInput()
 		{
+			if (_presuppliedInput.TryDequeue(out var input))
+			{
+				NotifyUser($"Using input supplied ahead of time: \"{input}\"");
+				return input;
+			}
 			return Console.ReadLine();
 		}
 		public override void NotifyUser(string notification)

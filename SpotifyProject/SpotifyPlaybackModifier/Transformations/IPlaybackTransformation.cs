@@ -5,9 +5,9 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public interface IPlaybackTransformation<in InputContextT, out OutputContextT, TrackT>
-		where InputContextT : ISpotifyPlaybackContext<TrackT>
-		where OutputContextT : ISpotifyPlaybackContext<TrackT>
+	public interface IPlaybackTransformation<in InputContextT, out OutputContextT>
+		where InputContextT : ISpotifyPlaybackContext
+		where OutputContextT : ISpotifyPlaybackContext
 	{
 		OutputContextT Transform(InputContextT playbackContext);
 	}

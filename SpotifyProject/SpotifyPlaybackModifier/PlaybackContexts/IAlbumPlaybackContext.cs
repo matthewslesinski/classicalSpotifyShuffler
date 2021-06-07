@@ -6,8 +6,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
 	public interface IAlbumPlaybackContext : IStaticPlaybackContext<FullAlbum, SimpleTrack>
 	{
-		PlaybackContextType ISpotifyPlaybackContext<SimpleTrack>.ContextType => PlaybackContextType.Album;
-		bool ISpotifyPlaybackContext<SimpleTrack>.TryGetSpotifyId(out string contextId)
+		PlaybackContextType ISpotifyPlaybackContext.ContextType => PlaybackContextType.Album;
+		bool ISpotifyPlaybackContext.TryGetSpotifyId(out string contextId)
 		{
 			contextId = SpotifyContext.Id;
 			return true;

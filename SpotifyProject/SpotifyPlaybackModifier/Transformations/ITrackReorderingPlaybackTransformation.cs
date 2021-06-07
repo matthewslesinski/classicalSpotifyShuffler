@@ -8,7 +8,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 		where InputContextT : ISpotifyPlaybackContext<TrackT>
 		where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
 	{
-		OutputContextT IPlaybackTransformation<InputContextT, OutputContextT, TrackT>.Transform(InputContextT playbackContext)
+		OutputContextT IPlaybackTransformation<InputContextT, OutputContextT>.Transform(InputContextT playbackContext)
 		{
 			var tracks = playbackContext.PlaybackOrder;
 			var newTracks = Reorder(playbackContext, tracks);
