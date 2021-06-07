@@ -10,7 +10,7 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 {
-	public abstract class SpotifyPlaybackModifier<TrackT, InputContextT, OutputContextT> : SpotifyAccessorBase, IPlaybackModifier<InputContextT>
+	public abstract class SpotifyPlaybackModifier<InputContextT, OutputContextT> : SpotifyAccessorBase, IPlaybackModifier<InputContextT>
 		where InputContextT : ISpotifyPlaybackContext
 		where OutputContextT : ISpotifyPlaybackContext
 	{

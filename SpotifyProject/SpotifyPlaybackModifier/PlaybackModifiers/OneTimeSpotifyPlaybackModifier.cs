@@ -8,8 +8,8 @@ using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 {
-	public class OneTimeSpotifyPlaybackModifier<TrackT, InputContextT, OutputContextT>
-		: SpotifyPlaybackModifier<TrackT, InputContextT, OutputContextT>
+	public class OneTimeSpotifyPlaybackModifier<InputContextT, OutputContextT>
+		: SpotifyPlaybackModifier<InputContextT, OutputContextT>
 		where InputContextT : IOriginalPlaybackContext
 		where OutputContextT : ISpotifyPlaybackContext
 	{

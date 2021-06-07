@@ -152,7 +152,7 @@ namespace SpotifyProject
                     ? namedSetter : playbackSetters.QueuePlaybackSetter;
                 var initialContext = await initialContextConstructor(_configuration, contextId);
 
-                var modifier = new OneTimeSpotifyPlaybackModifier<TrackT, OriginalContextT, ISpotifyPlaybackContext<TrackT>>(_configuration, transformation, playbackSetter);
+                var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(_configuration, transformation, playbackSetter);
 
                 await modifier.Run(initialContext);
                 return true;
