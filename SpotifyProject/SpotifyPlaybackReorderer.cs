@@ -27,6 +27,8 @@ namespace SpotifyProject
 		{
             Task<bool> TryHandleUserInput(string input)
 			{
+                if (string.Equals(input.Trim(), "current", StringComparison.OrdinalIgnoreCase))
+                    return ShuffleCurrentPlayback();
                 if (TryParseUriFromLink(input, out var uri))
                     input = uri;
                 if (input.StartsWith(SpotifyConstants.SpotifyUriPrefix))
@@ -60,27 +62,30 @@ namespace SpotifyProject
 			}
 		}
 
-        public async Task ShuffleCurrentPlayback()
+        public async Task<bool> ShuffleCurrentPlayback()
 		{
             var currentlyPlaying = await _spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = _configuration.Market });
             var contextUri = currentlyPlaying.Context?.Uri;
             bool result = contextUri != null && await ModifyContext(contextUri);
             if (result)
-                return;
+                return result;
             if (_shouldDefaultToAlbumReordering)
-                await ShuffleCurrentAlbumOfCurrentTrack();
-            else
-                Logger.Error("Playback could not be modified because the current context is unrecognized");
+                return await ShuffleCurrentAlbumOfCurrentTrack();
+            Logger.Error("Playback could not be modified because the current context is unrecognized");
+            return false;
         }
 
-        public async Task ShuffleCurrentAlbumOfCurrentTrack()
+        public async Task<bool> ShuffleCurrentAlbumOfCurrentTrack()
         {
             var currentlyPlaying = await _spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = _configuration.Market });
             var album = ((FullTrack)currentlyPlaying.Item).Album;
             if (album.Id == null)
+            {
                 Logger.Warning("Could not shuffle the current album because it is a local track that does not have an official album");
+                return false;
+            }
             else
-                await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id);            
+                return await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id);            
         }
 
         private bool TryParseUriFromLink(string contextLink, out string contextUri)

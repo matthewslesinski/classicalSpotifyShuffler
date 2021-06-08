@@ -50,8 +50,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var playbackRequest = new PlayerResumePlaybackRequest
 			{
 				Uris = trackUris,
-				OffsetParam = new PlayerResumePlaybackRequest.Offset { Uri = useUri ? uriToPlay : trackUris.First() },
-				PositionMs = useUri ? positionMs : 0
+				OffsetParam = useUri ? new PlayerResumePlaybackRequest.Offset { Uri = uriToPlay } : default,
+				PositionMs = useUri ? positionMs : default
 			};
 			await Spotify.Player.ResumePlayback(playbackRequest);
 			await Spotify.Player.SetShuffle(new PlayerShuffleRequest(false));
