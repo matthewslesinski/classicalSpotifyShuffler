@@ -15,5 +15,15 @@ namespace SpotifyProject.Utils
 		public const char UriPartDivider = ':';
 		public const string OpenSpotifyUrl = "https://open.spotify.com";
 		public const string SpotifyUriPrefix = "spotify:";
+
+		public const int PlaylistSizeLimit = 10000;
+
+		public enum SpotifyElementType
+		{
+			Album,
+			Playlist,
+			Track,
+			Artist
+		}
 	}
 }

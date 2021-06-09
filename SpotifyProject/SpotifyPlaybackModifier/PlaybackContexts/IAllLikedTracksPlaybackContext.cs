@@ -11,6 +11,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			contextId = null;
 			return false;
 		}
+		bool ISpotifyPlaybackContext.TryGetSpotifyUri(out string contextUri)
+		{
+			contextUri = null;
+			return false;
+		}
+
 	}
 
 	public interface IOriginalAllLikedTracksPlaybackContext : IAllLikedTracksPlaybackContext, IOriginalPlaybackContext

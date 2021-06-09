@@ -21,7 +21,7 @@ namespace SpotifyProject.Utils
 		}
 
 
-		public static IEnumerable<T> TraverseBreadthFirst<T>(this T seed, Func<T, IEnumerable<T>> branchingMechanism)
+		public static IEnumerable<T> TraverseBreadthFirst<T>(T seed, Func<T, IEnumerable<T>> branchingMechanism)
 		{
 			var q = new Queue<T>();
 			q.Enqueue(seed);

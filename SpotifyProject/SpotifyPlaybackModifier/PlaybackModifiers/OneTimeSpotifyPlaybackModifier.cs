@@ -38,7 +38,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 				if (currentlyPlaying?.Item is FullTrack currentlyPlayingTrack)
 				{
 					var uriToSetPlayTo = currentlyPlayingTrack.Uri;
-					var positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : 0;
+					var positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : (int?) null;
 					playbackArgs = new PlaybackStateArgs { UriToPlay = uriToSetPlayTo, PositionToPlayMs = positionToPlayAtMs };
 				}
 			}

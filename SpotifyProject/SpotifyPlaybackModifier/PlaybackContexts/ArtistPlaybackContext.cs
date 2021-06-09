@@ -36,7 +36,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public async Task FullyLoad()
 		{
-			Logger.Information($"Loading albums for artist with Id {SpotifyContext.Id}");
+			Logger.Information($"Loading albums for artist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
 			var includeGroup = _albumGroupsToInclude;
 			var artistsAlbumsRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = includeGroup, Limit = 50, Market = _relevantMarket };
 			var albumTracksRequest = new AlbumTracksRequest { Limit = 50 };

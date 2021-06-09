@@ -10,6 +10,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 	{
 		PlaybackContextType ContextType { get; }
 		bool TryGetSpotifyId(out string contextId);
+		bool TryGetSpotifyUri(out string contextUri);
 	}
 
 	public interface ISpotifyPlaybackContext<TrackT> : ISpotifyPlaybackContext, ISpotifyQueue<TrackT>

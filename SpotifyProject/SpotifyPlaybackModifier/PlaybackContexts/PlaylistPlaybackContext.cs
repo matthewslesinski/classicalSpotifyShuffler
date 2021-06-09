@@ -36,7 +36,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public async Task FullyLoad()
 		{
-			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id}");
+			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
 			var allItems = Spotify.Paginate(await Spotify.Playlists.GetItems(SpotifyContext.Id, new PlaylistGetItemsRequest { Limit = 100, Market = _relevantMarket }));
 			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
 			Logger.Information($"Loaded {allTracks.Count()} tracks");
