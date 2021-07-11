@@ -1,5 +1,6 @@
-## Place to put Spotify credentials, tokens.
+## Places to put Spotify credentials, tokens.
 credentials/*
+PersonalData/
 
 ## Ignore Rider temporary files - wow so much easier.
 .idea
@@ -36,6 +37,9 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+
+# Visual Studio Code-specific files
+.vscode/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

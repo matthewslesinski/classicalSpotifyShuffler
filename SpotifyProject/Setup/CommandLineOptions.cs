@@ -5,92 +5,109 @@ using System.Linq;
 
 namespace SpotifyProject.Setup
 {
-	public static class GlobalCommandLine
+	public class CommandLineOptions : ISettingsProvider
 	{
-		public static Dictionary<string, CommandOption> Store;
-	}
+		private readonly Dictionary<SettingsName, CommandOption> _options;
+		private CommandLineOptions(Dictionary<SettingsName, CommandOption> options) => _options = options;
 
-	public static class CommandLineOptions
-	{
-
-		public static class Names
+		private readonly static Dictionary<SettingsName, ICommandLineOption> _config = new Dictionary<SettingsName, ICommandLineOption>
 		{
-			public const string ClientInfoPath = nameof(ClientInfoPath);
-			public const string TokenPath = nameof(TokenPath);
-			public const string RedirectUri = nameof(RedirectUri);
-			public const string SuppressAuthenticationLogging = nameof(SuppressAuthenticationLogging);
-			public const string DefaultToAlbumShuffle = nameof(DefaultToAlbumShuffle);
-			public const string ArtistAlbumIncludeGroups = nameof(ArtistAlbumIncludeGroups);
-			public const string TrackQueueSizeLimit = nameof(TrackQueueSizeLimit);
-			public const string MaintainCurrentlyPlaying = nameof(MaintainCurrentlyPlaying);
-			public const string LogLevel = nameof(LogLevel);
-			public const string AskUser = nameof(AskUser);
-			public const string TransformationName = nameof(TransformationName);
-			public const string RandomSeed = nameof(RandomSeed);
-			public const string MetadataRecordFile = nameof(MetadataRecordFile);
-			public const string PlaybackSetterName = nameof(PlaybackSetterName);
-			public const string SupplyUserInput = nameof(SupplyUserInput);
-		}
-
-		private readonly static Dictionary<string, CommandLineOption> _config = new Dictionary<string, CommandLineOption>
-		{
-			{ Names.ClientInfoPath, new CommandLineOption{Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path for the file with the client id and secret for Spotify access", IsRequired = true} },
-			{ Names.TokenPath, new CommandLineOption{Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path for the file with access and refresh tokens for Spotify access" } },
-			{ Names.RedirectUri, new CommandLineOption{Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri", IsRequired = true } },
-			{ Names.SuppressAuthenticationLogging, new CommandLineOption{Flag = "--suppressAuthenticationLogging", Desc = "Provide if logging should be suppressed during authentication", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.DefaultToAlbumShuffle, new CommandLineOption{Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.ArtistAlbumIncludeGroups, new CommandLineOption{Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums", Type = CommandOptionType.SingleValue, ValueGetter = option => option.Value().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() } },
-			{ Names.TrackQueueSizeLimit, new CommandLineOption{Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue", Type = CommandOptionType.SingleValue, ValueGetter = option => option.HasValue() ? int.Parse(option.Value()) : 750} },
-			{ Names.MaintainCurrentlyPlaying, new CommandLineOption{Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.LogLevel, new CommandLineOption{Flag = "-l|--logLevel", Desc = "The lowest logging level to output. A good default value to provide is \"Info\"", Type = CommandOptionType.SingleValue, ValueGetter = option => Enum.Parse<LogLevel>(option.Value(), true), IsRequired = true } },
-			{ Names.AskUser, new CommandLineOption{Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder", Type = CommandOptionType.NoValue, ValueGetter = option => option.HasValue() } },
-			{ Names.TransformationName, new CommandLineOption{Flag = "--transformation", Desc = "The name of the transformation to be used."} },
-			{ Names.RandomSeed, new CommandLineOption{Flag = "--randomSeed", Desc = "The seed to use for random numbers.", ValueGetter = option => option.HasValue() ? int.Parse(option.Value()) : (int?) null } },
-			{ Names.MetadataRecordFile, new CommandLineOption{Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },
-			{ Names.PlaybackSetterName, new CommandLineOption{Flag = "--playbackSetter", Desc = "The name of the playback setter to be used."} },
-			{ Names.SupplyUserInput, new CommandLineOption{Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal.", Type = CommandOptionType.MultipleValue, ValueGetter = option => option.Values } }
+			{ SettingsName.ClientInfoPath,					new SingleValueOption{Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path for the file with the client id and secret for Spotify access" } },
+			{ SettingsName.TokenPath,						new SingleValueOption{Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path for the file with access and refresh tokens for Spotify access" } },
+			{ SettingsName.RedirectUri,						new SingleValueOption{Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri" } },
+			{ SettingsName.DefaultToAlbumShuffle,			new NoValueOption { Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback" } },
+			{ SettingsName.ArtistAlbumIncludeGroups,		new SingleValueOption { Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums" } },
+			{ SettingsName.TrackQueueSizeLimit,				new SingleValueOption { Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue" } },
+			{ SettingsName.MaintainCurrentlyPlaying,		new NoValueOption { Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing" } },
+			{ SettingsName.ConsoleLogLevel,                 new SingleValueOption { Flag = "-cl|--consoleLogLevel", Desc = "The lowest logging level to output to the console. A good default value to provide is \"Info\"" } },
+			{ SettingsName.OutputFileLogLevel,              new SingleValueOption { Flag = "-fl|--fileLogLevel", Desc = "The lowest logging level to output to a file. A good default value to provide is \"Verbose\"" } },
+			{ SettingsName.LogFileName,						new SingleValueOption { Flag = "--logFileName", Desc = "The name to give to the log file. This should not include the extension or directories" } },
+			{ SettingsName.AskUser,							new NoValueOption { Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder" } },
+			{ SettingsName.TransformationName,              new SingleValueOption { Flag = "--transformation", Desc = "The name of the transformation to be used." } },
+			{ SettingsName.PaginatorName,			        new SingleValueOption { Flag = "--paginator", Desc = "The name of the paginator to be used." } },
+			{ SettingsName.RetryHandlerName,				new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
+			{ SettingsName.HTTPLoggerName,                  new SingleValueOption { Flag = "--httpLogger", Desc = "The name of the http logger to be used." } },
+			{ SettingsName.HTTPLoggerCharacterLimit,        new SingleValueOption { Flag = "--httpLoggerCharacterLimit", Desc = "The max number of characters to print per line from the http logger." } },
+			{ SettingsName.RandomSeed,						new SingleValueOption { Flag = "--randomSeed", Desc = "The seed to use for random numbers." } },
+			{ SettingsName.MetadataRecordFile,				new SingleValueOption { Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },
+			{ SettingsName.PlaybackSetterName,				new SingleValueOption { Flag = "--playbackSetter", Desc = "The name of the playback setter to be used." } },
+			{ SettingsName.SaveAsPlaylistName,				new SingleValueOption { Flag = "--playlistName", Desc = "The name of the playlist to save the playback in." } },
+			{ SettingsName.SupplyUserInput,                 new MultiValueOption { Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal." } },
+			{ SettingsName.SpotifyProjectRootDirectory,     new SingleValueOption { Flag = "--projectRoot", Desc = "The root directory containing all the code for this project. This is probably the same as where git info is stored." } },
+			{ SettingsName.NumHTTPConnections,				new SingleValueOption { Flag = "--numHttpConnections", Desc = "The number of http connections to spotify's api to allow" } }
 		};
 
-		public static Dictionary<string, CommandOption> AddCommandLineOptions(CommandLineApplication app, bool makeGlobal = true)
+		public static ISettingsProvider Initialize(CommandLineApplication app)
 		{
 			app.HelpOption();
 			var result = _config.ToDictionary(kvp => kvp.Key, kvp => app.Option(kvp.Value.Flag, kvp.Value.Desc, kvp.Value.Type));
-			if (makeGlobal)
-				GlobalCommandLine.Store = result;
-			return result;
+			var settingsProvider = new CommandLineOptions(result);
+			return settingsProvider;
 		}
 
-		public static void ThrowIfMissingRequiredOptions(this Dictionary<string, CommandOption> options)
+		public bool IsLoaded => true;
+
+		public void Load()
 		{
-			var exceptions = options.Where(kvp => _config[kvp.Key].IsRequired && !kvp.Value.HasValue())
-				.Select(kvp => new KeyNotFoundException($"A value for command line argument {kvp.Key} is required but nothing was provided")).ToList();
-			if (exceptions.Any())
-			{
-				var exception = exceptions.Count() > 1 ? (Exception)new AggregateException(exceptions) : exceptions.First();
-				throw exception;
-			}
+			// no need
 		}
 
-		public static T GetOptionValue<T>(this Dictionary<string, CommandOption> options, string optionName) {
-			try
-			{
-				return (T)_config[optionName].ValueGetter(options[optionName]);
-			}
-			catch (Exception e)
-			{
-				Console.Error.WriteLine($"There was a problem retrieving the command line argument for {optionName}: {e}");
-				return default;
-			}
-		}
-
-
-		private class CommandLineOption
+		public bool TryGetValues(SettingsName setting, out IEnumerable<string> values)
 		{
-			internal string Flag { get; set; }
-			internal string Desc { get; set; }
-			internal CommandOptionType Type { get; set; } = CommandOptionType.SingleValue;
-			internal bool IsRequired { get; set; } = false;
-			internal Func<CommandOption, object> ValueGetter { get; set; } = option => option.HasValue() ?  option.Value() : default;
+			var option = _options[setting];
+			if (option.HasValue())
+			{
+				values = _config[setting].GetValues(option);
+				return true;
+			}
+			values = Array.Empty<string>();
+			return false;
+		}
+
+		private interface ICommandLineOption
+		{
+			string Flag { get; set; }
+			string Desc { get; set; }
+			CommandOptionType Type { get; }
+			IEnumerable<string> GetValues(CommandOption option);
+		}
+
+		private abstract class CommandLineOptionBase : ICommandLineOption
+		{
+			public string Flag { get; set; }
+			public string Desc { get; set; }
+			public abstract CommandOptionType Type { get; }
+			public abstract IEnumerable<string> GetValues(CommandOption option);
+		}
+
+		private class NoValueOption : CommandLineOptionBase
+		{
+			public override CommandOptionType Type => CommandOptionType.NoValue;
+
+			public override IEnumerable<string> GetValues(CommandOption option)
+			{
+				return option.HasValue() ? new[] { option.ShortName } : Array.Empty<string>();
+			}
+		}
+
+		private class SingleValueOption : CommandLineOptionBase
+		{
+			public override CommandOptionType Type => CommandOptionType.SingleValue;
+
+			public override IEnumerable<string> GetValues(CommandOption option)
+			{
+				return option.HasValue() ? new[] { option.Value() } : Array.Empty<string>();
+			}
+		}
+
+		private class MultiValueOption : CommandLineOptionBase
+		{
+			public override CommandOptionType Type => CommandOptionType.MultipleValue;
+
+			public override IEnumerable<string> GetValues(CommandOption option)
+			{
+				return option.Values;
+			}
 		}
 	}
 }

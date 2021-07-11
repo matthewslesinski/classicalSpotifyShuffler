@@ -4,7 +4,7 @@ using static SpotifyProject.Utils.SpotifyConstants;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-	public interface IPlaylistPlaybackContext : IStaticPlaybackContext<FullPlaylist, FullTrack>
+	public interface IPlaylistPlaybackContext<TrackT> : IStaticPlaybackContext<FullPlaylist, TrackT>
 	{
 		PlaybackContextType ISpotifyPlaybackContext.ContextType => PlaybackContextType.Playlist;
 		bool ISpotifyPlaybackContext.TryGetSpotifyId(out string contextId)
@@ -18,9 +18,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			return true;
 		}
 
-		SpotifyElementType IStaticPlaybackContext<FullPlaylist, FullTrack>.SpotifyElementType => SpotifyElementType.Playlist;
+		SpotifyElementType IStaticPlaybackContext<FullPlaylist, TrackT>.SpotifyElementType => SpotifyElementType.Playlist;
 	}
 
-	public interface IOriginalPlaylistPlaybackContext : IPlaylistPlaybackContext, IOriginalPlaybackContext
+	public interface IOriginalPlaylistPlaybackContext : IPlaylistPlaybackContext<FullTrack>, IOriginalPlaybackContext
 	{ }
 }

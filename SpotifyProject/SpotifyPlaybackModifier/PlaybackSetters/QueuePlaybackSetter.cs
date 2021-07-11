@@ -12,20 +12,21 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	public class QueuePlaybackSetter<TrackT> : SpotifyAccessorBase, IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>
 	{
 		public QueuePlaybackSetter(SpotifyConfiguration spotifyConfiguration) : base(spotifyConfiguration)
-		{
-		}
+		{ }
 
 		public async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, PlaybackStateArgs args)
 		{
-			string uriToPlay = args?.UriToPlay;
-			int? positionMs = args?.PositionToPlayMs;
-			var allowedLocalTracks = args?.AllowedLocalTrackUris ?? new HashSet<string>();
-			var allowUsingContextUri = args?.AllowUsingContextUri ?? false;
+			if (args.CurrentPlaybackFound.HasValue && !args.CurrentPlaybackFound.Value)
+				throw new ArgumentException("Cannot modify playback when nothing is playing");
+			string uriToPlay = args.UriToPlay;
+			int? positionMs = args.PositionToPlayMs;
+			var allowLocalTracks = args.AllowUsingContextUri ?? false;
+			var allowUsingContextUri = args.AllowUsingContextUri ?? false;
+			var useContextUri = context.TryGetSpotifyUri(out var contextUri) && allowUsingContextUri;
 			bool IsAllowedTrack(TrackT track)
 			{
 				var isLocal = context.IsLocal(track);
-				var uri = context.GetUriForTrack(track);
-				var isAllowed = !isLocal || allowedLocalTracks.Contains(uri);
+				var isAllowed = !isLocal || useContextUri;
 				if (!isAllowed)
 					Logger.Warning($"Not including track {context.GetUriForTrack(track)} because it is a local track and spotify doesn't support them through their API");
 				return isAllowed;
@@ -34,16 +35,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var uris = context.PlaybackOrder
 				.Where(IsAllowedTrack)
 				.Select(context.GetUriForTrack).ToList();
-			string contextUri = null;
-			var useContextUri = allowUsingContextUri && context.TryGetSpotifyUri(out contextUri);
-			var trackLimit = GlobalCommandLine.Store.GetOptionValue<int>(CommandLineOptions.Names.TrackQueueSizeLimit);
+			var trackLimit = Settings.Get<int>(SettingsName.TrackQueueSizeLimit);
 			var limitUris = !useContextUri && trackLimit < uris.Count();
 			var useUri = uriToPlay != null && uris.Contains(uriToPlay);
-			if (useContextUri)
-				Logger.Information($"Setting playback to context with uri: {contextUri}");
-			else
-				Logger.Information($"Setting playback to {(limitUris ? $"{trackLimit} out of {uris.Count()}" : uris.Count().ToString())} tracks");
-
 			List<string> trackUris;
 
 			if (limitUris)
@@ -63,6 +57,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			else
 				trackUris = uris;
 
+			if (useContextUri)
+				Logger.Information($"Setting playback to context with uri: {contextUri}");
+			else
+				Logger.Information($"Setting playback to {(limitUris ? $"{trackLimit} out of {uris.Count}" : uris.Count.ToString())} tracks");
+
 			var playbackRequest = new PlayerResumePlaybackRequest
 			{
 				ContextUri = useContextUri ? contextUri : default,
@@ -70,8 +69,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				OffsetParam = useUri ? new PlayerResumePlaybackRequest.Offset { Uri = uriToPlay } : default,
 				PositionMs = useUri ? positionMs : default
 			};
-			await Spotify.Player.ResumePlayback(playbackRequest);
-			await Spotify.Player.SetShuffle(new PlayerShuffleRequest(false));
+			await this.SetCurrentPlayback(playbackRequest);
+			await this.SetShuffle(false);
 			Logger.Information(useUri ? "The playback queue should be different" : "Should be something new playing");
 		}
 	}

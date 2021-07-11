@@ -7,7 +7,7 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-	public abstract class PlaylistPlaybackContext : SpotifyPlaybackQueueBase<FullTrack>, IPlaylistPlaybackContext
+	public abstract class PlaylistPlaybackContext : SpotifyPlaybackQueueBase<FullTrack>, IPlaylistPlaybackContext<FullTrack>
 	{
 		public PlaylistPlaybackContext(SpotifyConfiguration spotifyConfiguration, FullPlaylist playlist) : base(spotifyConfiguration)
 		{
@@ -37,15 +37,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var allItems = Spotify.Paginate(await Spotify.Playlists.GetItems(SpotifyContext.Id, new PlaylistGetItemsRequest { Limit = 100, Market = _relevantMarket }));
-			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
-			Logger.Information($"Loaded {allTracks.Count()} tracks");
+			var allTracks = await this.GetAllPlaylistTracks(SpotifyContext.Id);
+			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}
 	}
 
 	public class ReorderedPlaylistPlaybackContext<OriginalContextT> : PlaylistPlaybackContext, IReorderedPlaybackContext<FullTrack, OriginalContextT>
-		where OriginalContextT : IPlaylistPlaybackContext
+		where OriginalContextT : IPlaylistPlaybackContext<FullTrack>
 	{
 		public ReorderedPlaylistPlaybackContext(OriginalContextT baseContext, IEnumerable<FullTrack> reorderedTracks) : base(baseContext.SpotifyConfiguration, baseContext.SpotifyContext)
 		{
@@ -57,5 +56,24 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static ReorderedPlaylistPlaybackContext<OriginalContextT> FromContextAndTracks(OriginalContextT originalContext, IEnumerable<FullTrack> tracks) =>
 			new ReorderedPlaylistPlaybackContext<OriginalContextT>(originalContext, tracks);
+	}
+
+	public class ConstructedPlaylistContext<TrackT, OriginalContextT> : SpotifyPlaybackQueueBase<TrackT>, IPlaylistPlaybackContext<TrackT>, IReorderedPlaybackContext<TrackT, OriginalContextT>
+		where OriginalContextT : ISpotifyPlaybackContext<TrackT>
+	{
+		public ConstructedPlaylistContext(OriginalContextT originalContext, IPlaylistPlaybackContext<FullTrack> originalPlaylistVersion) : base(originalContext.SpotifyConfiguration)
+		{
+			PlaybackOrder = originalContext.PlaybackOrder;
+			BaseContext = originalContext;
+			SpotifyContext = originalPlaylistVersion.SpotifyContext;
+		}
+
+		public OriginalContextT BaseContext { get; }
+		public ITrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track)
+		{
+			return BaseContext.GetMetadataForTrack(track);
+		}
+
+		public FullPlaylist SpotifyContext { get; }
 	}
 }

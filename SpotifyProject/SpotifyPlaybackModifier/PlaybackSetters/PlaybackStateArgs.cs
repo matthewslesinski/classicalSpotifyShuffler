@@ -9,7 +9,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	{
 		public string UriToPlay { get; set; } = null;
 		public int? PositionToPlayMs { get; set; } = null;
-		public bool AllowUsingContextUri { get; set; } = false;
-		public ISet<string> AllowedLocalTrackUris { get; set; } = Array.Empty<string>().ToImmutableHashSet();
+		public bool? AllowUsingContextUri { get; set; } = false;
+		public bool? CurrentPlaybackFound {get; set; } = false;
 	}
 }

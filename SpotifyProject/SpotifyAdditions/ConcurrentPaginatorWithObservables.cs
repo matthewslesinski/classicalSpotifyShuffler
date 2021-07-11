@@ -23,7 +23,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		protected override IAsyncEnumerable<T> GetPages<T>(IAPIConnector connector, IEnumerable<Uri> uris, CancellationToken cancel = default)
 		{
-            var rest = uris.ToObservable().Select(uri => Observable.FromAsync(async () => await connector.Get<T>(uri))).Merge(Environment.ProcessorCount * 2);
+            var rest = uris.ToObservable().Select(uri => Observable.FromAsync(() => connector.Get<T>(uri))).Merge(Environment.ProcessorCount * 2);
             return rest.ToAsyncEnumerable();
         }
     }

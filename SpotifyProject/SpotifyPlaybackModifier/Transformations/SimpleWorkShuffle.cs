@@ -27,7 +27,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 		IEnumerable<ITrackGrouping<WorkT, TrackT>> IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>.GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks)
 		{
-			return _trackLinker.GroupTracksIntoWorks(playbackContext, tracks);
+			return _trackLinker.GroupTracksIntoWorks(playbackContext, tracks.DistinctOrdered(new KeyBasedEqualityComparer<TrackT, ITrackLinkingInfo>(playbackContext.GetMetadataForTrack, ITrackLinkingInfo.EqualityDefinition)));
 		}
 
 		IEnumerable<ITrackGrouping<WorkT, TrackT>> IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>.ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works)

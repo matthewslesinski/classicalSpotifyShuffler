@@ -4,6 +4,7 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using System.Linq;
 using System.Collections.Generic;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
@@ -42,6 +43,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 		IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }
+		
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReorderingByTrackName { get; }
+
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReorderingByTrackUri { get; }
 
 		IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffleByWork { get; }
@@ -61,8 +68,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			SimpleShuffle = new SimpleReordering<ContextT,
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor);
 
+			ReorderingByTrackName = new SortedReordering<ContextT,
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor, ComparerUtils.ComparingBy<ITrackLinkingInfo>(track => track.Name));
+
+			ReorderingByTrackUri = new SortedReordering<ContextT,
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor, ComparerUtils.ComparingBy<ITrackLinkingInfo>(track => track.Uri));
+
 			SimpleShuffleByWork = new SimpleWorkShuffle<ContextT,
-				IReorderedPlaybackContext<TrackT, ContextT>, TrackT, (string workName, string albumName)>(
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT, (string workName, string albumName, string albumUri)>(
 				contextConstructor, new NaiveTrackLinker<ContextT, TrackT>(new[] { "op", "k", "bwv", "woo", "d", "bb", "hwv", "s", "sz", "l" }, new[] { "/", ":", "-" }));
 
 			LukesShuffle = new SimpleWorkShuffle<ContextT,
@@ -76,7 +89,13 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 		public IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }
-		
+
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReorderingByTrackName { get; }
+
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReorderingByTrackUri { get; }
+
 		public IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffleByWork { get; }
 

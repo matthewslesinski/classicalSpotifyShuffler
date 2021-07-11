@@ -13,15 +13,11 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 
 namespace SpotifyProject
 {
-    public class SpotifyPlaybackReorderer
+    public class SpotifyPlaybackReorderer : SpotifyAccessorBase
     {
 
-        public SpotifyPlaybackReorderer(SpotifyClient spotify, bool shouldDefaultToAlbumReordering)
-        {
-            _spotify = spotify;
-            _configuration = new SpotifyConfiguration { Spotify = _spotify, Market = "US" };
-            _shouldDefaultToAlbumReordering = shouldDefaultToAlbumReordering;
-        }
+        public SpotifyPlaybackReorderer(SpotifyClient spotify) : base(spotify)
+        { }
 
         public async Task ShuffleUserProvidedContext()
 		{
@@ -29,7 +25,7 @@ namespace SpotifyProject
 			{
                 if (string.Equals(input.Trim(), "current", StringComparison.OrdinalIgnoreCase))
                     return ShuffleCurrentPlayback();
-                if (TryParseUriFromLink(input, out var uri))
+                if (SpotifyDependentUtils.TryParseUriFromLink(input, out var uri))
                     input = uri;
                 if (input.StartsWith(SpotifyConstants.SpotifyUriPrefix))
                     return ModifyContext(input);
@@ -53,7 +49,7 @@ namespace SpotifyProject
                         UserInterface.Instance.NotifyUser("Please provide a new Uri");
                     else
                     {
-                        if (_shouldDefaultToAlbumReordering)
+                        if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
                             await ShuffleCurrentAlbumOfCurrentTrack();
                         return;
                     }
@@ -64,12 +60,12 @@ namespace SpotifyProject
 
         public async Task<bool> ShuffleCurrentPlayback()
 		{
-            var currentlyPlaying = await _spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = _configuration.Market });
+            var currentlyPlaying = await this.GetCurrentlyPlaying();
             var contextUri = currentlyPlaying.Context?.Uri;
             bool result = contextUri != null && await ModifyContext(contextUri);
             if (result)
                 return result;
-            if (_shouldDefaultToAlbumReordering)
+            if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
                 return await ShuffleCurrentAlbumOfCurrentTrack();
             Logger.Error("Playback could not be modified because the current context is unrecognized");
             return false;
@@ -77,7 +73,7 @@ namespace SpotifyProject
 
         public async Task<bool> ShuffleCurrentAlbumOfCurrentTrack()
         {
-            var currentlyPlaying = await _spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = _configuration.Market });
+            var currentlyPlaying = await this.GetCurrentlyPlaying();
             var album = ((FullTrack)currentlyPlaying.Item).Album;
             if (album.Id == null)
             {
@@ -88,16 +84,7 @@ namespace SpotifyProject
                 return await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id);            
         }
 
-        private bool TryParseUriFromLink(string contextLink, out string contextUri)
-		{
-            contextUri = default;
-            if (!SpotifyDependentUtils.TryParseSpotifyContextLink(contextLink, out var typeString, out var contextId))
-                return false;
-            contextUri = $"{SpotifyConstants.SpotifyUriPrefix}{typeString}:{contextId}";
-            return true;
-        }
-
-        private bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
+        private static bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
 		{
             contextType = default;
             if (!SpotifyDependentUtils.TryParseSpotifyUri(contextUri, out var typeString, out contextId, out var allParts))
@@ -148,16 +135,17 @@ namespace SpotifyProject
                     return false;
                 }
 
-                var transformationName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.TransformationName);
+                var transformationName = Settings.Get<string>(SettingsName.TransformationName);
                 var transformation = transformations.TryGetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName, out var namedTransformation)
                     ? namedTransformation : transformations.SimpleShuffleByWork;
-                var playbackSetters = new SpotifyUpdaters<TrackT>(_configuration);
-                var playbackSetterName = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.PlaybackSetterName);
+                var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
+                var playbackSetterName = Settings.Get<string>(SettingsName.PlaybackSetterName);
                 var playbackSetter = playbackSetters.TryGetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName, out var namedSetter)
                     ? namedSetter : playbackSetters.QueuePlaybackSetter;
-                var initialContext = await initialContextConstructor(_configuration, contextId);
 
-                var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(_configuration, transformation, playbackSetter);
+                var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);
+
+                var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(SpotifyConfiguration, transformation, playbackSetter);
 
                 await modifier.Run(initialContext);
                 return true;
@@ -168,9 +156,5 @@ namespace SpotifyProject
                 return false;
 			}
         }
-
-        private readonly bool _shouldDefaultToAlbumReordering;
-        private readonly SpotifyConfiguration _configuration;
-        private readonly SpotifyClient _spotify;
     }
 }

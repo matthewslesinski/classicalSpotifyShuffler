@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using SpotifyAPI.Web;
 using System.Threading.Tasks;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -28,9 +29,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Requesting all saved tracks from Spotify");
-			var allItems = Spotify.Paginate(await Spotify.Library.GetTracks(new LibraryTracksRequest { Limit = 50, Market = _relevantMarket }));
-			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
-			Logger.Information($"Loaded {allTracks.Count()} tracks");
+			var allTracks = await this.GetAllSavedTracks();
+			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}
 	}

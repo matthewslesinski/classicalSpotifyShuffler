@@ -29,22 +29,21 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 	public interface ISimpleTrackLinker<ContextT, TrackT, WorkT> : IMetadataBasedTrackLinker<ContextT, TrackT, WorkT>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-		IComparer<ITrackLinkingInfo<TrackT>> IMetadataBasedTrackLinker<ContextT, TrackT, WorkT>.GetTrackOrdererWithinWorks(ContextT originalContext) => _trackOrderWithinWorks;
-
-		private static readonly IComparer<ITrackLinkingInfo<TrackT>> _trackOrderWithinWorks =
-			ComparerUtils.ComparingBy<ITrackLinkingInfo<TrackT>, (int discNumber, int trackNumber)>(t => t.AlbumIndex,
-				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber));
+		IComparer<ITrackLinkingInfo<TrackT>> IMetadataBasedTrackLinker<ContextT, TrackT, WorkT>.GetTrackOrdererWithinWorks(ContextT originalContext) =>
+			ITrackLinkingInfo.TrackOrderWithinAlbums;
 	}
 
-	public interface ISimpleTrackLinkerByWorkName<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, (string workName, string albumName)>
+	public interface ISimpleTrackLinkerByWorkName<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, (string workName, string albumName, string albumUri)>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 
 	{
-		IEnumerable<IGrouping<(string workName, string albumName), ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, (string workName, string albumName)>.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata) =>
-			trackMetadata.GroupBy(track => (GetWorkNameForTrack(track), track.AlbumName));
+		IEnumerable<IGrouping<(string workName, string albumName, string albumUri), ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, (string workName, string albumName, string albumUri)>
+			.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata) =>
+				trackMetadata.GroupBy(track => (GetWorkNameForTrack(track), track.AlbumName, track.AlbumUri));
 
-		ITrackGrouping<(string workName, string albumName), TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, (string workName, string albumName)>.DesignateTracksToWork((string workName, string albumName) work, IEnumerable<ITrackLinkingInfo<TrackT>> tracksInWork) =>
-			new SimpleWork<TrackT>(work.workName, work.albumName, tracksInWork);
+		ITrackGrouping<(string workName, string albumName, string albumUri), TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, (string workName, string albumName, string albumUri)>
+			.DesignateTracksToWork((string workName, string albumName, string albumUri) work, IEnumerable<ITrackLinkingInfo<TrackT>> tracksInWork) =>
+				new SimpleWork<TrackT>(work.workName, work.albumName, work.albumUri, tracksInWork);
 
 		protected string GetWorkNameForTrack(ITrackLinkingInfo trackInfo);
 	}

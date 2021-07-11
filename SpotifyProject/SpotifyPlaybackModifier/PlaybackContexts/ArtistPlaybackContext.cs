@@ -6,6 +6,7 @@ using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -28,7 +29,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static async Task<ExistingArtistPlaybackContext> FromSimpleArtist(SpotifyConfiguration spotifyConfiguration, string artistId, ArtistsAlbumsRequest.IncludeGroups albumTypesToInclude)
 		{
-			var fullArtist = await spotifyConfiguration.Spotify.Artists.Get(artistId);
+			var fullArtist = await spotifyConfiguration.GetArtist(artistId);
 			return new ExistingArtistPlaybackContext(spotifyConfiguration, fullArtist, albumTypesToInclude);
 		}
 
@@ -37,18 +38,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Loading albums for artist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var includeGroup = _albumGroupsToInclude;
-			var artistsAlbumsRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = includeGroup, Limit = 50, Market = _relevantMarket };
-			var albumTracksRequest = new AlbumTracksRequest { Limit = 50 };
-			var firstAlbumPage = await Spotify.Artists.GetAlbums(SpotifyContext.Id, artistsAlbumsRequest);
-			var allAlbums = Spotify.Paginate(firstAlbumPage).Distinct(new SimpleAlbumEqualityComparer()).ToObservable().Finally(() => Logger.Information($"All albums loaded"));
-			var allTracks = await allAlbums
-				.SelectMany(album => Observable.FromAsync(async () => await Spotify.Albums.GetTracks(album.Id, albumTracksRequest))
-					.SelectMany(page => Spotify.Paginate(page).ToObservable())
-					.Where(track => track.Artists.Select(artist => artist.Uri).Contains(SpotifyContext.Uri))
-					.Select(track => new SimpleTrackAndAlbumWrapper(track, album)))
-				.ToAsyncEnumerable().ToListAsync();
-			Logger.Information($"All {allTracks.Count()} tracks loaded");
+			var allTracks = await this.GetAllArtistTracks(SpotifyContext.Id, _albumGroupsToInclude);
+			Logger.Information($"All {allTracks.Count} tracks loaded");
 			PlaybackOrder = allTracks;
 		}
 	}
@@ -70,14 +61,16 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 	internal class SimpleAlbumEqualityComparer : IEqualityComparer<SimpleAlbum>
 	{
+		private (string name, string releaseDate, string albumType) GetKey(SimpleAlbum album) => (album?.Name, album?.ReleaseDate, album?.AlbumType);
+
 		public bool Equals([AllowNull] SimpleAlbum x, [AllowNull] SimpleAlbum y)
 		{
-			return x?.Name == y?.Name && x?.ReleaseDate == y?.ReleaseDate && x?.AlbumType == y?.AlbumType;
+			return Equals(GetKey(x), GetKey(y));
 		}
 
 		public int GetHashCode([DisallowNull] SimpleAlbum obj)
 		{
-			return (obj.Name, obj.ReleaseDate, obj.AlbumType).GetHashCode();
+			return GetKey(obj).GetHashCode();
 		}
 	}
 }

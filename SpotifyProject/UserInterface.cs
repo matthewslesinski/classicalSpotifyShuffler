@@ -12,6 +12,11 @@ namespace SpotifyProject
 		public static UserInterface Instance = Default;
 
 		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput);
+		public async Task<string> RequestResponseAsync(string requestNotification)
+		{
+			NotifyUser(requestNotification);
+			return await ReadNextUserInputAsync();
+		}
 		public abstract string ReadNextUserInput();
 		public abstract void NotifyUser(string notification);
 		public abstract void NotifyUserOfError(string error);
@@ -49,24 +54,30 @@ namespace SpotifyProject
 
 	public class ConsoleUserInterface : UserInterface
 	{
-		private readonly ConcurrentQueue<string> _presuppliedInput = new ConcurrentQueue<string>(GlobalCommandLine.Store.GetOptionValue<IEnumerable<string>>(CommandLineOptions.Names.SupplyUserInput));
+		private readonly ConcurrentQueue<string> _presuppliedInput
+			= new ConcurrentQueue<string>(Settings.Get<IEnumerable<string>>(SettingsName.SupplyUserInput) ?? Array.Empty<string>());
 
 		public override string ReadNextUserInput()
 		{
 			if (_presuppliedInput.TryDequeue(out var input))
 			{
 				NotifyUser($"Using input supplied ahead of time: \"{input}\"");
-				return input;
 			}
-			return Console.ReadLine();
+			else
+				input = Console.ReadLine();
+
+			Logger.Verbose($"Received the following input from the user via the command line: \"{input}\"");
+			return input;
 		}
 		public override void NotifyUser(string notification)
 		{
 			Console.WriteLine(notification);
+			Logger.Verbose($"Notifying the user via the command line with this message: \"{notification}\"");
 		}
 		public override void NotifyUserOfError(string error)
 		{
 			Console.Error.WriteLine(error);
+			Logger.Verbose($"Notifying the user via the command line of the following error: \"{error}\"");
 		}
 	}
 }

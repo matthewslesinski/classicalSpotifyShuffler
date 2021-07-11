@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="GeneralTests\" />
+    <None Remove="SpotifyApiTests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="GeneralTests\" />
+    <Folder Include="SpotifyApiTests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\SettingsTemplates\standardUnitTestSettings.xml">
+      <Link>standardUnitTestSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

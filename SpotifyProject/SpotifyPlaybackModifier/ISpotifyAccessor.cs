@@ -1,11 +1,112 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using SpotifyAPI.Web;
+using System.Linq;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
+using SpotifyProject.Utils;
+using System.Reactive.Linq;
 
 namespace SpotifyProject.SpotifyPlaybackModifier
 {
-	public interface ISpotifyAccessor
+	public interface ISpotifyAccessor : ISpotifyConfigurationContainer
+	{
+	}
+
+	public interface ISpotifyConfigurationContainer
 	{
 		SpotifyConfiguration SpotifyConfiguration { get; }
 		SpotifyClient Spotify => SpotifyConfiguration.Spotify;
+	}
+
+	public static class SpotifyConfigurationExtension
+	{
+		public static Task<CurrentlyPlaying> GetCurrentlyPlaying(this ISpotifyConfigurationContainer spotifyConfigurationContainer) =>
+			spotifyConfigurationContainer.Spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market });
+
+		public static async Task<List<FullTrack>> GetAllSavedTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, int batchSize = 50)
+		{
+			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Library.GetTracks(new LibraryTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }));
+			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
+			return allTracks;
+		}
+
+		public static async Task<List<FullTrack>> GetAllPlaylistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, int batchSize = 100)
+		{
+			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }));
+			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
+			return allTracks;
+		}
+
+		public static async Task<FullAlbum> GetAlbum(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId) =>
+			await spotifyConfigurationContainer.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market });
+
+		public static async Task<List<SimpleTrack>> GetAllAlbumTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId, int batchSize = 50) =>
+			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market })).ToListAsync();
+
+		public static async Task<FullArtist> GetArtist(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId) =>
+			await spotifyConfigurationContainer.Spotify.Artists.Get(artistId);
+
+		public static async Task<List<SimpleTrackAndAlbumWrapper>> GetAllArtistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId, ArtistsAlbumsRequest.IncludeGroups albumGroupsToInclude,
+			int albumBatchSize = 50, int trackBatchSize = 50)
+		{
+			var artistsAlbumsRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = albumGroupsToInclude, Limit = albumBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
+			var albumTracksRequest = new AlbumTracksRequest { Limit = trackBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
+			var albumEquality = new KeyBasedEqualityComparer<SimpleAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
+			var firstAlbumPage = await spotifyConfigurationContainer.Spotify.Artists.GetAlbums(artistId, artistsAlbumsRequest);
+			var allAlbums = spotifyConfigurationContainer.Spotify.Paginate(firstAlbumPage).Distinct(albumEquality).ToObservable().Finally(() => Logger.Information($"All albums loaded"));
+			var allTracks = await allAlbums
+				.SelectMany(album => Observable.FromAsync(() => spotifyConfigurationContainer.Spotify.Albums.GetTracks(album.Id, albumTracksRequest))
+					.SelectMany(page => spotifyConfigurationContainer.Spotify.Paginate(page).ToObservable())
+					.Where(track => track.Artists.Select(artist => artist.Id).Contains(artistId))
+					.Select(track => new SimpleTrackAndAlbumWrapper(track, album)))
+				.ToAsyncEnumerable().ToListAsync();
+			return allTracks;
+		}
+
+		public static Task SetCurrentPlayback(this ISpotifyConfigurationContainer spotifyConfigurationContainer, PlayerResumePlaybackRequest request) => spotifyConfigurationContainer.Spotify.Player.ResumePlayback(request);
+
+		public static Task SetShuffle(this ISpotifyConfigurationContainer spotifyConfigurationContainer, bool turnShuffleOn) =>
+			spotifyConfigurationContainer.Spotify.Player.SetShuffle(new PlayerShuffleRequest(turnShuffleOn));
+
+		public static Task<SnapshotResponse> AddPlaylistItems(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, IEnumerable<string> urisToAdd, int? addPosition = null) =>
+			spotifyConfigurationContainer.Spotify.Playlists.AddItems(playlistId, new PlaylistAddItemsRequest(urisToAdd is IList<string> urisList ? urisList : urisToAdd.ToList()) { Position = addPosition });
+
+		public static Task<SnapshotResponse> RemovePlaylistItems(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, string previousSnapshotId, IEnumerable<string> urisToRemove) =>
+			spotifyConfigurationContainer.Spotify.Playlists.RemoveItems(playlistId,
+				new PlaylistRemoveItemsRequest { Tracks = urisToRemove.Select(uri => new PlaylistRemoveItemsRequest.Item { Uri = uri }).ToList(), SnapshotId = previousSnapshotId });
+
+		public static Task<SnapshotResponse> ReorderPlaylistItems(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, string previousSnapshotId, int rangeStart, int rangeLength, int target) =>
+			spotifyConfigurationContainer.Spotify.Playlists.ReorderItems(playlistId, new PlaylistReorderItemsRequest(rangeStart, target) { RangeLength = rangeLength, SnapshotId = previousSnapshotId });
+
+		public static Task<bool> ReplacePlaylistItems(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, List<string> urisToReplaceWith = null) =>
+			spotifyConfigurationContainer.Spotify.Playlists.ReplaceItems(playlistId, new PlaylistReplaceItemsRequest(urisToReplaceWith ?? new List<string>()));
+
+		public static Task<FullPlaylist> GetPlaylist(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, IEnumerable<string> fieldConstraints = null)
+		{
+			if (fieldConstraints != null)
+			{
+				var request = new PlaylistGetRequest();
+				fieldConstraints.Each(request.Fields.Add);
+				return spotifyConfigurationContainer.Spotify.Playlists.Get(playlistId, request);
+			}
+			return spotifyConfigurationContainer.Spotify.Playlists.Get(playlistId);
+		}
+
+		public static Task<PrivateUser> GetCurrentUserProfile(this ISpotifyConfigurationContainer spotifyConfigurationContainer) => spotifyConfigurationContainer.Spotify.UserProfile.Current();
+
+		public static async Task<FullPlaylist> AddOrGetPlaylistByName(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string name)
+		{
+			var playlists = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = 50 }));
+			var existingPlaylist = await playlists.FirstOrDefaultAsync(playlist => string.Equals(playlist.Name, name, StringComparison.OrdinalIgnoreCase));
+			if (existingPlaylist != default)
+				return await spotifyConfigurationContainer.GetPlaylist(existingPlaylist.Id);
+			else
+			{
+				var userProfile = await spotifyConfigurationContainer.GetCurrentUserProfile();
+				var userId = userProfile.Id;
+				return await spotifyConfigurationContainer.Spotify.Playlists.Create(userId, new PlaylistCreateRequest(name) { Public = false, Collaborative = false });
+			}
+		}
 	}
 }

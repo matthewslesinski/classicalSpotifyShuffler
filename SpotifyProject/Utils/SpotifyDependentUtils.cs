@@ -21,6 +21,15 @@ namespace SpotifyProject.Utils
 			return (tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.CreatedAt, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope).GetHashCode();
 		}
 
+		public static bool TryParseUriFromLink(string contextLink, out string contextUri)
+		{
+			contextUri = default;
+			if (!TryParseSpotifyContextLink(contextLink, out var typeString, out var contextId))
+				return false;
+			contextUri = $"{SpotifyConstants.SpotifyUriPrefix}{typeString}:{contextId}";
+			return true;
+		}
+
 		public static bool TryParseSpotifyContextLink(string contextLink, out string type, out string id)
 		{
 			type = null;

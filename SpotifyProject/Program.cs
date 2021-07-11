@@ -7,31 +7,30 @@ using SpotifyProject.Authentication;
 using SpotifyProject.Utils;
 using SpotifyProject.Setup;
 using SpotifyProject.SpotifyAdditions;
+using System.IO;
+using System.Linq;
 
 namespace SpotifyProject
 {
     class Program
     {
-        private static string _tokenFilePath;
-        private static string _redirectUri;
-        private static string _clientInfoPath;
-        private static bool _suppressAuthenticationLogging;
-        private static bool _defaultToAlbumShuffle;
+        private const string _xmlSettingsFileFlag = "--settingsXmlFile";
 
         static void Main(string[] args)
         {
-
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
 			var app = new CommandLineApplication();
-			var commandLineOptions = CommandLineOptions.AddCommandLineOptions(app);
+			Settings.RegisterProvider(CommandLineOptions.Initialize(app));
+            var xmlSettingsFileOption = app.Option(_xmlSettingsFileFlag, "The file name for settings stored in xml format", CommandOptionType.MultipleValue);
 			app.OnExecute(() =>
 			{
-				commandLineOptions.ThrowIfMissingRequiredOptions();
-				_tokenFilePath = commandLineOptions.GetOptionValue<string>(CommandLineOptions.Names.TokenPath);
-				_redirectUri = commandLineOptions.GetOptionValue<string>(CommandLineOptions.Names.RedirectUri);
-				_clientInfoPath = commandLineOptions.GetOptionValue<string>(CommandLineOptions.Names.ClientInfoPath);
-				_suppressAuthenticationLogging = commandLineOptions.GetOptionValue<bool>(CommandLineOptions.Names.SuppressAuthenticationLogging);
-				_defaultToAlbumShuffle = commandLineOptions.GetOptionValue<bool>(CommandLineOptions.Names.DefaultToAlbumShuffle);
+                if (xmlSettingsFileOption.HasValue())
+                    Settings.RegisterProviders(xmlSettingsFileOption.Values.Where(File.Exists).Select(fileName => new XmlSettingsProvider(fileName)));
+                if (File.Exists(Constants.SuggestedAuthorizationSettingsFile))
+                    Settings.RegisterProvider(new XmlSettingsProvider(Constants.SuggestedAuthorizationSettingsFile));
+                if (File.Exists(Constants.StandardSettingsFile))
+                    Settings.RegisterProvider(new XmlSettingsProvider(Constants.StandardSettingsFile));
+                Settings.Load();
 				var task = Run();
 				while (!task.IsCompleted)
 				{
@@ -42,41 +41,16 @@ namespace SpotifyProject
 				Environment.Exit(0);
 			});
 			app.Execute(args);
-
 		}
-
-        static async Task<SpotifyClient> AuthenticateToSpotify()
-		{
-            if (_suppressAuthenticationLogging)
-                Logger.TemporarilySuppressLogging = true;
-            Logger.Information("Starting Spotify authentication process");
-            var config = SpotifyClientConfig.CreateDefault()
-                .WithHTTPLogger(new HTTPLogger())
-                .WithRetryHandler(new SimpleRetryHandler())
-                .WithDefaultPaginator(new ConcurrentPaginatorWithObservables(new SimplePaginator()));
-            var authenticator = new Authentication.AuthorizationCodeAuthenticator(config, _tokenFilePath);
-            var clientInfo = await Authenticator.ReadClientInfoPath(_clientInfoPath);
-            var authorizationSource = new AuthorizationSource
-            {
-                ClientInfo = clientInfo,
-                RedirectUriString = _redirectUri,
-                Scopes = SpotifyConstants.AllAuthenticationScopes
-            };
-            var spotify = await authenticator.Authenticate(authorizationSource);
-            if (_suppressAuthenticationLogging)
-                Logger.TemporarilySuppressLogging = false;
-            Logger.Information("Successfully logged into Spotify account.");
-            return spotify;
-        }
 
         static async Task Run()
         {
             try
             {
                 Logger.Information("Starting Spotify Project");
-				var spotify = await AuthenticateToSpotify();
-				var reorderer = new SpotifyPlaybackReorderer(spotify, _defaultToAlbumShuffle);
-                if (GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.AskUser))
+				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
+				var reorderer = new SpotifyPlaybackReorderer(spotify);
+                if (Settings.Get<bool>(SettingsName.AskUser))
                     await reorderer.ShuffleUserProvidedContext();
                 else
 				    await reorderer.ShuffleCurrentPlayback();

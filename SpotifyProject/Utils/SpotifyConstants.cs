@@ -16,7 +16,11 @@ namespace SpotifyProject.Utils
 		public const string OpenSpotifyUrl = "https://open.spotify.com";
 		public const string SpotifyUriPrefix = "spotify:";
 
+		public const int PlaylistRequestBatchSize = 100;
 		public const int PlaylistSizeLimit = 10000;
+
+		public const string USMarket = "US";
+
 
 		public enum SpotifyElementType
 		{

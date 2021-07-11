@@ -2,24 +2,27 @@
 using System.Collections.Generic;
 using System.Threading;
 using SpotifyProject.Setup;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SpotifyProject.Utils
 {
 	/** Utility methods that are generic */
 	public static class Utils
 	{
+		public static (A first, B second, C third) Append<A, B, C>(this (A first, B second) firstTwo, C third) => (firstTwo.first, firstTwo.second, third);
+		public static (A first, B second, C third, D fourth) Append<A, B, C, D>(this (A first, B second, C third) firstThree, D fourth) => (firstThree.first, firstThree.second, firstThree.third, fourth);
+		public static (A first, B second, C third, D fourth, E fifth) Append<A, B, C, D, E>(this (A first, B second, C third, D fourth) firstFour, E fifth) => (firstFour.first, firstFour.second, firstFour.third, firstFour.fourth, fifth);
+
 		public static bool IsRomanNumeral(string possibleNumber, out RomanNumeral romanNumeral)
 		{
 			return RomanNumeral.TryParse(possibleNumber, out romanNumeral);
 		}
 
-		public static void Swap<T>(this T[] array, int index1, int index2)
-		{
-			var temp = array[index1];
-			array[index1] = array[index2];
-			array[index2] = temp;
-		}
-
+		public static string Truncate(this string initialString, int? charLimit) =>
+			charLimit.HasValue && initialString != null && charLimit.Value >= 0 && initialString.Length > charLimit.Value
+				? initialString.Substring(0, charLimit.Value)
+				: initialString;
 
 		public static IEnumerable<T> TraverseBreadthFirst<T>(T seed, Func<T, IEnumerable<T>> branchingMechanism)
 		{
@@ -36,12 +39,51 @@ namespace SpotifyProject.Utils
 					q.Enqueue(child);
 			}
 		}
+
+		public static bool LoadOnce(ref bool isLoaded, object loadLock, Action loadAction)
+		{
+			if (!isLoaded)
+			{
+				lock(loadLock)
+				{
+					if (!isLoaded)
+					{
+						loadAction();
+						isLoaded = true;
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public static async Task<bool> LoadOnceAsync(Func<bool> isLoadedGetter, Action<bool> isLoadedSetter, object loadLock, Func<Task> loadAction)
+		{
+			Task loadActionTask = null;
+			if (!isLoadedGetter())
+			{
+				lock (loadLock)
+				{
+					if (!isLoadedGetter())
+					{
+						loadActionTask = loadAction();
+					}
+				}
+			}
+			if (loadActionTask != null)
+			{
+				await loadActionTask;
+				isLoadedSetter(true);
+				return true;
+			}
+			return false;
+		}
 	}
 
 	public static class ThreadSafeRandom
 	{
 		[ThreadStatic] private static Random Local;
-		private static readonly int? _hardSeed = GlobalCommandLine.Store.GetOptionValue<int?>(CommandLineOptions.Names.RandomSeed);
+		private static readonly int? _hardSeed = Settings.Get<int?>(SettingsName.RandomSeed);
 
 		public static Random Generator
 		{

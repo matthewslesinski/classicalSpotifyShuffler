@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Settings>
+  <Setting name="HTTPLoggerName">InternalLoggingWrapper</Setting>
+  <Setting name="HTTPLoggerCharacterLimit">250</Setting>
+  <Setting name="LogFileName">classicalShuffler</Setting>
+  <Setting name="RetryHandlerName">SimpleRetryHandler</Setting>
+  <Setting name="PaginatorName">SimplePaginator</Setting>
+  <Setting name="MaintainCurrentlyPlaying"></Setting>
+  <Setting name="TrackQueueSizeLimit">750</Setting>
+  <Setting name="NumHTTPConnections">-1</Setting>
+  <Setting name="ArtistAlbumIncludeGroups">Album,Single</Setting>
+  <Setting name="DefaultToAlbumShuffle">false</Setting>
+  <Setting name="SpotifyProjectRootDirectory">../../../../</Setting>
+</Settings>

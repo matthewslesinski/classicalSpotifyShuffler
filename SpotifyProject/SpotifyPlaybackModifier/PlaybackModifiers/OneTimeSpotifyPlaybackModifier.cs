@@ -21,7 +21,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		public override Task Run(InputContextT context)
 		{
-			var maintainCurrentListening = GlobalCommandLine.Store.GetOptionValue<bool>(CommandLineOptions.Names.MaintainCurrentlyPlaying);
+			var maintainCurrentListening = Settings.Get<bool>(SettingsName.MaintainCurrentlyPlaying);
 			return RunOnce(context, maintainCurrentListening);
 		}
 
@@ -30,18 +30,17 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 			await context.FullyLoad();
 			var transformedContext = _transformer.Transform(context);
 			PlaybackStateArgs playbackArgs = null;
-			if (maintainCurrentListening)
+			var currentMs = Environment.TickCount;
+			var currentlyPlaying = await this.GetCurrentlyPlaying();
+			var elapsedMs = Environment.TickCount - currentMs;
+			if (maintainCurrentListening && currentlyPlaying?.Item is FullTrack currentlyPlayingTrack)
 			{
-				var currentMs = Environment.TickCount;
-				var currentlyPlaying = await Spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = SpotifyConfiguration.Market });
-				var elapsedMs = Environment.TickCount - currentMs;
-				if (currentlyPlaying?.Item is FullTrack currentlyPlayingTrack)
-				{
-					var uriToSetPlayTo = currentlyPlayingTrack.Uri;
-					var positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : (int?) null;
-					playbackArgs = new PlaybackStateArgs { UriToPlay = uriToSetPlayTo, PositionToPlayMs = positionToPlayAtMs };
-				}
-			}
+				var uriToSetPlayTo = currentlyPlayingTrack.Uri;
+				var positionToPlayAtMs = currentlyPlaying.ProgressMs.HasValue ? (currentlyPlaying.ProgressMs.Value + elapsedMs) : (int?) null;
+				playbackArgs = new PlaybackStateArgs { UriToPlay = uriToSetPlayTo, PositionToPlayMs = positionToPlayAtMs };
+			} else 
+				playbackArgs = new PlaybackStateArgs();
+			playbackArgs.CurrentPlaybackFound = currentlyPlaying?.Item != null;
 			await _playbackSetter.SetPlayback(transformedContext, playbackArgs);
 		}
 	}

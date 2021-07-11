@@ -24,8 +24,16 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static async Task<ExistingAlbumPlaybackContext> FromSimpleAlbum(SpotifyConfiguration spotifyConfiguration, string albumId)
 		{
-			var fullAlbum = await spotifyConfiguration.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfiguration.Market });
+			var fullAlbum = await spotifyConfiguration.GetAlbum(albumId);
 			return new ExistingAlbumPlaybackContext(spotifyConfiguration, fullAlbum);
+		}
+
+		public async Task FullyLoad()
+		{
+			Logger.Information($"Requesting all tracks for album with id {SpotifyContext.Id} and name {SpotifyContext.Name}");
+			var allTracks = await this.GetAllAlbumTracks(SpotifyContext.Id);
+			Logger.Information($"Loaded {allTracks.Count} tracks");
+			PlaybackOrder = allTracks;
 		}
 
 	}

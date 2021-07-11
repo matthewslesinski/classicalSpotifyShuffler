@@ -23,8 +23,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		SpotifyElementType IStaticPlaybackContext<FullAlbum, SimpleTrack>.SpotifyElementType => SpotifyElementType.Album;
 	}
 
-	public interface IOriginalAlbumPlaybackContext : IAlbumPlaybackContext, ISimplePlaybackContext<FullAlbum, SimpleTrack>
+	public interface IOriginalAlbumPlaybackContext : IAlbumPlaybackContext, IOriginalPlaybackContext
 	{
-		IPaginatable<SimpleTrack> ISimplePlaybackContext<FullAlbum, SimpleTrack>.GetTracksFromSpotifyContext(FullAlbum spotifyContext) => spotifyContext.Tracks;
 	}
 }

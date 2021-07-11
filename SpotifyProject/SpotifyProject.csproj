@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +18,9 @@
     <PackageReference Include="System.Reactive.PlatformServices" Version="5.0.0" />
     <PackageReference Include="Reactive.Streams" Version="1.0.2" />
     <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+    <PackageReference Include="NLog" Version="4.7.10" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Authentication\" />
@@ -33,9 +36,30 @@
     <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Microsoft.Extensions.Logging" />
+    <None Remove="NLog" />
+    <None Remove="NLog.Extensions.Logging" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\.editorconfig" />
+    <None Include="NLog.config">
+      <Link>NLog.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\SettingsTemplates\standardSettings.xml">
+      <Link>standardSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\SettingsTemplates\lukesShuffleSettings.xml">
+      <Link>lukesShuffleSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\SettingsTemplates\allLikedTracksSettings.xml">
+      <Link>allLikedTracksSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

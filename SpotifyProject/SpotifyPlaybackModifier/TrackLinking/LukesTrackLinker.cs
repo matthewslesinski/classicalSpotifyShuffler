@@ -19,7 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
-			var recordTrackInfoLocation = GlobalCommandLine.Store.GetOptionValue<string>(CommandLineOptions.Names.MetadataRecordFile);
+			var recordTrackInfoLocation = Settings.Get<string>(SettingsName.MetadataRecordFile);
 			if (recordTrackInfoLocation != default)
 				RecordTrackInfo(recordTrackInfoLocation, infoInputArr);
 			var labels = new int[trackMetadataArr.Length];
@@ -31,7 +31,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		ITrackGrouping<int, TrackT> IMetadataBasedTrackLinker<ContextT, TrackT, int>.DesignateTracksToWork(int work, IEnumerable<ITrackLinkingInfo<TrackT>> tracksInWork)
 			=> new DumbWork<TrackT>(work, tracksInWork);
 
-		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.LogLevelMappings[logLevel](msg, Array.Empty<object>());
+		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.Log(logLevel, msg);
 
 		private static void RecordTrackInfo(string outputLocation, IEnumerable<TrackLinkingInfoInput> trackInfos) =>
 			File.WriteAllLines(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)));

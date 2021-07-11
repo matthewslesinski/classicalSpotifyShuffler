@@ -8,17 +8,19 @@ using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public class SimpleWork<TrackT> : ITrackGrouping<(string name, string albumName), TrackT>
+	public class SimpleWork<TrackT> : ITrackGrouping<(string name, string albumName, string albumUri), TrackT>
 	{
 		public string Name { get; }
 		public string AlbumName { get; }
+		public string AlbumUri { get; }
 		public IEnumerable<TrackT> Tracks => _trackLinkingInfos.Select(trackMetaData => trackMetaData.OriginalTrack);
 		private readonly IEnumerable<ITrackLinkingInfo<TrackT>> _trackLinkingInfos;
-		public (string name, string albumName) Key => (Name, AlbumName);
+		public (string name, string albumName, string albumUri) Key => (Name, AlbumName, AlbumUri);
 
-		public SimpleWork(string name, string albumName, IEnumerable<ITrackLinkingInfo<TrackT>> tracks)
+		public SimpleWork(string name, string albumName, string albumUri, IEnumerable<ITrackLinkingInfo<TrackT>> tracks)
 		{
 			AlbumName = albumName;
+			AlbumUri = albumUri;
 			Name = name;
 			_trackLinkingInfos = tracks;
 		}
@@ -27,7 +29,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 		{
 			return obj is SimpleWork<TrackT> o
 				&& Equals(Name, o.Name)
-				&& Equals(AlbumName, o.AlbumName)
+				&& Equals(AlbumUri, o.AlbumUri)
 				&& _trackLinkingInfos.Select(trackInfo => trackInfo.Uri)
 						.SequenceEqual(o._trackLinkingInfos.Select(trackInfo => trackInfo.Uri));
 		}

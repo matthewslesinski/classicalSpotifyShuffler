@@ -44,7 +44,7 @@ namespace SpotifyProject.Authentication
 			return authenticator;
 		}
 
-		private async Task<AuthorizationCodeTokenResponse> RequestInitialToken(AuthorizationSource authorizationSource)
+		private static async Task<AuthorizationCodeTokenResponse> RequestInitialToken(AuthorizationSource authorizationSource)
 		{
 			var loginRequest = new LoginRequest(authorizationSource.RedirectUri, authorizationSource.ClientId, LoginRequest.ResponseType.Code)
 			{
