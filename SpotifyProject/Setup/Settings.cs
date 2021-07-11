@@ -53,7 +53,7 @@ namespace SpotifyProject.Setup
 			{ SettingsName.DefaultToAlbumShuffle,             new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
 			{ SettingsName.MaintainCurrentlyPlaying,          new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
 			{ SettingsName.AskUser,                           new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
-			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.First().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() } },
+			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.First().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(), StringFormatter = GeneralExtensions.ToJsonString } },
 			{ SettingsName.ConsoleLogLevel,                   new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Info } },
 			{ SettingsName.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Verbose } },
 			{ SettingsName.ClientInfoPath,                    new SettingsSpecification { IsRequired = true} },
@@ -67,7 +67,7 @@ namespace SpotifyProject.Setup
 		private static bool _isLoaded = false;
 
 		public static IEnumerable<(SettingsName setting, string stringValue)> GetAllSettingsAsStrings() =>
-			_parsedSettings.Select(kvp => (kvp.Key, kvp.Value?.ToString()));
+			_parsedSettings.Select(kvp => (kvp.Key, _settingsSpecifications[kvp.Key].StringFormatter(kvp.Value)));
 
 		public static T Get<T>(SettingsName setting) => TryGet<T>(setting, out var value) ? value : default;
 		public static bool TryGet<T>(SettingsName setting, out T value)
@@ -142,6 +142,7 @@ namespace SpotifyProject.Setup
 			internal object Default { get; set; } = null;
 			internal Func<IEnumerable<string>, object> ValueGetter { get; set; }
 				= rawValues => rawValues.TryGetFirst(out var foundResult) && !string.IsNullOrWhiteSpace(foundResult) ? foundResult : default;
+			internal Func<object, string> StringFormatter { get; set; } = obj => obj?.ToString();
 		}
 	}
 
