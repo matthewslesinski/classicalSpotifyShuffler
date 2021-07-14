@@ -29,7 +29,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Requesting all saved tracks from Spotify");
-			var allTracks = await this.GetAllSavedTracks();
+			var allTracks = await this.GetAllSavedTracks().WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
+using SpotifyProject.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
@@ -24,14 +25,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static async Task<ExistingAlbumPlaybackContext> FromSimpleAlbum(SpotifyConfiguration spotifyConfiguration, string albumId)
 		{
-			var fullAlbum = await spotifyConfiguration.GetAlbum(albumId);
+			var fullAlbum = await spotifyConfiguration.GetAlbum(albumId).WithoutContextCapture();
 			return new ExistingAlbumPlaybackContext(spotifyConfiguration, fullAlbum);
 		}
 
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Requesting all tracks for album with id {SpotifyContext.Id} and name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllAlbumTracks(SpotifyContext.Id);
+			var allTracks = await this.GetAllAlbumTracks(SpotifyContext.Id).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}

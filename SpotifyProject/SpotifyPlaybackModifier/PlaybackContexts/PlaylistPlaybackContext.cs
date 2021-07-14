@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using SpotifyAPI.Web;
 using System.Threading.Tasks;
+using SpotifyProject.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
@@ -30,14 +31,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static async Task<ExistingPlaylistPlaybackContext> FromSimplePlaylist(SpotifyConfiguration spotifyConfiguration, string playlistId)
 		{
-			var fullPlaylist = await spotifyConfiguration.Spotify.Playlists.Get(playlistId);
+			var fullPlaylist = await spotifyConfiguration.Spotify.Playlists.Get(playlistId).WithoutContextCapture();
 			return new ExistingPlaylistPlaybackContext(spotifyConfiguration, fullPlaylist);
 		}
 
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllPlaylistTracks(SpotifyContext.Id);
+			var allTracks = await this.GetAllPlaylistTracks(SpotifyContext.Id).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}

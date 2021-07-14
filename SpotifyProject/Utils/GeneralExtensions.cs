@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace SpotifyProject.Utils
@@ -10,5 +12,11 @@ namespace SpotifyProject.Utils
 
 		public static string ToJsonString(this object obj) => JsonConvert.SerializeObject(obj);
 
+		public static ConfiguredTaskAwaitable WithoutContextCapture(this Task task) => 
+			task.ConfigureAwait(continueOnCapturedContext: false);
+		public static ConfiguredTaskAwaitable<V> WithoutContextCapture<V>(this Task<V> task) => 
+			task.ConfigureAwait(continueOnCapturedContext: false);
+		public static ConfiguredValueTaskAwaitable<V> WithoutContextCapture<V>(this ValueTask<V> task) => 
+			task.ConfigureAwait(continueOnCapturedContext: false);
 	}
 }

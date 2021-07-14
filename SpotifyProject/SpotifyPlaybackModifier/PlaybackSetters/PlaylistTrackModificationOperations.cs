@@ -12,7 +12,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task<string> IPlaylistModification.SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId)
 		{
 			Logger.Verbose($"Adding {UrisToAdd.Count} tracks to playlist with Id {playlistId}{(AddPosition.HasValue ? " at position " + AddPosition : "")}");
-			var response = await spotifyAccessor.AddPlaylistItems(playlistId, UrisToAdd, AddPosition);
+			var response = await spotifyAccessor.AddPlaylistItems(playlistId, UrisToAdd, AddPosition).WithoutContextCapture();
 			return response.SnapshotId;
 		}
 
@@ -25,7 +25,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task<string> IPlaylistModification.SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId)
 		{
 			Logger.Verbose($"Removing {UrisToRemove.Count} tracks from playlist with Id {playlistId}");
-			var response = await spotifyAccessor.RemovePlaylistItems(playlistId, previousSnapshotId, UrisToRemove);
+			var response = await spotifyAccessor.RemovePlaylistItems(playlistId, previousSnapshotId, UrisToRemove).WithoutContextCapture();
 			return response.SnapshotId;
 		}
 
@@ -37,7 +37,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task<string> IPlaylistModification.SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId)
 		{
 			Logger.Verbose($"Moving {RangeLength} tracks in playlist with Id {playlistId} from {RangeStartIndex} to {ToInsertIndex}");
-			var response = await spotifyAccessor.ReorderPlaylistItems(playlistId, previousSnapshotId, RangeStartIndex, RangeLength, ToInsertIndex);
+			var response = await spotifyAccessor.ReorderPlaylistItems(playlistId, previousSnapshotId, RangeStartIndex, RangeLength, ToInsertIndex).WithoutContextCapture();
 			return response.SnapshotId;
 		}
 
@@ -51,7 +51,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task<string> IPlaylistModification.SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId)
 		{
 			Logger.Verbose($"Overwriting existing tracks from playlist with Id {playlistId} with {UrisToReplaceWith.Count} new tracks");
-			await spotifyAccessor.ReplacePlaylistItems(playlistId, UrisToReplaceWith);
+			await spotifyAccessor.ReplacePlaylistItems(playlistId, UrisToReplaceWith).WithoutContextCapture();
 			return null;
 		}
 
@@ -63,7 +63,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task<string> IPlaylistModification.SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId)
 		{
 			Logger.Verbose($"Getting snapshot ID for playlist with Id {playlistId}");
-			var response = await spotifyAccessor.GetPlaylist(playlistId, new[] { "snapshot_id" });
+			var response = await spotifyAccessor.GetPlaylist(playlistId, new[] { "snapshot_id" }).WithoutContextCapture();
 			return response.SnapshotId;
 		}
 	}

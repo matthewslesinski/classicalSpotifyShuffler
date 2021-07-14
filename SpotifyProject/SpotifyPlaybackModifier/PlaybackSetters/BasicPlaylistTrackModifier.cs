@@ -19,7 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			string snapshotId = null;
 			foreach(var operation in operations)
 			{
-				snapshotId = await operation.SendRequest(this, playlistId, snapshotId);
+				snapshotId = await operation.SendRequest(this, playlistId, snapshotId).WithoutContextCapture();
 			}
 		}
 

@@ -24,14 +24,14 @@ namespace SpotifyProject.Authentication
 
 		public async Task<SpotifyClient> Authenticate(AuthorizationSource authorizationSource)
 		{
-            var authenticator = await GetAuthenticator(authorizationSource);
+            var authenticator = await GetAuthenticator(authorizationSource).WithoutContextCapture();
             return new SpotifyClient(_config.WithAuthenticator(authenticator));
 		}
 
         public static async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
         {
             Logger.Verbose($"Reading Client Id and Secret from {clientInfoPath}");
-            return JsonConvert.DeserializeObject<ClientInfo>(await File.ReadAllTextAsync(clientInfoPath));
+            return JsonConvert.DeserializeObject<ClientInfo>(await File.ReadAllTextAsync(clientInfoPath).WithoutContextCapture());
         }
     }
 
@@ -69,14 +69,14 @@ namespace SpotifyProject.Authentication
                 .WithRetryHandler(retryHandler)
                 .WithDefaultPaginator(paginator);
             var authenticator = authenticatorConstructor(config, tokenFilePath);
-            var clientInfo = await Authenticator.ReadClientInfoPath(clientInfoFilePath);
+            var clientInfo = await Authenticator.ReadClientInfoPath(clientInfoFilePath).WithoutContextCapture();
             var authorizationSource = new AuthorizationSource
             {
                 ClientInfo = clientInfo,
                 RedirectUriString = redirectUri,
                 Scopes = SpotifyConstants.AllAuthenticationScopes
             };
-            var spotify = await authenticator.Authenticate(authorizationSource);
+            var spotify = await authenticator.Authenticate(authorizationSource).WithoutContextCapture();
             Logger.Information("Successfully logged into Spotify account.");
             return spotify;
         }

@@ -72,7 +72,7 @@ namespace SpotifyProject.Utils
 			}
 			if (loadActionTask != null)
 			{
-				await loadActionTask;
+				await loadActionTask.WithoutContextCapture();
 				isLoadedSetter(true);
 				return true;
 			}

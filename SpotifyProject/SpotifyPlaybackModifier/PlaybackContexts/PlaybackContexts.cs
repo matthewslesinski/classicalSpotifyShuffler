@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyProject.Setup;
 using System.Linq;
+using SpotifyProject.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
@@ -12,13 +13,13 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 	public static class PlaybackContexts
 	{
 		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalAlbumPlaybackContext>> SimpleAlbumContextConstructor =
-			async (config, albumId) => await ExistingAlbumPlaybackContext.FromSimpleAlbum(config, albumId);
+			async (config, albumId) => await ExistingAlbumPlaybackContext.FromSimpleAlbum(config, albumId).WithoutContextCapture();
 		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalPlaylistPlaybackContext>> SimplePlaylistContextConstructor =
-			async (config, playlistId) => await ExistingPlaylistPlaybackContext.FromSimplePlaylist(config, playlistId);
+			async (config, playlistId) => await ExistingPlaylistPlaybackContext.FromSimplePlaylist(config, playlistId).WithoutContextCapture();
 		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalArtistPlaybackContext>> SimpleArtistContextConstructor =
 			async (config, artistId) => await ExistingArtistPlaybackContext.FromSimpleArtist(config, artistId,
 				Settings.Get<IEnumerable<string>>(SettingsName.ArtistAlbumIncludeGroups)
-					.Select(value => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(value, true)).Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2));
+					.Select(value => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(value, true)).Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2)).WithoutContextCapture();
 		private static readonly Func<SpotifyConfiguration, string, Task<IOriginalAllLikedTracksPlaybackContext>> SimpleAllLikedSongsContextConstructor =
 			(config, playlistId) => Task.FromResult<IOriginalAllLikedTracksPlaybackContext>(new ExistingAllLikedTracksPlaybackContext(config));
 

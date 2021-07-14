@@ -22,12 +22,12 @@ namespace SpotifyProject.SpotifyAdditions
 
         public async Task<IList<T>> PaginateAll<T>(IPaginatable<T> firstPage, IAPIConnector connector)
         {
-            return await Paginate(firstPage, connector).ToListAsync();
+            return await Paginate(firstPage, connector).ToListAsync().WithoutContextCapture();
         }
 
         public async Task<IList<T>> PaginateAll<T, TNext>(IPaginatable<T, TNext> firstPage, Func<TNext, IPaginatable<T, TNext>> mapper, IAPIConnector connector)
         {
-            return await Paginate(firstPage, mapper, connector).ToListAsync();
+            return await Paginate(firstPage, mapper, connector).ToListAsync().WithoutContextCapture();
         }
 
         public IAsyncEnumerable<T> Paginate<T>(IPaginatable<T> firstPage, IAPIConnector connector, CancellationToken cancel = default)

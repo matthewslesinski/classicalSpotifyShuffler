@@ -124,7 +124,7 @@ namespace SpotifyProject.Utils
 			foreach (var request in requests)
 			{
 				cancel.ThrowIfCancellationRequested();
-				yield return await request;
+				yield return await request.WithoutContextCapture();
 			}
 		}
 

@@ -25,13 +25,13 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		async Task IPlaylistTrackModifier.SendOperations(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracks)
 		{
 			var newTracksCapped = newTracks.Take(SpotifyConstants.PlaylistSizeLimit).ToArray();
-			await PutCorrectTracksInPlaylist(playlistId, currentTracks, newTracksCapped);
+			await PutCorrectTracksInPlaylist(playlistId, currentTracks, newTracksCapped).WithoutContextCapture();
 			var jumbledContentsPlaylistVersion = await ExistingPlaylistPlaybackContext.FromSimplePlaylist(SpotifyConfiguration, playlistId);
-			await jumbledContentsPlaylistVersion.FullyLoad();
+			await jumbledContentsPlaylistVersion.FullyLoad().WithoutContextCapture();
 			var initialSnapshotId = jumbledContentsPlaylistVersion.SpotifyContext.SnapshotId;
 			var jumbledUris = jumbledContentsPlaylistVersion.PlaybackOrder.Select(track => track.Uri).ToArray();
 			var newUris = newTracksCapped.Select(track => track.Uri).ToArray();
-			await ReorderPlaylist(playlistId, initialSnapshotId, jumbledUris, newUris);
+			await ReorderPlaylist(playlistId, initialSnapshotId, jumbledUris, newUris).WithoutContextCapture();
 		}
 
 		private async Task PutCorrectTracksInPlaylist(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracksCapped)
@@ -48,8 +48,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var removeOperations = tracksToKeep.Any() ? RemoveOperation.CreateOperations(tracksToRemove) : new IPlaylistModification[] { new ReplaceOperation() };
 			var addOperations = AddOperation.CreateOperations(tracksToAdd);
 
-			await Task.WhenAll(removeOperations.Select(operation => operation.SendRequest(this, playlistId)).ToArray());
-			await Task.WhenAll(addOperations.Select(operation => operation.SendRequest(this, playlistId)).ToArray());
+			await Task.WhenAll(removeOperations.Select(operation => operation.SendRequest(this, playlistId)).ToArray()).WithoutContextCapture();
+			await Task.WhenAll(addOperations.Select(operation => operation.SendRequest(this, playlistId)).ToArray()).WithoutContextCapture();
 		}
 
 		private async Task ReorderPlaylist(string playlistId, string snapshotId, string[] jumbledOrder, string[] intendedOrder)
@@ -69,8 +69,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 			while (TryGetOperations(jumbledBatches, playlistSize, out var operations, out jumbledBatches))
 			{
-				await Task.WhenAll(operations.Select(operation => operation.SendRequest(this, playlistId, snapshotId)).ToList());
-				snapshotId = await QueryCurrentSnapshotId();
+				await Task.WhenAll(operations.Select(operation => operation.SendRequest(this, playlistId, snapshotId)).ToList()).WithoutContextCapture();
+				snapshotId = await QueryCurrentSnapshotId().WithoutContextCapture();
 			}			
 		}
 

@@ -48,12 +48,12 @@ namespace SpotifyProject
             try
             {
                 Logger.Information("Starting Spotify Project");
-				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
+				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
 				var reorderer = new SpotifyPlaybackReorderer(spotify);
                 if (Settings.Get<bool>(SettingsName.AskUser))
-                    await reorderer.ShuffleUserProvidedContext();
+                    await reorderer.ShuffleUserProvidedContext().WithoutContextCapture();
                 else
-				    await reorderer.ShuffleCurrentPlayback();
+				    await reorderer.ShuffleCurrentPlayback().WithoutContextCapture();
 				Logger.Information("Terminating successfully");
                 Environment.Exit(0);
             }
