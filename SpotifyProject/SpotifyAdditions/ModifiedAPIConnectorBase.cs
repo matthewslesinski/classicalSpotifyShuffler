@@ -32,19 +32,19 @@ namespace SpotifyProject.SpotifyAdditions
 			return SendAPIRequest<T>(uri, HttpMethod.Delete);
 		}
 
-		public Task<T> Delete<T>(Uri uri, IDictionary<string, string>? parameters)
+		public Task<T> Delete<T>(Uri uri, IDictionary<string, string> parameters)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Delete, parameters);
 		}
 
-		public Task<T> Delete<T>(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public Task<T> Delete<T>(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Delete, parameters, body);
 		}
 
-		public async Task<HttpStatusCode> Delete(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public async Task<HttpStatusCode> Delete(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return (await SendAPIRequestDetailed(uri, HttpMethod.Delete, parameters, body).ConfigureAwait(continueOnCapturedContext: false)).StatusCode;
@@ -56,13 +56,13 @@ namespace SpotifyProject.SpotifyAdditions
 			return SendAPIRequest<T>(uri, HttpMethod.Get);
 		}
 
-		public Task<T> Get<T>(Uri uri, IDictionary<string, string>? parameters)
+		public Task<T> Get<T>(Uri uri, IDictionary<string, string> parameters)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Get, parameters);
 		}
 
-		public async Task<HttpStatusCode> Get(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public async Task<HttpStatusCode> Get(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return (await SendAPIRequestDetailed(uri, HttpMethod.Get, parameters, body).ConfigureAwait(continueOnCapturedContext: false)).StatusCode;
@@ -74,25 +74,25 @@ namespace SpotifyProject.SpotifyAdditions
 			return SendAPIRequest<T>(uri, HttpMethod.Post);
 		}
 
-		public Task<T> Post<T>(Uri uri, IDictionary<string, string>? parameters)
+		public Task<T> Post<T>(Uri uri, IDictionary<string, string> parameters)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Post, parameters);
 		}
 
-		public Task<T> Post<T>(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public Task<T> Post<T>(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Post, parameters, body);
 		}
 
-		public Task<T> Post<T>(Uri uri, IDictionary<string, string>? parameters, object? body, Dictionary<string, string>? headers)
+		public Task<T> Post<T>(Uri uri, IDictionary<string, string> parameters, object body, Dictionary<string, string> headers)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Post, parameters, body, headers);
 		}
 
-		public async Task<HttpStatusCode> Post(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public async Task<HttpStatusCode> Post(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return (await SendAPIRequestDetailed(uri, HttpMethod.Post, parameters, body).ConfigureAwait(continueOnCapturedContext: false)).StatusCode;
@@ -104,49 +104,49 @@ namespace SpotifyProject.SpotifyAdditions
 			return SendAPIRequest<T>(uri, HttpMethod.Put);
 		}
 
-		public Task<T> Put<T>(Uri uri, IDictionary<string, string>? parameters)
+		public Task<T> Put<T>(Uri uri, IDictionary<string, string> parameters)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Put, parameters);
 		}
 
-		public Task<T> Put<T>(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public Task<T> Put<T>(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return SendAPIRequest<T>(uri, HttpMethod.Put, parameters, body);
 		}
 
-		public async Task<HttpStatusCode> Put(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public async Task<HttpStatusCode> Put(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return (await SendAPIRequestDetailed(uri, HttpMethod.Put, parameters, body).ConfigureAwait(continueOnCapturedContext: false)).StatusCode;
 		}
 
-		public async Task<HttpStatusCode> PutRaw(Uri uri, IDictionary<string, string>? parameters, object? body)
+		public async Task<HttpStatusCode> PutRaw(Uri uri, IDictionary<string, string> parameters, object body)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			return (await SendRawRequest(uri, HttpMethod.Put, parameters, body).ConfigureAwait(continueOnCapturedContext: false)).StatusCode;
 		}
 
-		public Task<IResponse> SendRawRequest(Uri uri, HttpMethod method, IDictionary<string, string>? parameters = null, object? body = null, IDictionary<string, string>? headers = null)
+		public Task<IResponse> SendRawRequest(Uri uri, HttpMethod method, IDictionary<string, string> parameters = null, object body = null, IDictionary<string, string> headers = null)
 		{
 			IRequest request = CreateRequest(uri, method, parameters, body, headers);
 			return DoRequest(request);
 		}
 
-		public async Task<T> SendAPIRequest<T>(Uri uri, HttpMethod method, IDictionary<string, string>? parameters = null, object? body = null, IDictionary<string, string>? headers = null)
+		public async Task<T> SendAPIRequest<T>(Uri uri, HttpMethod method, IDictionary<string, string> parameters = null, object body = null, IDictionary<string, string> headers = null)
 		{
 			IRequest request = CreateRequest(uri, method, parameters, body, headers);
 			return (await DoSerializedRequest<T>(request).WithoutContextCapture()).Body;
 		}
 
-		public async Task<IResponse> SendAPIRequestDetailed(Uri uri, HttpMethod method, IDictionary<string, string>? parameters = null, object? body = null, IDictionary<string, string>? headers = null)
+		public async Task<IResponse> SendAPIRequestDetailed(Uri uri, HttpMethod method, IDictionary<string, string> parameters = null, object body = null, IDictionary<string, string> headers = null)
 		{
 			IRequest request = CreateRequest(uri, method, parameters, body, headers);
 			return (await DoSerializedRequest<object>(request).WithoutContextCapture()).Response;
 		}
 
-		private IRequest CreateRequest(Uri uri, HttpMethod method, IDictionary<string, string>? parameters, object? body, IDictionary<string, string>? headers)
+		private IRequest CreateRequest(Uri uri, HttpMethod method, IDictionary<string, string> parameters, object body, IDictionary<string, string> headers)
 		{
 			Ensure.ArgumentNotNull(uri, "uri");
 			Ensure.ArgumentNotNull(method, "method");

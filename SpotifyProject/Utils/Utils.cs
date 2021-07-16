@@ -10,10 +10,6 @@ namespace SpotifyProject.Utils
 	/** Utility methods that are generic */
 	public static class Utils
 	{
-		public static (A first, B second, C third) Append<A, B, C>(this (A first, B second) firstTwo, C third) => (firstTwo.first, firstTwo.second, third);
-		public static (A first, B second, C third, D fourth) Append<A, B, C, D>(this (A first, B second, C third) firstThree, D fourth) => (firstThree.first, firstThree.second, firstThree.third, fourth);
-		public static (A first, B second, C third, D fourth, E fifth) Append<A, B, C, D, E>(this (A first, B second, C third, D fourth) firstFour, E fifth) => (firstFour.first, firstFour.second, firstFour.third, firstFour.fourth, fifth);
-
 		public static bool IsRomanNumeral(string possibleNumber, out RomanNumeral romanNumeral)
 		{
 			return RomanNumeral.TryParse(possibleNumber, out romanNumeral);
