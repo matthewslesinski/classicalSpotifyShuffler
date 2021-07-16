@@ -27,6 +27,7 @@ namespace SpotifyProject.Setup
 			{ SettingsName.PaginatorName,			        new SingleValueOption { Flag = "--paginator", Desc = "The name of the paginator to be used." } },
 			{ SettingsName.RetryHandlerName,				new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
 			{ SettingsName.HTTPLoggerName,                  new SingleValueOption { Flag = "--httpLogger", Desc = "The name of the http logger to be used." } },
+			{ SettingsName.APIConnectorName,                new SingleValueOption { Flag = "--apiConnector", Desc = "The name of the APIConnector to be used." } },
 			{ SettingsName.HTTPLoggerCharacterLimit,        new SingleValueOption { Flag = "--httpLoggerCharacterLimit", Desc = "The max number of characters to print per line from the http logger." } },
 			{ SettingsName.RandomSeed,						new SingleValueOption { Flag = "--randomSeed", Desc = "The seed to use for random numbers." } },
 			{ SettingsName.MetadataRecordFile,				new SingleValueOption { Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },

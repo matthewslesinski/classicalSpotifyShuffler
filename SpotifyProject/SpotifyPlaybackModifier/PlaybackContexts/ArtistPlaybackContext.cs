@@ -29,7 +29,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static async Task<ExistingArtistPlaybackContext> FromSimpleArtist(SpotifyConfiguration spotifyConfiguration, string artistId, ArtistsAlbumsRequest.IncludeGroups albumTypesToInclude)
 		{
-			var fullArtist = await spotifyConfiguration.GetArtist(artistId);
+			var fullArtist = await spotifyConfiguration.GetArtist(artistId).WithoutContextCapture();
 			return new ExistingArtistPlaybackContext(spotifyConfiguration, fullArtist, albumTypesToInclude);
 		}
 
@@ -38,7 +38,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Loading albums for artist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllArtistTracks(SpotifyContext.Id, _albumGroupsToInclude);
+			var allTracks = await this.GetAllArtistTracks(SpotifyContext.Id, _albumGroupsToInclude).WithoutContextCapture();
 			Logger.Information($"All {allTracks.Count} tracks loaded");
 			PlaybackOrder = allTracks;
 		}

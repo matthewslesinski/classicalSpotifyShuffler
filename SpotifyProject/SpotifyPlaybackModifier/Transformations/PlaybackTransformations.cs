@@ -25,15 +25,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			};
 
 
-		public static bool TryGetTransformation<ContextT, TrackT>(PlaybackContextType contextType, out IPlaybackTransformationsStore<ContextT, TrackT> transformations)
-			where ContextT : ISpotifyPlaybackContext<TrackT>
-		{
-			transformations = null;
-			return _transformations.TryGetValue(contextType, out var transformationObj)
-				&& (transformations = transformationObj as IPlaybackTransformationsStore<ContextT, TrackT>) != default;
-		}
-		
-	}
+        public static bool TryGetTransformation<ContextT, TrackT>(PlaybackContextType contextType, out IPlaybackTransformationsStore<ContextT, TrackT> transformations)
+            where ContextT : ISpotifyPlaybackContext<TrackT> => 
+				_transformations.TryGetCastedValue<PlaybackContextType, IPlaybackTransformationsStore<ContextT, TrackT>>(contextType, out transformations);
+
+    }
 
 	public interface IPlaybackTransformationsStore<ContextT, TrackT> where ContextT : ISpotifyPlaybackContext<TrackT>
 	{

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyProject.Setup;
+using SpotifyProject.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
@@ -69,8 +70,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				OffsetParam = useUri ? new PlayerResumePlaybackRequest.Offset { Uri = uriToPlay } : default,
 				PositionMs = useUri ? positionMs : default
 			};
-			await this.SetCurrentPlayback(playbackRequest);
-			await this.SetShuffle(false);
+			await this.SetCurrentPlayback(playbackRequest).WithoutContextCapture();
+			await this.SetShuffle(false).WithoutContextCapture();
 			Logger.Information(useUri ? "The playback queue should be different" : "Should be something new playing");
 		}
 	}

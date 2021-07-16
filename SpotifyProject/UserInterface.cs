@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyProject.Setup;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject
 {
@@ -11,11 +12,11 @@ namespace SpotifyProject
 		public static readonly UserInterface Default = new ConsoleUserInterface();
 		public static UserInterface Instance = Default;
 
-		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput);
+		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput).WithoutContextCapture();
 		public async Task<string> RequestResponseAsync(string requestNotification)
 		{
 			NotifyUser(requestNotification);
-			return await ReadNextUserInputAsync();
+			return await ReadNextUserInputAsync().WithoutContextCapture();
 		}
 		public abstract string ReadNextUserInput();
 		public abstract void NotifyUser(string notification);

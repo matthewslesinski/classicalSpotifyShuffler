@@ -26,26 +26,26 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 
 		public static async Task<List<FullTrack>> GetAllSavedTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, int batchSize = 50)
 		{
-			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Library.GetTracks(new LibraryTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }));
-			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
+			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Library.GetTracks(new LibraryTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
+			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync().WithoutContextCapture();
 			return allTracks;
 		}
 
 		public static async Task<List<FullTrack>> GetAllPlaylistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, int batchSize = 100)
 		{
-			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }));
-			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync();
+			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
+			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync().WithoutContextCapture();
 			return allTracks;
 		}
 
 		public static async Task<FullAlbum> GetAlbum(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId) =>
-			await spotifyConfigurationContainer.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market });
+			await spotifyConfigurationContainer.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture();
 
 		public static async Task<List<SimpleTrack>> GetAllAlbumTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId, int batchSize = 50) =>
-			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market })).ToListAsync();
+			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market })).ToListAsync().WithoutContextCapture();
 
 		public static async Task<FullArtist> GetArtist(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId) =>
-			await spotifyConfigurationContainer.Spotify.Artists.Get(artistId);
+			await spotifyConfigurationContainer.Spotify.Artists.Get(artistId).WithoutContextCapture();
 
 		public static async Task<List<SimpleTrackAndAlbumWrapper>> GetAllArtistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId, ArtistsAlbumsRequest.IncludeGroups albumGroupsToInclude,
 			int albumBatchSize = 50, int trackBatchSize = 50)
@@ -53,14 +53,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 			var artistsAlbumsRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = albumGroupsToInclude, Limit = albumBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
 			var albumTracksRequest = new AlbumTracksRequest { Limit = trackBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
 			var albumEquality = new KeyBasedEqualityComparer<SimpleAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
-			var firstAlbumPage = await spotifyConfigurationContainer.Spotify.Artists.GetAlbums(artistId, artistsAlbumsRequest);
+			var firstAlbumPage = await spotifyConfigurationContainer.Spotify.Artists.GetAlbums(artistId, artistsAlbumsRequest).WithoutContextCapture();
 			var allAlbums = spotifyConfigurationContainer.Spotify.Paginate(firstAlbumPage).Distinct(albumEquality).ToObservable().Finally(() => Logger.Information($"All albums loaded"));
 			var allTracks = await allAlbums
 				.SelectMany(album => Observable.FromAsync(() => spotifyConfigurationContainer.Spotify.Albums.GetTracks(album.Id, albumTracksRequest))
 					.SelectMany(page => spotifyConfigurationContainer.Spotify.Paginate(page).ToObservable())
 					.Where(track => track.Artists.Select(artist => artist.Id).Contains(artistId))
 					.Select(track => new SimpleTrackAndAlbumWrapper(track, album)))
-				.ToAsyncEnumerable().ToListAsync();
+				.ToAsyncEnumerable().ToListAsync().WithoutContextCapture();
 			return allTracks;
 		}
 
@@ -98,14 +98,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		public static async Task<FullPlaylist> AddOrGetPlaylistByName(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string name)
 		{
 			var playlists = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = 50 }));
-			var existingPlaylist = await playlists.FirstOrDefaultAsync(playlist => string.Equals(playlist.Name, name, StringComparison.OrdinalIgnoreCase));
+			var existingPlaylist = await playlists.FirstOrDefaultAsync(playlist => string.Equals(playlist.Name, name, StringComparison.OrdinalIgnoreCase)).WithoutContextCapture();
 			if (existingPlaylist != default)
-				return await spotifyConfigurationContainer.GetPlaylist(existingPlaylist.Id);
+				return await spotifyConfigurationContainer.GetPlaylist(existingPlaylist.Id).WithoutContextCapture();
 			else
 			{
-				var userProfile = await spotifyConfigurationContainer.GetCurrentUserProfile();
+				var userProfile = await spotifyConfigurationContainer.GetCurrentUserProfile().WithoutContextCapture();
 				var userId = userProfile.Id;
-				return await spotifyConfigurationContainer.Spotify.Playlists.Create(userId, new PlaylistCreateRequest(name) { Public = false, Collaborative = false });
+				return await spotifyConfigurationContainer.Spotify.Playlists.Create(userId, new PlaylistCreateRequest(name) { Public = false, Collaborative = false }).WithoutContextCapture();
 			}
 		}
 	}

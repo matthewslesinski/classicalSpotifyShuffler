@@ -3,6 +3,8 @@ using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SpotifyAPI.Web;
+using SpotifyProject.Utils;
+using SpotifyProject.SpotifyAdditions;
 
 namespace SpotifyProject.Authentication
 {
@@ -17,7 +19,7 @@ namespace SpotifyProject.Authentication
 	{
 		private readonly string _credentialsFilePath;
 
-		public AuthorizationCodeAuthenticator(SpotifyClientConfig config, string credentialsFilePath) : base(config)
+		public AuthorizationCodeAuthenticator(SpotifyClientConfigHolder config, string credentialsFilePath) : base(config)
 		{
 			_credentialsFilePath = string.IsNullOrWhiteSpace(credentialsFilePath) ? null : credentialsFilePath;
 		}
@@ -30,10 +32,10 @@ namespace SpotifyProject.Authentication
 			SpotifyAuthenticationArguments authenticationArguments;
 			bool askForLogin = false;
 			if (_credentialsFilePath == null || !File.Exists(_credentialsFilePath)
-				|| !Equals((authenticationArguments = await ReadExistingAuthenticationArguments()).AuthorizationSource, authorizationSource))
+				|| !Equals((authenticationArguments = await ReadExistingAuthenticationArguments().WithoutContextCapture()).AuthorizationSource, authorizationSource))
 			{
 				askForLogin = true;
-				authenticationArguments = BuildAuthenticationArgumentsFromTokenResponse(await RequestInitialToken(authorizationSource));
+				authenticationArguments = BuildAuthenticationArgumentsFromTokenResponse(await RequestInitialToken(authorizationSource).WithoutContextCapture());
 			}
 
 			var authenticator = new SpotifyAPI.Web.AuthorizationCodeAuthenticator(authorizationSource.ClientId, authorizationSource.ClientSecret, authenticationArguments.TokenResponse);
@@ -53,15 +55,15 @@ namespace SpotifyProject.Authentication
 			var loginUri = loginRequest.ToUri();
 			UserInterface.Instance.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
 			UserInterface.Instance.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
-			var authorizationCode = await UserInterface.Instance.ReadNextUserInputAsync();
-			var response = await new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(authorizationSource.ClientId, authorizationSource.ClientSecret, authorizationCode, authorizationSource.RedirectUri));
+			var authorizationCode = await UserInterface.Instance.ReadNextUserInputAsync().WithoutContextCapture();
+			var response = await new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(authorizationSource.ClientId, authorizationSource.ClientSecret, authorizationCode, authorizationSource.RedirectUri)).WithoutContextCapture();
 			return response;
 		}
 
 		private async Task<SpotifyAuthenticationArguments> ReadExistingAuthenticationArguments()
 		{
 			Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");
-			var json = await File.ReadAllTextAsync(_credentialsFilePath);
+			var json = await File.ReadAllTextAsync(_credentialsFilePath).WithoutContextCapture();
 			return JsonConvert.DeserializeObject<SpotifyAuthenticationArguments>(json);
 		}
 

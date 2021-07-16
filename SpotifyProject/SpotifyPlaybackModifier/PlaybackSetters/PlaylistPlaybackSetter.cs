@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Setup;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -29,19 +30,19 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		{
 			var name = PlaylistName;
 			if (string.IsNullOrWhiteSpace(name))
-				name = await UserInterface.Instance.RequestResponseAsync("Please provide a playlist name to save to");
-			var reorderedPlaylist = await SaveContextAsPlaylist(context, name);
+				name = await UserInterface.Instance.RequestResponseAsync("Please provide a playlist name to save to").WithoutContextCapture();
+			var reorderedPlaylist = await SaveContextAsPlaylist(context, name).WithoutContextCapture();
 			args.AllowUsingContextUri = true;
-			await _underlyingPlaybackSetter.SetPlayback(reorderedPlaylist, args);
+			await _underlyingPlaybackSetter.SetPlayback(reorderedPlaylist, args).WithoutContextCapture();
 		}
 
 		private async Task<IPlaylistPlaybackContext<TrackT>> SaveContextAsPlaylist(ISpotifyPlaybackContext<TrackT> context, string playlistName)
 		{
-			var playlistObject = await this.AddOrGetPlaylistByName(playlistName);
+			var playlistObject = await this.AddOrGetPlaylistByName(playlistName).WithoutContextCapture();
 			var existingPlaylistContext = new ExistingPlaylistPlaybackContext(SpotifyConfiguration, playlistObject);
-			await existingPlaylistContext.FullyLoad();
+			await existingPlaylistContext.FullyLoad().WithoutContextCapture();
 			Logger.Information($"Saving new track list to playlist {playlistName}");
-			await _playlistTrackModifier.ModifyPlaylistTracks(existingPlaylistContext, context.PlaybackOrder.Select(context.GetMetadataForTrack));
+			await _playlistTrackModifier.ModifyPlaylistTracks(existingPlaylistContext, context.PlaybackOrder.Select(context.GetMetadataForTrack)).WithoutContextCapture();
 			return new ConstructedPlaylistContext<TrackT, ISpotifyPlaybackContext<TrackT>>(context, existingPlaylistContext);
 		}
 
@@ -54,7 +55,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		public async Task ModifyPlaylistTracks(ExistingPlaylistPlaybackContext currentVersion, IEnumerable<ITrackLinkingInfo> newTracks)
 		{
 			var playlistId = currentVersion.SpotifyContext.Id;
-			await SendOperations(playlistId, currentVersion.PlaybackOrder.Select(currentVersion.GetMetadataForTrack), newTracks);
+			await SendOperations(playlistId, currentVersion.PlaybackOrder.Select(currentVersion.GetMetadataForTrack), newTracks).WithoutContextCapture();
 		}
 
 		protected Task SendOperations(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracks);

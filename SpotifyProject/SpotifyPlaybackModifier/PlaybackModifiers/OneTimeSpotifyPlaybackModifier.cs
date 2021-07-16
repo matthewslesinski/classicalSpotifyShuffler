@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
+using SpotifyProject.Utils;
 using SpotifyProject.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
@@ -27,11 +28,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		private async Task RunOnce(InputContextT context, bool maintainCurrentListening = false)
 		{
-			await context.FullyLoad();
+			await context.FullyLoad().WithoutContextCapture();
 			var transformedContext = _transformer.Transform(context);
 			PlaybackStateArgs playbackArgs = null;
 			var currentMs = Environment.TickCount;
-			var currentlyPlaying = await this.GetCurrentlyPlaying();
+			var currentlyPlaying = await this.GetCurrentlyPlaying().WithoutContextCapture();
 			var elapsedMs = Environment.TickCount - currentMs;
 			if (maintainCurrentListening && currentlyPlaying?.Item is FullTrack currentlyPlayingTrack)
 			{
@@ -41,7 +42,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 			} else 
 				playbackArgs = new PlaybackStateArgs();
 			playbackArgs.CurrentPlaybackFound = currentlyPlaying?.Item != null;
-			await _playbackSetter.SetPlayback(transformedContext, playbackArgs);
+			await _playbackSetter.SetPlayback(transformedContext, playbackArgs).WithoutContextCapture();
 		}
 	}
 }

@@ -37,7 +37,7 @@ namespace SpotifyProject
 
             UserInterface.Instance.NotifyUser("Please provide the indicator of the Spotify context to use");
             var userInput = UserInterface.Instance.ReadNextUserInput();
-            while (!await TryHandleUserInput(userInput))
+            while (!await TryHandleUserInput(userInput).WithoutContextCapture())
 			{
                 UserInterface.Instance.NotifyUser("The provided input was not valid. Would you like to try again? If so, you can just provide new input now. " +
 					"Otherwise we may default to the current track's album, if that was a startup argument provided");
@@ -50,7 +50,7 @@ namespace SpotifyProject
                     else
                     {
                         if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
-                            await ShuffleCurrentAlbumOfCurrentTrack();
+                            await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
                         return;
                     }
 				}
@@ -60,20 +60,20 @@ namespace SpotifyProject
 
         public async Task<bool> ShuffleCurrentPlayback()
 		{
-            var currentlyPlaying = await this.GetCurrentlyPlaying();
+            var currentlyPlaying = await this.GetCurrentlyPlaying().WithoutContextCapture();
             var contextUri = currentlyPlaying.Context?.Uri;
-            bool result = contextUri != null && await ModifyContext(contextUri);
+            bool result = contextUri != null && await ModifyContext(contextUri).WithoutContextCapture();
             if (result)
                 return result;
             if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
-                return await ShuffleCurrentAlbumOfCurrentTrack();
+                return await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
             Logger.Error("Playback could not be modified because the current context is unrecognized");
             return false;
         }
 
         public async Task<bool> ShuffleCurrentAlbumOfCurrentTrack()
         {
-            var currentlyPlaying = await this.GetCurrentlyPlaying();
+            var currentlyPlaying = await this.GetCurrentlyPlaying().WithoutContextCapture();
             var album = ((FullTrack)currentlyPlaying.Item).Album;
             if (album.Id == null)
             {
@@ -81,7 +81,7 @@ namespace SpotifyProject
                 return false;
             }
             else
-                return await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id);            
+                return await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id).WithoutContextCapture();            
         }
 
         private static bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
@@ -102,13 +102,13 @@ namespace SpotifyProject
             switch (contextType)
             {
                 case PlaybackContextType.Album:
-                    result = await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(contextType, contextId);
+                    result = await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(contextType, contextId).WithoutContextCapture();
                     break;
 				case PlaybackContextType.Artist:
-					result = await ModifyContext<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>(contextType, contextId);
+					result = await ModifyContext<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>(contextType, contextId).WithoutContextCapture();
 					break;
                 case PlaybackContextType.Playlist:
-                    result = await ModifyContext<IOriginalPlaylistPlaybackContext, FullTrack>(contextType, contextId);
+                    result = await ModifyContext<IOriginalPlaylistPlaybackContext, FullTrack>(contextType, contextId).WithoutContextCapture();
                     break;
                 default:
                     throw new ArgumentException($"Code should not be able to reach here. Please make sure the {nameof(PlaybackContextType)} type's value of " +
@@ -147,7 +147,7 @@ namespace SpotifyProject
 
                 var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(SpotifyConfiguration, transformation, playbackSetter);
 
-                await modifier.Run(initialContext);
+                await modifier.Run(initialContext).WithoutContextCapture();
                 return true;
             }
             catch (Exception e)

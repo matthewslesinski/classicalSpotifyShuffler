@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using SpotifyAPI.Web.Http;
 using SpotifyProject.Utils;
@@ -16,8 +17,11 @@ namespace SpotifyProject.SpotifyAdditions
      */
     public class HTTPLogger : ITruncatedHTTPLogger
     {
-        private const string OnRequestFormat = "Sending Spotify Request: {0} {1} [{2}] {3}";
-        private const string OnResponseFormat = "Received Spotify Response: {0} {1} {2}";
+        private const string _multipleSpacesRegexString = "\\s+";
+        private const string _onRequestFormat = "Sending Spotify Request: {0} {1} [{2}] {3}";
+        private const string _onResponseFormat = "Received Spotify Response: {0} {1} {2}";
+
+        private readonly static Regex _multipleSpacesRegex = new Regex(_multipleSpacesRegexString);
 
         public HTTPLogger()
         {
@@ -35,13 +39,14 @@ namespace SpotifyProject.SpotifyAdditions
                 );
             }
 
-            Loggers.HTTPLogger.Verbose(string.Format(OnRequestFormat, request.Method, request.Endpoint, parameters, request.Body).Truncate(CharacterLimit));
+            Loggers.HTTPLogger.Verbose(string.Format(_onRequestFormat, request.Method, request.Endpoint, parameters, request.Body).Trim().Truncate(CharacterLimit));
         }
 
         public void OnResponse(IResponse response)
         {
-            var body = response.Body?.ToString()?.Replace("\n", "", StringComparison.InvariantCulture);
-            Loggers.HTTPLogger.Verbose(string.Format(OnResponseFormat, response.StatusCode, response.ContentType, body).Truncate(CharacterLimit));
+            
+            var body = response.Body?.ToString()?.Replace(_multipleSpacesRegex, " ");
+            Loggers.HTTPLogger.Verbose(string.Format(_onResponseFormat, response.StatusCode, response.ContentType, body).Trim().Truncate(CharacterLimit));
         }
     }
 }

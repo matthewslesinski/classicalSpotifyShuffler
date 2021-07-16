@@ -15,7 +15,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		protected override IAsyncEnumerable<T> GetPages<T>(IAPIConnector connector, IEnumerable<Uri> uris, CancellationToken cancel)
 		{
-			return uris.RunInParallel(uri => connector.Get<T>(uri).ConfigureAwait(false), cancel);
+			return uris.RunInParallel(uri => connector.Get<T>(uri).WithoutContextCapture(), cancel);
 		}
 	}
 }
