@@ -22,6 +22,7 @@ namespace SpotifyProject.Setup
 		HTTPLoggerName,
 		RetryHandlerName,
 		PaginatorName,
+		APIConnectorName,
 		RandomSeed,
 		MetadataRecordFile,
 		PlaybackSetterName,
@@ -42,6 +43,7 @@ namespace SpotifyProject.Setup
 			{ SettingsName.HTTPLoggerName,					  new SettingsSpecification() },
 			{ SettingsName.RetryHandlerName,                  new SettingsSpecification() },
 			{ SettingsName.PaginatorName,					  new SettingsSpecification() },
+			{ SettingsName.APIConnectorName,				  new SettingsSpecification() },
 			{ SettingsName.PlaybackSetterName,                new SettingsSpecification() },
 			{ SettingsName.SaveAsPlaylistName,                new SettingsSpecification() },
 			{ SettingsName.TokenPath,                         new SettingsSpecification() },
@@ -58,7 +60,7 @@ namespace SpotifyProject.Setup
 			{ SettingsName.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Verbose } },
 			{ SettingsName.ClientInfoPath,                    new SettingsSpecification { IsRequired = true} },
 			{ SettingsName.RedirectUri,                       new SettingsSpecification { IsRequired = true } },
-			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values } }
+			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values, StringFormatter = GeneralExtensions.ToJsonString } }
 		};
 
 		private readonly static Dictionary<SettingsName, object> _parsedSettings = new Dictionary<SettingsName, object>();
@@ -67,7 +69,9 @@ namespace SpotifyProject.Setup
 		private static bool _isLoaded = false;
 
 		public static IEnumerable<(SettingsName setting, string stringValue)> GetAllSettingsAsStrings() =>
-			_parsedSettings.Select(kvp => (kvp.Key, _settingsSpecifications[kvp.Key].StringFormatter(kvp.Value)));
+			Enum.GetValues<SettingsName>().Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue) 
+																			? _settingsSpecifications[setting].StringFormatter(parsedSettingValue)
+																			: null));
 
 		public static T Get<T>(SettingsName setting) => TryGet<T>(setting, out var value) ? value : default;
 		public static bool TryGet<T>(SettingsName setting, out T value)

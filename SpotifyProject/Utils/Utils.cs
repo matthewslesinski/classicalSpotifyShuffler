@@ -19,9 +19,9 @@ namespace SpotifyProject.Utils
 			return RomanNumeral.TryParse(possibleNumber, out romanNumeral);
 		}
 
-		public static string Truncate(this string initialString, int? charLimit) =>
+		public static string Truncate(this string initialString, int? charLimit, string truncatedSuffix = "...") =>
 			charLimit.HasValue && initialString != null && charLimit.Value >= 0 && initialString.Length > charLimit.Value
-				? initialString.Substring(0, charLimit.Value)
+				? initialString.Substring(0, charLimit.Value) + truncatedSuffix
 				: initialString;
 
 		public static IEnumerable<T> TraverseBreadthFirst<T>(T seed, Func<T, IEnumerable<T>> branchingMechanism)
@@ -88,6 +88,24 @@ namespace SpotifyProject.Utils
 		public static Random Generator
 		{
 			get { return Local ??= new Random(_hardSeed ?? unchecked(Environment.TickCount * 31 + Thread.CurrentThread.ManagedThreadId)); }
+		}
+	}
+
+	public static class Ensure
+	{
+		/// <summary>
+		///   Checks an argument to ensure it isn't null.
+		/// </summary>
+		/// <param name = "value">The argument value to check</param>
+		/// <param name = "name">The name of the argument</param>
+		public static void ArgumentNotNull(object value, string name)
+		{
+			if (value != null)
+			{
+				return;
+			}
+
+			throw new ArgumentNullException(name);
 		}
 	}
 }

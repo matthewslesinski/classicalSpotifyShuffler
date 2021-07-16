@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SpotifyAPI.Web;
 using SpotifyProject.Utils;
+using SpotifyProject.SpotifyAdditions;
 
 namespace SpotifyProject.Authentication
 {
@@ -18,7 +19,7 @@ namespace SpotifyProject.Authentication
 	{
 		private readonly string _credentialsFilePath;
 
-		public AuthorizationCodeAuthenticator(SpotifyClientConfig config, string credentialsFilePath) : base(config)
+		public AuthorizationCodeAuthenticator(SpotifyClientConfigHolder config, string credentialsFilePath) : base(config)
 		{
 			_credentialsFilePath = string.IsNullOrWhiteSpace(credentialsFilePath) ? null : credentialsFilePath;
 		}

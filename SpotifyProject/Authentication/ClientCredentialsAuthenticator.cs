@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
+using SpotifyProject.SpotifyAdditions;
 
 namespace SpotifyProject.Authentication
 {
@@ -10,7 +11,7 @@ namespace SpotifyProject.Authentication
 	 */
 	public class ClientCredentialsAuthenticator : Authenticator
 	{
-		public ClientCredentialsAuthenticator(SpotifyClientConfig config) : base(config)
+		public ClientCredentialsAuthenticator(SpotifyClientConfigHolder config) : base(config)
 		{
 		}
 
