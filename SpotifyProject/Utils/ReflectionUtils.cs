@@ -21,11 +21,9 @@ namespace SpotifyProject.Utils
 			getter = null;
 			if (string.IsNullOrWhiteSpace(propertyName))
 				return 0;
-			if (_gettersByPropertyName.TryGetValue(propertyName, out var getterObject))
-			{
-				getter = (Func<T, R>) getterObject;
+			if (_gettersByPropertyName.TryGetCastedValue<string, Func<T, R>>(propertyName, out getter))
 				return 1;
-			}
+			
 			Func<T, R> result;
 			var type = typeof(T);
 			var propertyInfos = _propertiesByName[propertyName].ToList();
@@ -36,7 +34,6 @@ namespace SpotifyProject.Utils
 			result = Expression.Lambda<Func<T, R>>(expr, input).Compile();
 			_gettersByPropertyName[propertyName] = getter = result;
 			return 1;
-			
 		}
 
 		private static IEnumerable<PropertyInfo> GetAllPublicProperties()
@@ -107,9 +104,7 @@ namespace SpotifyProject.Utils
 			
 			var typeT = containingObject.GetType();
 			Func<string, Func<object, object>> getter = null;
-			if (_gettersForTypes.TryGetValue(typeT, out var getterObject))
-				getter = getterObject;
-			else
+			if (!_gettersForTypes.TryGetValue(typeT, out getter))
 			{
 				var reflectionUtilsType = typeof(ReflectionUtils<>).MakeGenericType(typeT);
 				var methodInfo = reflectionUtilsType.GetMethod(nameof(ReflectionUtils<object>.RetrieveGetterByPropertyName), BindingFlags.Public | BindingFlags.Static);
