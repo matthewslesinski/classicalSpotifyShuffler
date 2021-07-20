@@ -5,8 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Collections.Immutable;
+using SpotifyProject.Utils.Concepts;
 
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.Extensions
 {
 	public static class LinqExtensions
 	{

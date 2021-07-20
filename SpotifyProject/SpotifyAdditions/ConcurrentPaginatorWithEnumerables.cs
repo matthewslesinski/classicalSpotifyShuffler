@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyAdditions
 {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.Utils
 {
@@ -21,7 +22,7 @@ namespace SpotifyProject.Utils
 			getter = null;
 			if (string.IsNullOrWhiteSpace(propertyName))
 				return 0;
-			if (_gettersByPropertyName.TryGetCastedValue<string, Func<T, R>>(propertyName, out getter))
+			if (_gettersByPropertyName.TryGetCastedValue(propertyName, out getter))
 				return 1;
 			
 			Func<T, R> result;
@@ -103,8 +104,7 @@ namespace SpotifyProject.Utils
 				return false;
 			
 			var typeT = containingObject.GetType();
-			Func<string, Func<object, object>> getter = null;
-			if (!_gettersForTypes.TryGetValue(typeT, out getter))
+			if (!_gettersForTypes.TryGetValue(typeT, out Func<string, Func<object, object>> getter))
 			{
 				var reflectionUtilsType = typeof(ReflectionUtils<>).MakeGenericType(typeT);
 				var methodInfo = reflectionUtilsType.GetMethod(nameof(ReflectionUtils<object>.RetrieveGetterByPropertyName), BindingFlags.Public | BindingFlags.Static);

@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SpotifyAPI.Web;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 using SpotifyProject.SpotifyAdditions;
 
 namespace SpotifyProject.Authentication

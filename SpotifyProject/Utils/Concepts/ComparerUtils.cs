@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.Concepts
 {
 	public static class ComparerUtils
 	{

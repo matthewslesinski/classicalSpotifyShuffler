@@ -8,6 +8,7 @@ using SpotifyProject.Authentication;
 using SpotifyProject.Setup;
 using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 

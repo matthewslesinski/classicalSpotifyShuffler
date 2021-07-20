@@ -1,4 +1,4 @@
-﻿using SpotifyProject.Utils;
+﻿using SpotifyProject.Utils.Extensions;
 using System;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;

@@ -9,6 +9,7 @@ using SpotifyProject.Setup;
 using SpotifyProject.SpotifyAdditions;
 using System.IO;
 using System.Linq;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject
 {

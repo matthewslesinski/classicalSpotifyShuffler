@@ -34,11 +34,17 @@
     <Folder Include="SpotifyPlaybackModifier\TrackLinking\" />
     <Folder Include="SpotifyAdditions\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
+    <Folder Include="Utils\Concepts\" />
+    <Folder Include="Utils\Algorithms\" />
+    <Folder Include="Utils\Extensions\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.Extensions.Logging" />
     <None Remove="NLog" />
     <None Remove="NLog.Extensions.Logging" />
+    <None Remove="Utils\Concepts\" />
+    <None Remove="Utils\Algorithms\" />
+    <None Remove="Utils\Extensions\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />

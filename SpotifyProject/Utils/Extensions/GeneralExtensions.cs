@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.Extensions
 {
 	public static class GeneralExtensions
 	{
@@ -21,8 +21,11 @@ namespace SpotifyProject.Utils
 		
 		public static string ToJsonString(this object obj) => JsonConvert.SerializeObject(obj);
 
-		public static bool TryGetCastedValue<K, V>(this IDictionary<K, object> dictionary, K key, out V value) {
-			if (dictionary.TryGetValue(key, out var foundValue) && foundValue is V castedValue) {
+		public static bool TryGetCastedValue<K, V>(this IDictionary<K, object> dictionary, K key, out V value) => TryGetCastedValue<K, object, V>(dictionary, key, out value);
+		public static bool TryGetCastedValue<K, O, V>(this IDictionary<K, O> dictionary, K key, out V value) where V : O
+		{
+			if (dictionary.TryGetValue(key, out var foundValue) && foundValue is V castedValue)
+			{
 				value = castedValue;
 				return true;
 			}

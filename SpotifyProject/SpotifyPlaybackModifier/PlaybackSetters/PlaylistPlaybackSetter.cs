@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using System.Linq;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Setup;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

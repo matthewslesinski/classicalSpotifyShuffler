@@ -4,7 +4,8 @@ using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
+using SpotifyProject.Utils.Concepts;
 using System.Reactive.Linq;
 
 namespace SpotifyProject.SpotifyPlaybackModifier

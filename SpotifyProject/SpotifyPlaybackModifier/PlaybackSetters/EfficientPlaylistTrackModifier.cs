@@ -6,6 +6,8 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using System.Linq;
 using SpotifyProject.Utils;
 using System.Diagnostics.CodeAnalysis;
+using SpotifyProject.Utils.Concepts;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

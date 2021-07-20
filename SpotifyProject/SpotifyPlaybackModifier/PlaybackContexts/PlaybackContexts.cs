@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyProject.Setup;
 using System.Linq;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -36,7 +36,6 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		};
 
         public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out ContextConstructor<ContextT> constructor)
-            where ContextT : IOriginalPlaybackContext => 
-				SimplePlaybackContextConstructors.TryGetCastedValue<PlaybackContextType, ContextConstructor<ContextT>>(type, out constructor);
+            where ContextT : IOriginalPlaybackContext => SimplePlaybackContextConstructors.TryGetCastedValue(type, out constructor);
     }
 }

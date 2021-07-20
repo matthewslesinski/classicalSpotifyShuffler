@@ -4,12 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using SpotifyAPI.Web;
-using SpotifyProject.Setup;
 using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
+using SpotifyProject.Utils.Concepts;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -94,7 +95,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[TestCase("BrahmsSymphonies", 1, "order by album index")]
 		public async Task TestReorderingPlaylist(string albumToUse, int testCaseIndex, string testCaseDescriptor)
 		{
-			IComparer<ITrackLinkingInfo>[] TestCasesForTestReorderingPlaylist = new[] {
+			IComparer<ITrackLinkingInfo>[] TestCasesForTestReorderingPlaylist = new [] {
 				ITrackLinkingInfo.TrackOrderWithinAlbums.Reversed(),
 				ITrackLinkingInfo.TrackOrderWithinAlbums,
 			};
