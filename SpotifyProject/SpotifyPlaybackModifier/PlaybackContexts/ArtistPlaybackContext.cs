@@ -56,19 +56,4 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public static ReorderedArtistPlaybackContext<OriginalContextT> FromContextAndTracks(OriginalContextT originalContext, IEnumerable<SimpleTrackAndAlbumWrapper> tracks) =>
 			new ReorderedArtistPlaybackContext<OriginalContextT>(originalContext, tracks);
 	}
-
-	internal class SimpleAlbumEqualityComparer : IEqualityComparer<SimpleAlbum>
-	{
-		private (string name, string releaseDate, string albumType) GetKey(SimpleAlbum album) => (album?.Name, album?.ReleaseDate, album?.AlbumType);
-
-		public bool Equals([AllowNull] SimpleAlbum x, [AllowNull] SimpleAlbum y)
-		{
-			return Equals(GetKey(x), GetKey(y));
-		}
-
-		public int GetHashCode([DisallowNull] SimpleAlbum obj)
-		{
-			return GetKey(obj).GetHashCode();
-		}
-	}
 }

@@ -8,6 +8,7 @@ using SpotifyAPI.Web.Http;
 using SpotifyProject.Setup;
 using SpotifyProject.SpotifyAdditions;
 using SpotifyProject.Utils;
+using SpotifyProject.Utils.GeneralUtils;
 using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.Authentication

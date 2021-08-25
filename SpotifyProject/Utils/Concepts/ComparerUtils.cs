@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
+using SpotifyProject.Utils.Extensions;
+using SpotifyProject.Utils.GeneralUtils;
 
 namespace SpotifyProject.Utils.Concepts
 {
@@ -24,6 +28,12 @@ namespace SpotifyProject.Utils.Concepts
 
 		public static IComparer<T> Reversed<T>(this IComparer<T> comparer) =>
 			Comparer<T>.Create((o1, o2) => comparer.Compare(o2, o1));
+
+		public static bool Equals<T>(this IComparer<T> comparer, T a, T b) => comparer.Compare(a, b) == 0;
+		public static bool GreaterThan<T>(this IComparer<T> comparer, T a, T b) => comparer.Compare(a, b) > 0;
+		public static bool GreaterThanOrEqual<T>(this IComparer<T> comparer, T a, T b) => comparer.Compare(a, b) >= 0;
+		public static bool LessThan<T>(this IComparer<T> comparer, T a, T b) => comparer.Compare(a, b) < 0;
+		public static bool LessThanOrEqual<T>(this IComparer<T> comparer, T a, T b) => comparer.Compare(a, b) <= 0;
 
 	}
 
@@ -79,6 +89,84 @@ namespace SpotifyProject.Utils.Concepts
 		public int Compare([AllowNull] T x, [AllowNull] T y)
 		{
 			return _resultComparer.Compare(_mappingFunction(x), _mappingFunction(y));
+		}
+	}
+
+	internal delegate bool ToleranceCompareFunc<T>(T x, T y, T delta);
+
+	public class ToleranceComparer<T> : IComparer<T>, IEqualityComparer<T>
+	{
+		private static readonly IEqualityComparer<T> _hashCodeProvider = EqualityComparer<T>.Default;
+		private static readonly ToleranceCompareFunc<T> _toleranceFunc = (ToleranceCompareFunc<T>) ToleranceComparers.FuncsForTypes.AddIfNotPresent(typeof(T), t => GetToleranceFuncForType());
+
+		private readonly T _delta;
+		private readonly IComparer<T> _comparer;
+
+		public ToleranceComparer(T delta, IComparer<T> comparer = null)
+		{
+			_comparer = comparer ?? Comparer<T>.Default;
+			_delta = delta;
+		}
+
+		public int GetHashCode([DisallowNull] T obj)
+		{
+			return _hashCodeProvider.GetHashCode(obj);
+		}
+
+		public bool Equals([AllowNull] T x, [AllowNull] T y)
+		{
+			return _hashCodeProvider.Equals(x, y) || _toleranceFunc(x, y, _delta);
+		}
+
+		public int Compare([AllowNull] T x, [AllowNull] T y)
+		{
+			return Equals(x, y) ? 0 : _comparer.Compare(x, y);
+		}
+
+		private static ToleranceCompareFunc<T> GetToleranceFuncForType() {
+			if (ToleranceComparers.TryCreateToleranceFuncForType(out ToleranceCompareFunc<T> toleranceFunc))
+				return toleranceFunc;
+			else if (typeof(T).IsAssignableTo(typeof(IConvertible)) && ToleranceComparers.FuncsForTypes.TryGetCastedValue(typeof(decimal), out ToleranceCompareFunc<decimal> decimalToleranceFunc))
+				return (i, j, delta) => decimalToleranceFunc(Convert.ToDecimal(i), Convert.ToDecimal(j), Convert.ToDecimal(delta));
+			throw new ArgumentException($"Cannot create a tolerance comparer for type {typeof(T).Name}");
+		}
+	}
+
+	internal static class ToleranceComparers
+	{
+		internal static readonly IDictionary<Type, Delegate> FuncsForTypes = new Dictionary<Type, Delegate>
+		{
+			{ typeof(int), (ToleranceCompareFunc<int>) ((i, j, delta) => Math.Abs( i -  j) <= delta) },
+			{ typeof(double), (ToleranceCompareFunc<double>) ((i, j, delta) => Math.Abs(i - j) <= delta) },
+			{ typeof(decimal), (ToleranceCompareFunc<decimal>) ((i, j, delta) => Math.Abs(i - j) <= delta) },
+			{ typeof(long), (ToleranceCompareFunc<long>) ((i, j, delta) => Math.Abs(i - j) <= delta) },
+		};
+
+		internal static bool TryCreateToleranceFuncForType<T>(out ToleranceCompareFunc<T> toleranceFunc)
+		{
+			try
+			{
+				var type = typeof(T);
+				MethodInfo absMethodInfo = typeof(Math).GetMethod(nameof(Math.Abs), new[] { type });
+				if (absMethodInfo == null)
+				{
+					toleranceFunc = default;
+					return false;
+				}
+				var iParam = Expression.Parameter(typeof(T));
+				var jParam = Expression.Parameter(typeof(T));
+				var deltaParam = Expression.Parameter(typeof(T));
+				var subtraction = Expression.Subtract(iParam, jParam);
+				var absCall = Expression.Call(null, absMethodInfo, subtraction);
+				var comparison = Expression.LessThanOrEqual(absCall, deltaParam);
+				toleranceFunc = Expression.Lambda<ToleranceCompareFunc<T>>(comparison, iParam, jParam, deltaParam).Compile();
+				return true;
+			}
+			catch (InvalidOperationException)
+			{
+				toleranceFunc = default;
+				return false;
+			}
 		}
 	}
 }

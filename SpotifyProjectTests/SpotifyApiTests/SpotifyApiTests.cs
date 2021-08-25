@@ -119,8 +119,5 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			CollectionAssert.AreEqual(trackInfos.Select(track => track.Uri), newTracks.Select(track => track.Uri), "The playlist resulted in the wrong order. " +
 				$"The expected order was: \n{TurnTracksIntoString(trackInfos)}\n but the retrieved order was \n {TurnTracksIntoString(newTracks.Select(existingPlaylistContext.GetMetadataForTrack))}");
 		}
-
-		
-
 	}
 }

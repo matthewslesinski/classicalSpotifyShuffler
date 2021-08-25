@@ -2,11 +2,9 @@
 using System.Threading.Tasks;
 using System.Threading;
 using McMaster.Extensions.CommandLineUtils;
-using SpotifyAPI.Web;
 using SpotifyProject.Authentication;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.GeneralUtils;
 using SpotifyProject.Setup;
-using SpotifyProject.SpotifyAdditions;
 using System.IO;
 using System.Linq;
 using SpotifyProject.Utils.Extensions;

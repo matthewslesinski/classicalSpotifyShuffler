@@ -2,18 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Algorithms;
 using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProjectTests.GeneralTests
 {
-	public class AlgorithmTests : UnitTestBase
+	public class AlgorithmTests : GeneralTestBase
 	{
-
-		[SetUp]
-		public void Setup()
-		{
-		}
 
 		[TestCase(new int[] { 1, 2, 3, 4, 5 }, ExpectedResult = new int[] { 1, 2, 3, 4, 5 })]
 		[TestCase(new int[] { }, ExpectedResult = new int[] { })]

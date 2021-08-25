@@ -4,7 +4,7 @@ using System.Linq;
 using SpotifyProject.Utils.Extensions;
 using SpotifyProject.Utils.Concepts;
 
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.Algorithms
 {
 	public static class LCS
 	{

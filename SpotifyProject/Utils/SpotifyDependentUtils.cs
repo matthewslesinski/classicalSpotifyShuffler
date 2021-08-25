@@ -18,7 +18,7 @@ namespace SpotifyProject.Utils
 
 		public static int Hash(this AuthorizationCodeTokenResponse tokenResponse)
 		{
-			return (tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.CreatedAt, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope).GetHashCode();
+			return HashCode.Combine(tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.CreatedAt, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope);
 		}
 
 		public static bool TryParseUriFromLink(string contextLink, out string contextUri)

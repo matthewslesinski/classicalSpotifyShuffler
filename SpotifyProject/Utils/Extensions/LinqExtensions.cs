@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Collections.Immutable;
 using SpotifyProject.Utils.Concepts;
+using SpotifyProject.Utils.GeneralUtils;
 
 namespace SpotifyProject.Utils.Extensions
 {
@@ -13,45 +14,21 @@ namespace SpotifyProject.Utils.Extensions
 	{
 		public delegate bool TryGetFunc<in K, V>(K key, out V value);
 
-		public static IEnumerable<T> RandomShuffle<T>(this IEnumerable<T> sequence)
-		{
-			if (!sequence.Any())
-				return Array.Empty<T>();
-			var resultArray = sequence.ToArray();
-			int[] randomNums;
-			if (resultArray.Length < byte.MaxValue)
-			{
-				var temp = new byte[resultArray.Count() - 1];
-				ThreadSafeRandom.Generator.NextBytes(temp);
-				randomNums = temp.Select(b => (int)b).ToArray();
-			}
-			else
-				randomNums = Enumerable.Range(0, resultArray.Length - 1).Select(i => ThreadSafeRandom.Generator.Next()).ToArray();
-
-			for (var i = resultArray.Count() - 1; i > 0; i--)
-				resultArray.Swap(i, randomNums[i - 1] % (i + 1));
-			return resultArray;
-		}
-
-		public static void AddOrReplace<T>(this IList<T> list, int index, T element) { if (index < list.Count) list[index] = element; else list.Add(element); }
-
 		public static IEnumerable<List<T>> Batch<T>(this IEnumerable<T> sequence, int batchSize)
 		{
-			using (var enumerator = sequence.GetEnumerator())
+			using var enumerator = sequence.GetEnumerator();
+			while (enumerator.MoveNext())
 			{
-				while (enumerator.MoveNext())
+				var firstElement = enumerator.Current;
+				var list = new List<T>(batchSize) { firstElement };
+				for (int i = 1; i < batchSize; i++)
 				{
-					var firstElement = enumerator.Current;
-					var list = new List<T>(batchSize) { firstElement };
-					for (int i = 1; i < batchSize; i++)
-					{
-						if (enumerator.MoveNext())
-							list.Add(enumerator.Current);
-						else
-							break;
-					}
-					yield return list;
+					if (enumerator.MoveNext())
+						list.Add(enumerator.Current);
+					else
+						break;
 				}
+				yield return list;
 			}
 		}
 
@@ -93,29 +70,47 @@ namespace SpotifyProject.Utils.Extensions
 		{
 			if (sequence == null)
 				return null;
-			using (var enumerator = sequence.GetEnumerator())
+			using var enumerator = sequence.GetEnumerator();
+			if (!enumerator.MoveNext())
+				return sequence;
+			T min = enumerator.Current;
+			List<T> minima = new List<T> { min };
+			while (enumerator.MoveNext())
 			{
-				if (!enumerator.MoveNext())
-					return sequence;
-				T min = enumerator.Current;
-				List<T> minima = new List<T> { min };
-				while (enumerator.MoveNext())
+				var candidate = enumerator.Current;
+				var comparerResult = comparer.Compare(candidate, min);
+				if (comparerResult < 0)
 				{
-					var candidate = enumerator.Current;
-					var comparerResult = comparer.Compare(candidate, min);
-					if (comparerResult < 0)
-					{
-						minima.Clear();
-						min = candidate;
-					}
-					if (comparerResult <= 0)
-						minima.Add(candidate);
+					minima.Clear();
+					min = candidate;
 				}
-				return minima;
+				if (comparerResult <= 0)
+					minima.Add(candidate);
 			}
+			return minima;
 		}
 
 		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => x, comparer);
+
+		public static T[] RandomShuffle<T>(this IEnumerable<T> sequence, Random generator = null)
+		{
+			if (!sequence.Any())
+				return Array.Empty<T>();
+			var resultArray = sequence.ToArray();
+			int[] randomNums;
+			if (resultArray.Length < byte.MaxValue)
+			{
+				var temp = new byte[resultArray.Length - 1];
+				(generator ?? ThreadSafeRandom.Generator).NextBytes(temp);
+				randomNums = temp.Select(b => (int)b).ToArray();
+			}
+			else
+				randomNums = Enumerable.Range(0, resultArray.Length - 1).Select(i => (generator ?? ThreadSafeRandom.Generator).Next()).ToArray();
+
+			for (var i = resultArray.Length - 1; i > 0; i--)
+				resultArray.Swap(i, randomNums[i - 1] % (i + 1));
+			return resultArray;
+		}
 
 		public static List<T> Reversed<T>(this IEnumerable<T> sequence) { var list = sequence.ToList(); list.Reverse(); return list; }
 

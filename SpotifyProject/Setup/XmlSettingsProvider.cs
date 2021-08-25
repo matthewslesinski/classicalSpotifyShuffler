@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml;
 using System.Xml.Linq;
 using SpotifyProject.Utils.Extensions;
+using Util = SpotifyProject.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.Setup
 {
@@ -23,7 +23,7 @@ namespace SpotifyProject.Setup
 
 		public void Load()
 		{
-			Utils.Utils.LoadOnce(ref _isLoaded, _fileName, () =>
+			Util.LoadOnce(ref _isLoaded, _fileName, () =>
 			{
 				var doc = XElement.Load(_fileName);
 				_loadedValues = doc.Descendants(_settingNodeName)

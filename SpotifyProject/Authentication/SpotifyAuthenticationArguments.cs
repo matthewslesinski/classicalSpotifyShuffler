@@ -23,7 +23,7 @@ namespace SpotifyProject.Authentication
 
 		public override int GetHashCode()
 		{
-			return (AuthorizationSource, TokenResponse.Hash()).GetHashCode();
+			return HashCode.Combine(AuthorizationSource, TokenResponse.Hash());
 		}
 	}
 }
