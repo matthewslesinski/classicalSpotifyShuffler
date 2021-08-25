@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyProject.Setup;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject
 {

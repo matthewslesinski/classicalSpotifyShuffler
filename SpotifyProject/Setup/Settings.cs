@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
+using Util = SpotifyProject.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.Setup
 {
@@ -47,6 +48,8 @@ namespace SpotifyProject.Setup
 			{ SettingsName.PlaybackSetterName,                new SettingsSpecification() },
 			{ SettingsName.SaveAsPlaylistName,                new SettingsSpecification() },
 			{ SettingsName.TokenPath,                         new SettingsSpecification() },
+			{ SettingsName.ClientInfoPath,                    new SettingsSpecification() },
+			{ SettingsName.RedirectUri,                       new SettingsSpecification() },
 			{ SettingsName.SpotifyProjectRootDirectory,       new SettingsSpecification { Default = Environment.CurrentDirectory } },
 			{ SettingsName.RandomSeed,                        new SettingsSpecification { ValueGetter = values => int.Parse(values.First()) } },
 			{ SettingsName.TrackQueueSizeLimit,               new SettingsSpecification { ValueGetter = values => int.Parse(values.First()), Default = 750} },
@@ -58,8 +61,6 @@ namespace SpotifyProject.Setup
 			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.First().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(), StringFormatter = GeneralExtensions.ToJsonString } },
 			{ SettingsName.ConsoleLogLevel,                   new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Info } },
 			{ SettingsName.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Verbose } },
-			{ SettingsName.ClientInfoPath,                    new SettingsSpecification { IsRequired = true} },
-			{ SettingsName.RedirectUri,                       new SettingsSpecification { IsRequired = true } },
 			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values, StringFormatter = GeneralExtensions.ToJsonString } }
 		};
 
@@ -97,7 +98,7 @@ namespace SpotifyProject.Setup
 
 		public static void Load()
 		{
-			Utils.Utils.LoadOnce(ref _isLoaded, _loadLock, () =>
+			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
 			{
 				_settingsProviders.Each(provider =>
 				{

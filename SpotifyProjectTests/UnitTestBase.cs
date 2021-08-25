@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using SpotifyProject.Setup;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.GeneralUtils;
 using NUnit.Framework.Interfaces;
 using SpotifyProject;
 using System.Collections.Generic;
@@ -27,6 +27,9 @@ namespace SpotifyProjectTests
 					throw new FileNotFoundException($"In order to run unit tests, you must provide settings in a file located at {unitTestSettingsFileName}");
 			});
 		}
+
+		[SetUp]
+		public void SetUp__UnitTestBase() { }
 
 		[TearDown]
 		public void TearDown__UnitTestBase()

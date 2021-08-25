@@ -4,8 +4,11 @@ using System.Threading.Tasks;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using System.Linq;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Algorithms;
 using System.Diagnostics.CodeAnalysis;
+using SpotifyProject.Utils.Concepts;
+using SpotifyProject.Utils.Extensions;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

@@ -1,5 +1,5 @@
 ﻿using System;
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.GeneralUtils
 {
 	public static class Constants
 	{

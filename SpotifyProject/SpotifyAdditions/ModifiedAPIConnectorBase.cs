@@ -5,7 +5,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.GeneralUtils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyAdditions
 {

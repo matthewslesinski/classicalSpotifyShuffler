@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SpotifyProject.Utils
+namespace SpotifyProject.Utils.Concepts
 {
 	public class RomanNumeral
 	{

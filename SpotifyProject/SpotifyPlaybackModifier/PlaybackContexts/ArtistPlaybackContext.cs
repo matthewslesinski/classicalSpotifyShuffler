@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
-using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Linq;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -57,20 +55,5 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		public static ReorderedArtistPlaybackContext<OriginalContextT> FromContextAndTracks(OriginalContextT originalContext, IEnumerable<SimpleTrackAndAlbumWrapper> tracks) =>
 			new ReorderedArtistPlaybackContext<OriginalContextT>(originalContext, tracks);
-	}
-
-	internal class SimpleAlbumEqualityComparer : IEqualityComparer<SimpleAlbum>
-	{
-		private (string name, string releaseDate, string albumType) GetKey(SimpleAlbum album) => (album?.Name, album?.ReleaseDate, album?.AlbumType);
-
-		public bool Equals([AllowNull] SimpleAlbum x, [AllowNull] SimpleAlbum y)
-		{
-			return Equals(GetKey(x), GetKey(y));
-		}
-
-		public int GetHashCode([DisallowNull] SimpleAlbum obj)
-		{
-			return GetKey(obj).GetHashCode();
-		}
 	}
 }

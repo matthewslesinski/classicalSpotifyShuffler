@@ -4,7 +4,8 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using System.Linq;
 using System.Collections.Generic;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
+using SpotifyProject.Utils.Concepts;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
@@ -27,7 +28,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
         public static bool TryGetTransformation<ContextT, TrackT>(PlaybackContextType contextType, out IPlaybackTransformationsStore<ContextT, TrackT> transformations)
             where ContextT : ISpotifyPlaybackContext<TrackT> => 
-				_transformations.TryGetCastedValue<PlaybackContextType, IPlaybackTransformationsStore<ContextT, TrackT>>(contextType, out transformations);
+				_transformations.TryGetCastedValue(contextType, out transformations);
 
     }
 

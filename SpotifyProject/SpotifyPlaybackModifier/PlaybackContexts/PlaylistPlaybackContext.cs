@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using SpotifyAPI.Web;
 using System.Threading.Tasks;
-using SpotifyProject.Utils;
+using SpotifyProject.Utils.Extensions;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
