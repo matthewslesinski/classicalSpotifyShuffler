@@ -39,6 +39,7 @@
     <Folder Include="Utils\Extensions\" />
     <Folder Include="Utils\GeneralUtils\" />
     <Folder Include="Utils\Concepts\DataStructures\" />
+    <Folder Include="SpotifyUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.Extensions.Logging" />
@@ -49,6 +50,7 @@
     <None Remove="Utils\Extensions\" />
     <None Remove="Utils\GeneralUtils\" />
     <None Remove="Utils\Concepts\DataStructures\" />
+    <None Remove="SpotifyUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
