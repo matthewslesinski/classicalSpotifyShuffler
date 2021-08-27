@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using SpotifyProject.Utils.Extensions;
+using ApplicationExtensions = ApplicationResources.Utils.GeneralExtensions;
 using Util = SpotifyProject.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.Setup
@@ -58,10 +59,10 @@ namespace SpotifyProject.Setup
 			{ SettingsName.DefaultToAlbumShuffle,             new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
 			{ SettingsName.MaintainCurrentlyPlaying,          new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
 			{ SettingsName.AskUser,                           new SettingsSpecification { ValueGetter = values => values.Any() && (!bool.TryParse(values.First(), out var parsedValue) || parsedValue) } },
-			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.First().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(), StringFormatter = GeneralExtensions.ToJsonString } },
+			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.First().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(), StringFormatter = ApplicationExtensions.ToJsonString } },
 			{ SettingsName.ConsoleLogLevel,                   new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Info } },
 			{ SettingsName.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.First(), true), Default = LogLevel.Verbose } },
-			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values, StringFormatter = GeneralExtensions.ToJsonString } }
+			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values, StringFormatter = ApplicationExtensions.ToJsonString } }
 		};
 
 		private readonly static Dictionary<SettingsName, object> _parsedSettings = new Dictionary<SettingsName, object>();

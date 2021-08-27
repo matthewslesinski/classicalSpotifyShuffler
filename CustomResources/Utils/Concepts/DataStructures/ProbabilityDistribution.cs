@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.GeneralUtils;
 
 namespace SpotifyProject.Utils.Concepts.DataStructures
 {
@@ -21,9 +20,9 @@ namespace SpotifyProject.Utils.Concepts.DataStructures
 			_distribution = new SortedList<decimal, V>(distribution.ToDictionary(GeneralExtensions.GetFirst, GeneralExtensions.GetSecond), _decimalComparerWithTolerance);
 		}
 
-		public V Sample(Random generator = null)
+		public V Sample(Random generator)
 		{
-			var sampledDecimal = Convert.ToDecimal((generator ?? ThreadSafeRandom.Generator).NextDouble());
+			var sampledDecimal = Convert.ToDecimal(generator.NextDouble());
 			if (_distribution.TryGetCeiling(sampledDecimal, out var foundDecimal))
 				return _distribution[foundDecimal];
 			else

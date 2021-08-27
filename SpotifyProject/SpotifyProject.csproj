@@ -18,46 +18,28 @@
     <PackageReference Include="System.Reactive.PlatformServices" Version="5.0.0" />
     <PackageReference Include="Reactive.Streams" Version="1.0.2" />
     <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-    <PackageReference Include="NLog" Version="4.7.10" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Authentication\" />
-    <Folder Include="Logging\" />
-    <Folder Include="Utils\" />
+    <Folder Include="..\CustomResources\Utils\" />
     <Folder Include="SpotifyPlaybackModifier\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackContexts\" />
     <Folder Include="SpotifyPlaybackModifier\Transformations\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackModifiers\" />
-    <Folder Include="Setup\" />
     <Folder Include="SpotifyPlaybackModifier\TrackLinking\" />
     <Folder Include="SpotifyAdditions\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
-    <Folder Include="Utils\Concepts\" />
-    <Folder Include="Utils\Algorithms\" />
-    <Folder Include="Utils\Extensions\" />
-    <Folder Include="Utils\GeneralUtils\" />
-    <Folder Include="Utils\Concepts\DataStructures\" />
     <Folder Include="SpotifyUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.Extensions.Logging" />
     <None Remove="NLog" />
     <None Remove="NLog.Extensions.Logging" />
-    <None Remove="Utils\Concepts\" />
-    <None Remove="Utils\Algorithms\" />
-    <None Remove="Utils\Extensions\" />
-    <None Remove="Utils\GeneralUtils\" />
-    <None Remove="Utils\Concepts\DataStructures\" />
     <None Remove="SpotifyUtils\" />
+    <None Remove="NLog.config" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="NLog.config">
-      <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -74,5 +56,9 @@
       <Link>allLikedTracksSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />
+    <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
   </ItemGroup>
 </Project>

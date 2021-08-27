@@ -92,7 +92,7 @@ namespace SpotifyProject.Utils.Extensions
 
 		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => x, comparer);
 
-		public static T[] RandomShuffle<T>(this IEnumerable<T> sequence, Random generator = null)
+		public static T[] RandomShuffle<T>(this IEnumerable<T> sequence, Random generator)
 		{
 			if (!sequence.Any())
 				return Array.Empty<T>();
@@ -101,11 +101,11 @@ namespace SpotifyProject.Utils.Extensions
 			if (resultArray.Length < byte.MaxValue)
 			{
 				var temp = new byte[resultArray.Length - 1];
-				(generator ?? ThreadSafeRandom.Generator).NextBytes(temp);
+				generator.NextBytes(temp);
 				randomNums = temp.Select(b => (int)b).ToArray();
 			}
 			else
-				randomNums = Enumerable.Range(0, resultArray.Length - 1).Select(i => (generator ?? ThreadSafeRandom.Generator).Next()).ToArray();
+				randomNums = Enumerable.Range(0, resultArray.Length - 1).Select(i => generator.Next()).ToArray();
 
 			for (var i = resultArray.Length - 1; i > 0; i--)
 				resultArray.Swap(i, randomNums[i - 1] % (i + 1));

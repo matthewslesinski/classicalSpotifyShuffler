@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using ApplicationResources.Utils;
 using NUnit.Framework;
 using SpotifyProject;
 using SpotifyProject.Utils.Concepts;
@@ -53,7 +54,7 @@ namespace SpotifyProjectTests.GeneralTests
 		[TestCase(10000, 128, 100, 100, 1)]
 		public void TestEnumSet(int numTrials, int initialElements, int addLikelihood, int removeLikelihood, int enumerableArgMethodLikelihood)
 		{
-			var testGenerator = ThreadSafeRandom.NewGenerator(out var seed);
+			var testGenerator = RandomUtils.NewGenerator(out var seed);
 			Logger.Information($"Test {nameof(DataStructureTests)}.{nameof(TestEnumSet)} is using a random generator with seed {seed}");
 			var maxElement = 256;
 			var possibleElements = Enumerable.Range(0, maxElement).RandomShuffle(testGenerator).ToList();

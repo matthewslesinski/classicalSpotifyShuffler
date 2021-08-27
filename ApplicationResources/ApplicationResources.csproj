@@ -4,4 +4,29 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+    <PackageReference Include="NLog" Version="4.7.10" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.3" />  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Utils\" />
+    <None Remove="Setup\" />
+    <None Remove="Logging\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Utils\" />
+    <Folder Include="Setup\" />
+    <Folder Include="Logging\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="NLog.config">
+      <Link>NLog.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
+  </ItemGroup>
 </Project>

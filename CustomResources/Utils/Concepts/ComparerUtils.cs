@@ -69,7 +69,7 @@ namespace SpotifyProject.Utils.Concepts
 
 	public class KeyBasedEqualityComparer<T, R> : SimpleEqualityComparer<T>
 	{
-		internal KeyBasedEqualityComparer(Func<T, R> mappingFunction, IEqualityComparer<R> resultEqualityComparer = null)
+		public KeyBasedEqualityComparer(Func<T, R> mappingFunction, IEqualityComparer<R> resultEqualityComparer = null)
 			: base((x, y) => (resultEqualityComparer ?? EqualityComparer<R>.Default).Equals(mappingFunction(x), mappingFunction(y)),
 				  obj => (resultEqualityComparer ?? EqualityComparer<R>.Default).GetHashCode(mappingFunction(obj)))
 		{ }
