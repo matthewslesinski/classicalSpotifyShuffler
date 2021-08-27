@@ -12,17 +12,17 @@ namespace SpotifyProject.Setup
 
 		private readonly static Dictionary<SettingsName, ICommandLineOption> _config = new Dictionary<SettingsName, ICommandLineOption>
 		{
-			{ SettingsName.ClientInfoPath,					new SingleValueOption{Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path for the file with the client id and secret for Spotify access" } },
-			{ SettingsName.TokenPath,						new SingleValueOption{Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path for the file with access and refresh tokens for Spotify access" } },
-			{ SettingsName.RedirectUri,						new SingleValueOption{Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri" } },
-			{ SettingsName.DefaultToAlbumShuffle,			new NoValueOption { Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback" } },
+			{ SettingsName.ClientInfoPath,					new SingleValueOption { Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path for the file with the client id and secret for Spotify access" } },
+			{ SettingsName.TokenPath,						new SingleValueOption { Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path for the file with access and refresh tokens for Spotify access" } },
+			{ SettingsName.RedirectUri,						new SingleValueOption { Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri" } },
+			{ SettingsName.DefaultToAlbumShuffle,			new NoValueOption	  { Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback" } },
 			{ SettingsName.ArtistAlbumIncludeGroups,		new SingleValueOption { Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums" } },
 			{ SettingsName.TrackQueueSizeLimit,				new SingleValueOption { Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue" } },
-			{ SettingsName.MaintainCurrentlyPlaying,		new NoValueOption { Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing" } },
+			{ SettingsName.MaintainCurrentlyPlaying,		new NoValueOption	  { Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing" } },
 			{ SettingsName.ConsoleLogLevel,                 new SingleValueOption { Flag = "-cl|--consoleLogLevel", Desc = "The lowest logging level to output to the console. A good default value to provide is \"Info\"" } },
 			{ SettingsName.OutputFileLogLevel,              new SingleValueOption { Flag = "-fl|--fileLogLevel", Desc = "The lowest logging level to output to a file. A good default value to provide is \"Verbose\"" } },
 			{ SettingsName.LogFileName,						new SingleValueOption { Flag = "--logFileName", Desc = "The name to give to the log file. This should not include the extension or directories" } },
-			{ SettingsName.AskUser,							new NoValueOption { Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder" } },
+			{ SettingsName.AskUser,							new NoValueOption	  { Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder" } },
 			{ SettingsName.TransformationName,              new SingleValueOption { Flag = "--transformation", Desc = "The name of the transformation to be used." } },
 			{ SettingsName.PaginatorName,			        new SingleValueOption { Flag = "--paginator", Desc = "The name of the paginator to be used." } },
 			{ SettingsName.RetryHandlerName,				new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
@@ -33,7 +33,7 @@ namespace SpotifyProject.Setup
 			{ SettingsName.MetadataRecordFile,				new SingleValueOption { Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },
 			{ SettingsName.PlaybackSetterName,				new SingleValueOption { Flag = "--playbackSetter", Desc = "The name of the playback setter to be used." } },
 			{ SettingsName.SaveAsPlaylistName,				new SingleValueOption { Flag = "--playlistName", Desc = "The name of the playlist to save the playback in." } },
-			{ SettingsName.SupplyUserInput,                 new MultiValueOption { Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal." } },
+			{ SettingsName.SupplyUserInput,                 new MultiValueOption  { Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal." } },
 			{ SettingsName.SpotifyProjectRootDirectory,     new SingleValueOption { Flag = "--projectRoot", Desc = "The root directory containing all the code for this project. This is probably the same as where git info is stored." } },
 			{ SettingsName.NumHTTPConnections,				new SingleValueOption { Flag = "--numHttpConnections", Desc = "The number of http connections to spotify's api to allow" } }
 		};
