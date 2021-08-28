@@ -67,12 +67,14 @@ namespace SpotifyProject.Utils.Concepts.DataStructures
 				Array.Copy(_nodes, 0, newArr, amountToPrepend, _nodes.Length);
 				_minHash -= amountToPrepend;
 				candidateIndex += amountToPrepend;
+				_nodes = newArr;
 			}
 			else if (candidateIndex >= _nodes.Length)
 			{
 				var amountToAppend = Math.Max(candidateIndex - _nodes.Length + 1, _nodes.Length);
 				var newArr = new Node[_nodes.Length + amountToAppend];
 				Array.Copy(_nodes, 0, newArr, 0, _nodes.Length);
+				_nodes = newArr;
 			}
 			if (_nodes[candidateIndex] != null)
 				throw new ArgumentException($"Key {key} already has an entry in the dictionary");
