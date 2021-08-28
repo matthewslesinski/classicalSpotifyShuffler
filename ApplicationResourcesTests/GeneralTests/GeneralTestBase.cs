@@ -17,10 +17,10 @@ namespace SpotifyProjectTests.GeneralTests
 		{
 			Utils.LoadOnce(ref _isLoaded, _lock, () =>
 			{
-				if (File.Exists(Constants.StandardSettingsFile))
-					Settings.RegisterProvider(new XmlSettingsProvider(Constants.StandardSettingsFile));
+				if (File.Exists(ApplicationConstants.StandardSettingsFile))
+					Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
 				else
-					throw new FileNotFoundException($"In order to run unit tests, you must provide general settings in a file located at {Constants.StandardSettingsFile}");
+					throw new FileNotFoundException($"In order to run unit tests, you must provide general settings in a file located at {ApplicationConstants.StandardSettingsFile}");
 				Settings.Load();
 			});
 		}

@@ -93,7 +93,7 @@ namespace SpotifyProject.Setup
 			}
 		}
 
-		public static void RegisterProvider(ISettingsProvider providers) => _settingsProviders.Add(providers);
+		public static void RegisterProvider(ISettingsProvider provider) => _settingsProviders.Add(provider);
 		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers);
 		public static void RegisterProviders(IEnumerable<ISettingsProvider> providers) => _settingsProviders.AddRange(providers);
 

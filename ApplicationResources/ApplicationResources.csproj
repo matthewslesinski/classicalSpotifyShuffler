@@ -14,11 +14,13 @@
     <None Remove="Utils\" />
     <None Remove="Setup\" />
     <None Remove="Logging\" />
+    <None Remove="ApplicationUtils\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utils\" />
     <Folder Include="Setup\" />
     <Folder Include="Logging\" />
+    <Folder Include="ApplicationUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="NLog.config">

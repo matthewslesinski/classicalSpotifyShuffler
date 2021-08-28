@@ -18,7 +18,7 @@ namespace SpotifyProjectTests
 		[OneTimeSetUp]
 		public void OneTimeSetUp__UnitTestBase()
 		{
-			string unitTestSettingsFileName = Constants.StandardUnitTestSettingsFile;
+			string unitTestSettingsFileName = ApplicationConstants.StandardUnitTestSettingsFile;
 			Utils.LoadOnce(ref _isLoaded, _lock, () =>
 			{
 				if (File.Exists(unitTestSettingsFileName))
