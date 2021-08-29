@@ -9,8 +9,8 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
-using SpotifyProject.Utils.Concepts;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {

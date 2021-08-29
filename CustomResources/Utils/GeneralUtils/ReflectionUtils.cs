@@ -4,10 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using SpotifyProject.Utils.Concepts.DataStructures;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Concepts.DataStructures;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject.Utils.GeneralUtils
+namespace CustomResources.Utils.GeneralUtils
 {
 	public static class ReflectionUtils<T>
 	{

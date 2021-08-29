@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
-namespace SpotifyProjectTests.GeneralTests
+namespace ApplicationResourcesTests.GeneralTests
 {
 	public class Experiments : GeneralTestBase
 	{

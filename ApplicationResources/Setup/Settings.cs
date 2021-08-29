@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
+using ApplicationResources.Logging;
+using CustomResources.Utils.Extensions;
 using ApplicationExtensions = ApplicationResources.Utils.GeneralExtensions;
-using Util = SpotifyProject.Utils.GeneralUtils.Utils;
+using Util = CustomResources.Utils.GeneralUtils.Utils;
 
-namespace SpotifyProject.Setup
+namespace ApplicationResources.Setup
 {
 	public enum SettingsName
 	{

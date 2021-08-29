@@ -1,8 +1,9 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using MicrosoftLogLevel = Microsoft.Extensions.Logging.LogLevel;
-namespace SpotifyProject
+
+namespace ApplicationResources.Logging
 {
     /**
      * Centralization of logging functionality. 

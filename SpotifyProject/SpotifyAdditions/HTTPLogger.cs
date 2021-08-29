@@ -2,8 +2,9 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using SpotifyAPI.Web.Http;
-using SpotifyProject.Utils.GeneralUtils;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
+using CustomResources.Utils.Extensions;
+using ApplicationResources.Logging;
 
 namespace SpotifyProject.SpotifyAdditions
 {

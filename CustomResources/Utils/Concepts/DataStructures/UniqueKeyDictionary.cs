@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace SpotifyProject.Utils.Concepts.DataStructures
+namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public class UniqueKeyDictionary<K, V> : IDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>, IReadOnlyDictionary<K, V>
 	{

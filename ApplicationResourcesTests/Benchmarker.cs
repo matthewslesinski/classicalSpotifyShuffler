@@ -5,14 +5,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using ApplicationResources.Logging;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using NUnit.Framework;
-using SpotifyProject;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProjectTests
+namespace ApplicationResourcesTests
 {
 	public class Benchmarker
 	{

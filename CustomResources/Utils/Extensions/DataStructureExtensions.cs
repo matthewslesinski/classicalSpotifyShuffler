@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using SpotifyProject.Utils.Concepts;
+using CustomResources.Utils.Concepts;
 
-namespace SpotifyProject.Utils.Extensions
+namespace CustomResources.Utils.Extensions
 {
 	public static class DataStructureExtensions
 	{

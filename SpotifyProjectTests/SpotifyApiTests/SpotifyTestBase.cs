@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using SpotifyProject;
 using SpotifyProject.Authentication;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier;
-using SpotifyProject.Utils.GeneralUtils;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
+using CustomResources.Utils.Extensions;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
+using ApplicationResources.Logging;
+using ApplicationResources.ApplicationUtils;
+using ApplicationResourcesTests;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {

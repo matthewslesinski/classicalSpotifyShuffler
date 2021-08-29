@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject.Utils.Concepts.DataStructures
+namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public class ProbabilityDistribution<V> : IEnumerable<(V result, decimal probability)>
 	{

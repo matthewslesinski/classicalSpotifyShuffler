@@ -5,7 +5,7 @@ using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers

@@ -3,16 +3,17 @@ using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
-using SpotifyProject.SpotifyPlaybackModifier;
-using SpotifyProject.Utils.GeneralUtils;
+using CustomResources.Utils.GeneralUtils;
 using SpotifyProject.Utils;
 using System;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
+using ApplicationResources.Logging;
+using ApplicationResources.ApplicationUtils;
 
-namespace SpotifyProject
+namespace SpotifyProject.SpotifyPlaybackModifier
 {
     public class SpotifyPlaybackReorderer : SpotifyAccessorBase
     {
@@ -125,7 +126,7 @@ namespace SpotifyProject
             try
             {
                 Logger.Information($"Attempting to modify context of type {contextType}{(string.IsNullOrWhiteSpace(contextId) ? "" : $" and with id {contextId}")}");
-                if (!PlaybackContexts.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
+                if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
                 {
                     Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
                     return false;

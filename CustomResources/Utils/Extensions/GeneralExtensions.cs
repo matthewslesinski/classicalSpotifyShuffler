@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace SpotifyProject.Utils.Extensions
+namespace CustomResources.Utils.Extensions
 {
 	public static class GeneralExtensions
 	{

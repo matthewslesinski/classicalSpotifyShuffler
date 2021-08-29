@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SpotifyProject.Utils.Concepts;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject.Utils.GeneralUtils
+namespace CustomResources.Utils.GeneralUtils
 {
 	/** Utility methods that are generic */
 	public static class Utils

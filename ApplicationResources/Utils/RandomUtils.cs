@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.Concepts.DataStructures;
-using SpotifyProject.Utils.Extensions;
+using ApplicationResources.Setup;
+using CustomResources.Utils.Concepts.DataStructures;
+using CustomResources.Utils.Extensions;
 
 namespace ApplicationResources.Utils
 {

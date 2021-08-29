@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using ApplicationResources.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyProject.Utils.Concepts;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {

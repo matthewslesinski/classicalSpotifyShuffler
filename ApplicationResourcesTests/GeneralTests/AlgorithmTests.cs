@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using SpotifyProject.Utils.Algorithms;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Algorithms;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProjectTests.GeneralTests
+namespace ApplicationResourcesTests.GeneralTests
 {
 	public class AlgorithmTests : GeneralTestBase
 	{

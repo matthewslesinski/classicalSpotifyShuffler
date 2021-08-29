@@ -2,10 +2,11 @@
 using System.Threading.Tasks;
 using System.Threading;
 using SpotifyProject.Authentication;
-using SpotifyProject.Utils.GeneralUtils;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.Extensions;
+using ApplicationResources.Setup;
+using CustomResources.Utils.Extensions;
 using ApplicationResources.ApplicationUtils;
+using ApplicationResources.Logging;
+using SpotifyProject.SpotifyPlaybackModifier;
 
 namespace SpotifyProject
 {

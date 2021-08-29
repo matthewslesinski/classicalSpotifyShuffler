@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using McMaster.Extensions.CommandLineUtils;
 using System.Linq;
 
-namespace SpotifyProject.Setup
+namespace ApplicationResources.Setup
 {
 	public class CommandLineOptions : ISettingsProvider
 	{

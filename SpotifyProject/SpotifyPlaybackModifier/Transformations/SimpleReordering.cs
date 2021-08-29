@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ApplicationResources.Utils;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {

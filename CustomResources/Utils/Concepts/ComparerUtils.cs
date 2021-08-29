@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.GeneralUtils;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject.Utils.Concepts
+namespace CustomResources.Utils.Concepts
 {
 	public static class ComparerUtils
 	{

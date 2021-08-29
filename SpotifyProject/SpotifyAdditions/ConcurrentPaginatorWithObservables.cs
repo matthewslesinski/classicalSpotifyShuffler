@@ -1,17 +1,10 @@
 ﻿using System;
 using SpotifyAPI.Web;
-using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Joins;
-using System.Reactive.Threading;
-using System.Reactive.Subjects;
-using System.Reactive.Disposables;
 using System.Linq;
 using System.Collections.Generic;
 using SpotifyAPI.Web.Http;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SpotifyProject.SpotifyAdditions
 {

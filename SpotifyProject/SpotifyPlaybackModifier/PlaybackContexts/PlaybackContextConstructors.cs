@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-
-	public static class PlaybackContexts
+	public static class PlaybackContextConstructors
 	{
 		public delegate Task<ContextT> ContextConstructor<ContextT>(SpotifyConfiguration config, string contextId) where ContextT : IOriginalPlaybackContext;
 

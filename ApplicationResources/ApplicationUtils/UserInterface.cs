@@ -2,10 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.Extensions;
+using ApplicationResources.Logging;
+using ApplicationResources.Setup;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject
+namespace ApplicationResources.ApplicationUtils
 {
 	public abstract class UserInterface
 	{

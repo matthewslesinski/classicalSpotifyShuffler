@@ -1,5 +1,6 @@
 ﻿using System;
-namespace SpotifyProject.Utils.GeneralUtils
+
+namespace CustomResources.Utils.GeneralUtils
 {
 	public static class Calculator
 	{

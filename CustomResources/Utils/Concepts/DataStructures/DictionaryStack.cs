@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using SpotifyProject.Utils.Extensions;
+using CustomResources.Utils.Extensions;
 
-namespace SpotifyProject.Utils.Concepts.DataStructures
+namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public class DictionaryStack<K, V> : Stack<IDictionary<K, V>>
 	{

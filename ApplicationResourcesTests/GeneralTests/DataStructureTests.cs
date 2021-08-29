@@ -4,15 +4,15 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using ApplicationResources.Logging;
 using ApplicationResources.Utils;
 using NUnit.Framework;
-using SpotifyProject;
-using SpotifyProject.Utils.Concepts;
-using SpotifyProject.Utils.Concepts.DataStructures;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.GeneralUtils;
+using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Concepts.DataStructures;
+using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 
-namespace SpotifyProjectTests.GeneralTests
+namespace ApplicationResourcesTests.GeneralTests
 {
 	public class DataStructureTests : GeneralTestBase
 	{

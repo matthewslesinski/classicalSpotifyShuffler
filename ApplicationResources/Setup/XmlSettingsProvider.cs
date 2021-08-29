@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
-using SpotifyProject.Utils.Extensions;
-using Util = SpotifyProject.Utils.GeneralUtils.Utils;
+using CustomResources.Utils.Extensions;
+using Util = CustomResources.Utils.GeneralUtils.Utils;
 
-namespace SpotifyProject.Setup
+namespace ApplicationResources.Setup
 {
 	public class XmlSettingsProvider : ISettingsProvider
 	{

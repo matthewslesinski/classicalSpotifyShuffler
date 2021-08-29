@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Reflection;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using NUnit.Framework;
-using SpotifyProject;
-using SpotifyProject.Utils.GeneralUtils;
-using SpotifyProject.Utils.Concepts;
+using CustomResources.Utils.GeneralUtils;
+using CustomResources.Utils.Concepts;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.Algorithms;
+using CustomResources.Utils.Extensions;
+using CustomResources.Utils.Algorithms;
+using ApplicationResources.Logging;
 
-namespace SpotifyProjectTests.GeneralTests
+namespace ApplicationResourcesTests.GeneralTests
 {
 	public class ReflectionTests : GeneralTestBase
 	{

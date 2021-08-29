@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace SpotifyProject.Utils.GeneralUtils
+namespace CustomResources.Utils.GeneralUtils
 {
 	public static class ExpressionUtils
 	{

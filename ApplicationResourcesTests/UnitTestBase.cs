@@ -1,14 +1,13 @@
 ﻿using System;
 using System.IO;
-using System.Threading.Tasks;
 using NUnit.Framework;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.GeneralUtils;
+using ApplicationResources.Setup;
+using CustomResources.Utils.GeneralUtils;
 using NUnit.Framework.Interfaces;
-using SpotifyProject;
-using System.Collections.Generic;
+using ApplicationResources.ApplicationUtils;
+using ApplicationResources.Logging;
 
-namespace SpotifyProjectTests
+namespace ApplicationResourcesTests
 {
 	public abstract class UnitTestBase
 	{

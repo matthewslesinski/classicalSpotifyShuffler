@@ -2,10 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.GeneralUtils;
+using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 
-namespace SpotifyProject.Utils.Concepts.DataStructures
+namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public abstract class ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT> : IReadOnlyCollection<T>
 		where CollectionT : IReadOnlyCollection<WrappedElementT>

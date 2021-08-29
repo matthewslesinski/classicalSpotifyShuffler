@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.Extensions;
+using ApplicationResources.Setup;
+using CustomResources.Utils.Extensions;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
+using ApplicationResources.Logging;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

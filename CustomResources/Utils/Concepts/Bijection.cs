@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq.Expressions;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.GeneralUtils;
+using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 using Converter = System.Convert;
 
-namespace SpotifyProject.Utils.Concepts
+namespace CustomResources.Utils.Concepts
 {
 	public class Bijection<S, T>
 	{

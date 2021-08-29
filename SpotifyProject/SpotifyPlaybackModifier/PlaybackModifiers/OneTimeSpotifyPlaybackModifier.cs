@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SpotifyAPI.Web;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Setup;
+using CustomResources.Utils.Extensions;
+using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;

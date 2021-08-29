@@ -1,10 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using ApplicationResources.Logging;
 using McMaster.Extensions.CommandLineUtils;
-using SpotifyProject;
-using SpotifyProject.Setup;
-using SpotifyProject.Utils.GeneralUtils;
+using ApplicationResources.Setup;
 
 namespace ApplicationResources.ApplicationUtils
 {

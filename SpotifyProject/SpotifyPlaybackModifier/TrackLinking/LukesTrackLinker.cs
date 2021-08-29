@@ -1,13 +1,14 @@
-﻿using SpotifyProject.Utils.Extensions;
-using System;
+﻿using System;
+using CustomResources.Utils.Extensions;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 using System.Linq;
 using System.Runtime.InteropServices;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using System.IO;
 using Newtonsoft.Json;
+using ApplicationResources.Logging;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
