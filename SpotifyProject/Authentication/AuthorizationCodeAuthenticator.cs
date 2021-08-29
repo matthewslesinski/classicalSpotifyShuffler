@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using SpotifyAPI.Web;
 using CustomResources.Utils.Extensions;
 using SpotifyProject.SpotifyAdditions;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
+using ApplicationResources.Utils;
 
 namespace SpotifyProject.Authentication
 {
@@ -66,13 +66,13 @@ namespace SpotifyProject.Authentication
 		{
 			Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");
 			var json = await File.ReadAllTextAsync(_credentialsFilePath).WithoutContextCapture();
-			return JsonConvert.DeserializeObject<SpotifyAuthenticationArguments>(json);
+			return json.FromJsonString<SpotifyAuthenticationArguments>();
 		}
 
 		private void WriteTokenToFile(SpotifyAuthenticationArguments token)
 		{
 			Logger.Verbose($"Writing new Spotify access/refresh tokens to file {_credentialsFilePath}");
-			var json = JsonConvert.SerializeObject(token);
+			var json = token.ToJsonString();
 			File.WriteAllText(_credentialsFilePath, json);
 		}
 	}
