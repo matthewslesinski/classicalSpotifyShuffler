@@ -31,4 +31,10 @@
   <ItemGroup>
     <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\SettingsTemplates\standardSettings.xml">
+      <Link>standardSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

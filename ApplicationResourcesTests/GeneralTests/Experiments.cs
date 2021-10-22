@@ -32,5 +32,20 @@ namespace ApplicationResourcesTests.GeneralTests
 
 		}
 
+		[Test]
+		public Task TestAsyncLocalUniqueToThreads()
+		{
+			var asyncVal = new AsyncLocal<int> { Value = -1 };
+			Task RunTest(int uniqueValue)
+			{
+				return Task.Run(() =>
+				{
+					asyncVal.Value = uniqueValue;
+					Task.WaitAll(Task.Delay(100).ContinueWith(completedTask => Assert.AreEqual(uniqueValue, asyncVal.Value)));
+				});
+					
+			}
+			return Task.WhenAll(RunTest(1), RunTest(2));
+		}
 	}
 }

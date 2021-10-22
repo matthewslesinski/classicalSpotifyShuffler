@@ -142,7 +142,7 @@ namespace CustomResources.Utils.GeneralUtils
 
 	public static class ReflectionUtils
 	{
-		public static R GetPropertyByName<R>(object containingObject, string propertyName, bool throwOnDoesntExist = true)
+		public static R GetPropertyByName<R>(this object containingObject, string propertyName, bool throwOnDoesntExist = true)
 		{
 			var foundGetter = RetrieveGetterByPropertyName<R>(containingObject.GetType(), propertyName, throwOnDoesntExist);
 			return foundGetter == null ? default : foundGetter(containingObject);

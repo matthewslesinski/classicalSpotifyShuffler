@@ -42,10 +42,6 @@
       <Link>libworkIdentifier.dylib</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\SettingsTemplates\standardSettings.xml">
-      <Link>standardSettings.xml</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="..\SettingsTemplates\lukesShuffleSettings.xml">
       <Link>lukesShuffleSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

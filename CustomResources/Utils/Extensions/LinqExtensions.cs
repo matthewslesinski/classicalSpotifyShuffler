@@ -170,6 +170,23 @@ namespace CustomResources.Utils.Extensions
 			result = default;
 			return false;
 		}
+		public static bool TryGetSingle<T>(this IEnumerable<T> sequence, out T result) => TryGetSingle(sequence, t => true, out result);
+		public static bool TryGetSingle<T>(this IEnumerable<T> sequence, Func<T, bool> predicate, out T result)
+		{
+			bool foundElement = false;
+			result = default;
+			foreach (var item in sequence)
+			{
+				if (predicate(item))
+				{
+					if (foundElement)
+						return false;
+					foundElement = true;
+					result = item;
+				}
+			}
+			return foundElement;
+		}
 
 		public static IEnumerable<(A first, B second, C third)> Zip<A, B, C>(this IEnumerable<A> sequence1, IEnumerable<B> sequence2, IEnumerable<C> sequence3) =>
 			sequence1.Zip(sequence2).Zip(sequence3, (firstTwo, third) => firstTwo.Append(third));

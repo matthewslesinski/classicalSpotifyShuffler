@@ -7,7 +7,7 @@ using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public class XmlSettingsProvider : ISettingsProvider
+	public class XmlSettingsProvider : ISettingsProvider<SettingsName>
 	{
 		private readonly string _fileName;
 		private readonly IEnumerable<SettingsName> _requiredSettings;

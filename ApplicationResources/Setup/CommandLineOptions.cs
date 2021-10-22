@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace ApplicationResources.Setup
 {
-	public class CommandLineOptions : ISettingsProvider
+	public class CommandLineOptions : ISettingsProvider<SettingsName>
 	{
 		private readonly Dictionary<SettingsName, CommandOption> _options;
 		private CommandLineOptions(Dictionary<SettingsName, CommandOption> options) => _options = options;
@@ -38,7 +38,7 @@ namespace ApplicationResources.Setup
 			{ SettingsName.NumHTTPConnections,				new SingleValueOption { Flag = "--numHttpConnections", Desc = "The number of http connections to spotify's api to allow" } }
 		};
 
-		public static ISettingsProvider Initialize(CommandLineApplication app)
+		public static ISettingsProvider<SettingsName> Initialize(CommandLineApplication app)
 		{
 			app.HelpOption();
 			var result = _config.ToDictionary(kvp => kvp.Key, kvp => app.Option(kvp.Value.Flag, kvp.Value.Desc, kvp.Value.Type));

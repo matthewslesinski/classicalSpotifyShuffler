@@ -137,13 +137,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                     return false;
                 }
 
-                var transformationName = Settings.Get<string>(SettingsName.TransformationName);
-                var transformation = transformations.TryGetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName, out var namedTransformation)
-                    ? namedTransformation : transformations.SimpleShuffleByWork;
+                var transformationName = Settings.Get<string>(SettingsName.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
+                var transformation = transformations.GetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName);
                 var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
-                var playbackSetterName = Settings.Get<string>(SettingsName.PlaybackSetterName);
-                var playbackSetter = playbackSetters.TryGetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName, out var namedSetter)
-                    ? namedSetter : playbackSetters.QueuePlaybackSetter;
+                var playbackSetterName = Settings.Get<string>(SettingsName.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
+                var playbackSetter = playbackSetters.GetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
 
                 var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);
 

@@ -21,4 +21,10 @@
   <ItemGroup>
     <Folder Include="GeneralTests\" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\SettingsTemplates\standardUnitTestSettings.xml">
+      <Link>standardUnitTestSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -24,10 +24,4 @@
     <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
     <ProjectReference Include="..\ApplicationResourcesTests\ApplicationResourcesTests.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\SettingsTemplates\standardUnitTestSettings.xml">
-      <Link>standardUnitTestSettings.xml</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>
