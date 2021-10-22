@@ -36,7 +36,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var uris = context.PlaybackOrder
 				.Where(IsAllowedTrack)
 				.Select(context.GetUriForTrack).ToList();
-			var trackLimit = Settings.Get<int>(SettingsName.TrackQueueSizeLimit);
+			var trackLimit = Settings.Get<int>(BasicSettings.TrackQueueSizeLimit);
 			var limitUris = !useContextUri && trackLimit < uris.Count();
 			var useUri = uriToPlay != null && uris.Contains(uriToPlay);
 			List<string> trackUris;

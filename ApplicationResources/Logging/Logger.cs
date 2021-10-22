@@ -53,10 +53,10 @@ namespace ApplicationResources.Logging
 
         static Logger()
 		{
-            var minConsoleLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(SettingsName.ConsoleLogLevel)];
-            var minFileLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(SettingsName.OutputFileLogLevel)];
-            var logDirectoryParent = Settings.Get<string>(SettingsName.SpotifyProjectRootDirectory);
-            var logFileName = Settings.Get<string>(SettingsName.LogFileName);
+            var minConsoleLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.ConsoleLogLevel)];
+            var minFileLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.OutputFileLogLevel)];
+            var logDirectoryParent = Settings.Get<string>(BasicSettings.SpotifyProjectRootDirectory);
+            var logFileName = Settings.Get<string>(BasicSettings.LogFileName);
             NLog.GlobalDiagnosticsContext.Set(_logDirectoryParentKeyName, logDirectoryParent);
             NLog.GlobalDiagnosticsContext.Set(_logFileNameKeyName, logFileName);
             NLog.GlobalDiagnosticsContext.Set(_consoleMinLogLevelKeyName, minConsoleLogLevel);

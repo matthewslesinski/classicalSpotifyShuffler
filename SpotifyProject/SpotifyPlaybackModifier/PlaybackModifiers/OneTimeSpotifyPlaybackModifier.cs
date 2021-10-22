@@ -22,7 +22,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		public override Task Run(InputContextT context)
 		{
-			var maintainCurrentListening = Settings.Get<bool>(SettingsName.MaintainCurrentlyPlaying);
+			var maintainCurrentListening = Settings.Get<bool>(BasicSettings.MaintainCurrentlyPlaying);
 			return RunOnce(context, maintainCurrentListening);
 		}
 

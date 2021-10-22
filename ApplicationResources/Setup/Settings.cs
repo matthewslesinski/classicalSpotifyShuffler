@@ -3,95 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Extensions;
-using CustomResources.Utils.GeneralUtils;
-using ApplicationExtensions = ApplicationResources.Utils.GeneralExtensions;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	[EnumExtensionProvider(typeof(SettingsSpecifications))]
-	public enum SettingsName
-	{
-		ClientInfoPath,
-		TokenPath,
-		RedirectUri,
-		DefaultToAlbumShuffle,
-		ArtistAlbumIncludeGroups,
-		TrackQueueSizeLimit,
-		MaintainCurrentlyPlaying,
-		ConsoleLogLevel,
-		OutputFileLogLevel,
-		LogFileName,
-		AskUser,
-		TransformationName,
-		HTTPLoggerName,
-		RetryHandlerName,
-		PaginatorName,
-		APIConnectorName,
-		RandomSeed,
-		MetadataRecordFile,
-		PlaybackSetterName,
-		SaveAsPlaylistName,
-		SupplyUserInput,
-		SpotifyProjectRootDirectory,
-		NumHTTPConnections,
-		HTTPLoggerCharacterLimit,
-	}
-
-	public class SettingsSpecifications : IEnumExtensionProvider<SettingsName, SettingsSpecification>
-	{
-		public IReadOnlyDictionary<SettingsName, SettingsSpecification> Specifications { get; } = new Dictionary<SettingsName, SettingsSpecification>
-		{
-			{ SettingsName.MetadataRecordFile,                new SettingsSpecification() },
-			{ SettingsName.LogFileName,                       new SettingsSpecification() },
-			{ SettingsName.TransformationName,                new SettingsSpecification() },
-			{ SettingsName.HTTPLoggerName,                    new SettingsSpecification() },
-			{ SettingsName.RetryHandlerName,                  new SettingsSpecification() },
-			{ SettingsName.PaginatorName,                     new SettingsSpecification() },
-			{ SettingsName.APIConnectorName,                  new SettingsSpecification() },
-			{ SettingsName.PlaybackSetterName,                new SettingsSpecification() },
-			{ SettingsName.SaveAsPlaylistName,                new SettingsSpecification() },
-			{ SettingsName.TokenPath,                         new SettingsSpecification() },
-			{ SettingsName.ClientInfoPath,                    new SettingsSpecification() },
-			{ SettingsName.RedirectUri,                       new SettingsSpecification() },
-			{ SettingsName.SpotifyProjectRootDirectory,       new SettingsSpecification { Default = Environment.CurrentDirectory } },
-			{ SettingsName.RandomSeed,                        new SettingsSpecification { ValueGetter = values => int.Parse(values.Single()) } },
-			{ SettingsName.TrackQueueSizeLimit,               new SettingsSpecification { ValueGetter = values => int.Parse(values.Single()), Default = 750} },
-			{ SettingsName.NumHTTPConnections,                new SettingsSpecification { ValueGetter = values => int.TryParse(values.Single(), out var numConnections) && numConnections > 0 ? numConnections : int.MaxValue, Default = int.MaxValue } },
-			{ SettingsName.HTTPLoggerCharacterLimit,          new SettingsSpecification { ValueGetter = values => int.TryParse(values.Single(), out var characterLimit) && characterLimit > 0 ? characterLimit : null, Default = null } },
-			{ SettingsName.DefaultToAlbumShuffle,             new SettingsSpecification { ValueGetter = values => !values.TryGetSingle(out var singleValue) || !bool.TryParse(singleValue, out var parsedValue) || parsedValue } },
-			{ SettingsName.MaintainCurrentlyPlaying,          new SettingsSpecification { ValueGetter = values => !values.TryGetSingle(out var singleValue) || !bool.TryParse(singleValue, out var parsedValue) || parsedValue } },
-			{ SettingsName.AskUser,                           new SettingsSpecification { ValueGetter = values => !values.TryGetSingle(out var singleValue) || !bool.TryParse(singleValue, out var parsedValue) || parsedValue } },
-			{ SettingsName.ArtistAlbumIncludeGroups,          new SettingsSpecification { ValueGetter = values => values.Single().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(), StringFormatter = ApplicationExtensions.ToJsonString } },
-			{ SettingsName.ConsoleLogLevel,                   new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.Single(), true), Default = LogLevel.Info } },
-			{ SettingsName.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.Single(), true), Default = LogLevel.Verbose } },
-			{ SettingsName.SupplyUserInput,                   new SettingsSpecification { ValueGetter = values => values, StringFormatter = ApplicationExtensions.ToJsonString } }
-		};
-	}
-
-	public class SettingsSpecification
-	{
-		internal bool IsRequired { get; set; } = false;
-		internal object Default { get; set; } = null;
-		internal Func<IEnumerable<string>, object> ValueGetter { get; set; }
-			= rawValues => rawValues.TryGetSingle(out var foundResult) && !string.IsNullOrWhiteSpace(foundResult) ? foundResult : default;
-		internal Func<object, string> StringFormatter { get; set; } = obj => obj?.ToString();
-	}
-
 	public class Settings
 	{
-		private readonly static Dictionary<SettingsName, object> _parsedSettings = new Dictionary<SettingsName, object>();
-		private readonly static List<ISettingsProvider<SettingsName>> _settingsProviders = new List<ISettingsProvider<SettingsName>>();
+		private readonly static Dictionary<BasicSettings, object> _parsedSettings = new Dictionary<BasicSettings, object>();
+		private readonly static List<ISettingsProvider<BasicSettings>> _settingsProviders = new List<ISettingsProvider<BasicSettings>>();
 		private static readonly object _loadLock = new object();
 		private static bool _isLoaded = false;
 
-		public static IEnumerable<(SettingsName setting, string stringValue)> GetAllSettingsAsStrings() =>
-			Enum.GetValues<SettingsName>().Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue) 
-																			? setting.GetExtension<SettingsSpecification>().StringFormatter(parsedSettingValue)
+		public static IEnumerable<(BasicSettings setting, string stringValue)> GetAllSettingsAsStrings() =>
+			Enum.GetValues<BasicSettings>().Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue) 
+																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
 																			: null));
 
-		public static T Get<T>(SettingsName setting) => TryGet<T>(setting, out var value) ? value : default;
-		public static bool TryGet<T>(SettingsName setting, out T value)
+		public static T Get<T>(BasicSettings setting) => TryGet<T>(setting, out var value) ? value : default;
+		public static bool TryGet<T>(BasicSettings setting, out T value)
 		{
 			try
 			{
@@ -108,9 +37,9 @@ namespace ApplicationResources.Setup
 			}
 		}
 
-		public static void RegisterProvider(ISettingsProvider<SettingsName> provider) => _settingsProviders.Add(provider);
-		public static void RegisterProviders(params ISettingsProvider<SettingsName>[] providers) => RegisterProviders(providers);
-		public static void RegisterProviders(IEnumerable<ISettingsProvider<SettingsName>> providers) => _settingsProviders.AddRange(providers);
+		public static void RegisterProvider(ISettingsProvider<BasicSettings> provider) => _settingsProviders.Add(provider);
+		public static void RegisterProviders(params ISettingsProvider<BasicSettings>[] providers) => RegisterProviders(providers);
+		public static void RegisterProviders(IEnumerable<ISettingsProvider<BasicSettings>> providers) => _settingsProviders.AddRange(providers);
 
 		public static void Load()
 		{
@@ -129,11 +58,11 @@ namespace ApplicationResources.Setup
 					}
 				});
 				var exceptions = new List<Exception>();
-				foreach (var settingName in Enum.GetValues<SettingsName>())
+				foreach (var settingName in Enum.GetValues<BasicSettings>())
 				{
-					var specification = settingName.GetExtension<SettingsSpecification>();
+					var specification = settingName.GetExtension<ISettingsSpecification>();
 					var didFindValue = _settingsProviders.Where(provider => provider != null && provider.IsLoaded)
-						.TryGetFirst((ISettingsProvider<SettingsName> provider, out IEnumerable<string> values) => provider.TryGetValues(settingName, out values), out var foundValues);
+						.TryGetFirst((ISettingsProvider<BasicSettings> provider, out IEnumerable<string> values) => provider.TryGetValues(settingName, out values), out var foundValues);
 					if (didFindValue)
 						_parsedSettings[settingName] = ParseSetting(settingName, foundValues);
 					else if (specification.IsRequired)
@@ -150,12 +79,20 @@ namespace ApplicationResources.Setup
 			});
 		}
 
-		private static object ParseSetting(SettingsName setting, IEnumerable<string> rawValueStrings)
+		private static object ParseSetting(BasicSettings setting, IEnumerable<string> rawValueStrings)
 		{
-			var specification = setting.GetExtension<SettingsSpecification>();
+			var specification = setting.GetExtension<ISettingsSpecification>();
 			var parsedValues = specification.ValueGetter(rawValueStrings);
 			return parsedValues;
 		}
+	}
+
+	public interface ISettingsSpecification
+	{
+		bool IsRequired { get; set; }
+		object Default { get; set; }
+		Func<IEnumerable<string>, object> ValueGetter { get; set; }
+		Func<object, string> StringFormatter { get; set; }
 	}
 
 	public interface ISettingsProvider<KeyType>

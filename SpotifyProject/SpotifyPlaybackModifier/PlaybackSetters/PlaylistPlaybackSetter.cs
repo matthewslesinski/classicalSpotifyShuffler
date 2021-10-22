@@ -25,7 +25,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			_playlistTrackModifier = trackModifier;
 		}
 
-		public string PlaylistName => Settings.Get<string>(SettingsName.SaveAsPlaylistName);
+		public string PlaylistName => Settings.Get<string>(BasicSettings.SaveAsPlaylistName);
 
 		public async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, PlaybackStateArgs args)
 		{

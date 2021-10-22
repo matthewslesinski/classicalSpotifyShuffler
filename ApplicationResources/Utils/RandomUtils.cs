@@ -24,7 +24,7 @@ namespace ApplicationResources.Utils
 	public static class ThreadSafeRandom
 	{
 		[ThreadStatic] private static Random Local;
-		private static readonly int? _hardSeed = Settings.Get<int?>(SettingsName.RandomSeed);
+		private static readonly int? _hardSeed = Settings.Get<int?>(BasicSettings.RandomSeed);
 
 		public static Random Generator
 		{

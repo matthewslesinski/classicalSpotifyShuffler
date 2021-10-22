@@ -51,7 +51,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                         UserInterface.Instance.NotifyUser("Please provide a new Uri");
                     else
                     {
-                        if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
+                        if (Settings.Get<bool>(BasicSettings.DefaultToAlbumShuffle))
                             await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
                         return;
                     }
@@ -67,7 +67,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             bool result = contextUri != null && await ModifyContext(contextUri).WithoutContextCapture();
             if (result)
                 return result;
-            if (Settings.Get<bool>(SettingsName.DefaultToAlbumShuffle))
+            if (Settings.Get<bool>(BasicSettings.DefaultToAlbumShuffle))
                 return await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
             Logger.Error("Playback could not be modified because the current context is unrecognized");
             return false;
@@ -137,10 +137,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                     return false;
                 }
 
-                var transformationName = Settings.Get<string>(SettingsName.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
+                var transformationName = Settings.Get<string>(BasicSettings.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
                 var transformation = transformations.GetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName);
                 var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
-                var playbackSetterName = Settings.Get<string>(SettingsName.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
+                var playbackSetterName = Settings.Get<string>(BasicSettings.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
                 var playbackSetter = playbackSetters.GetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
 
                 var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);

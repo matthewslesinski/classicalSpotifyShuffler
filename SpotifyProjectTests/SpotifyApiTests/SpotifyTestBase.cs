@@ -30,7 +30,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
 			{
 				if (File.Exists(authorizationSettingsFileName))
-					Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsFileName, SettingsName.ClientInfoPath, SettingsName.TokenPath, SettingsName.RedirectUri));
+					Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsFileName, BasicSettings.ClientInfoPath, BasicSettings.TokenPath, BasicSettings.RedirectUri));
 				else
 					throw new FileNotFoundException($"In order to run unit tests, you must provide authorization settings in a file located at {authorizationSettingsFileName}");
 				if (File.Exists(ApplicationConstants.StandardSettingsFile))

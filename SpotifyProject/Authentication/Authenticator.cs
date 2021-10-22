@@ -52,16 +52,16 @@ namespace SpotifyProject.Authentication
 
         public static async Task<SpotifyClient> Authenticate(Func<SpotifyClientConfigHolder, string, Authenticator> authenticatorConstructor)
 		{
-            var tokenFilePath = Settings.Get<string>(SettingsName.TokenPath);
-            var clientInfoFilePath = Settings.Get<string>(SettingsName.ClientInfoPath);
-            var redirectUri = Settings.Get<string>(SettingsName.RedirectUri);
-            var httpLoggerName = Settings.Get<string>(SettingsName.HTTPLoggerName);
-            var httpLoggerCharLimit = Settings.Get<int?>(SettingsName.HTTPLoggerCharacterLimit);
-            var retryHandlerName = Settings.Get<string>(SettingsName.RetryHandlerName);
-            var paginatorName = Settings.Get<string>(SettingsName.PaginatorName);
-            var apiConnectorName = Settings.Get<string>(SettingsName.APIConnectorName);
+            var tokenFilePath = Settings.Get<string>(BasicSettings.TokenPath);
+            var clientInfoFilePath = Settings.Get<string>(BasicSettings.ClientInfoPath);
+            var redirectUri = Settings.Get<string>(BasicSettings.RedirectUri);
+            var httpLoggerName = Settings.Get<string>(BasicSettings.HTTPLoggerName);
+            var httpLoggerCharLimit = Settings.Get<int?>(BasicSettings.HTTPLoggerCharacterLimit);
+            var retryHandlerName = Settings.Get<string>(BasicSettings.RetryHandlerName);
+            var paginatorName = Settings.Get<string>(BasicSettings.PaginatorName);
+            var apiConnectorName = Settings.Get<string>(BasicSettings.APIConnectorName);
             Logger.Information("Starting Spotify authentication process");
-            ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SettingsName.NumHTTPConnections);
+            ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(BasicSettings.NumHTTPConnections);
             var httpLogger = SpotifyDefaults.HTTPLoggers.TryGetPropertyByName<ITruncatedHTTPLogger>(httpLoggerName, out var foundLogger)
                 ? foundLogger
                 : SpotifyDefaults.HTTPLoggers.InternalLoggingWrapper;

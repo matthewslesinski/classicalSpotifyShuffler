@@ -57,7 +57,7 @@ namespace ApplicationResources.ApplicationUtils
 	public class ConsoleUserInterface : UserInterface
 	{
 		private readonly ConcurrentQueue<string> _presuppliedInput
-			= new ConcurrentQueue<string>(Settings.Get<IEnumerable<string>>(SettingsName.SupplyUserInput) ?? Array.Empty<string>());
+			= new ConcurrentQueue<string>(Settings.Get<IEnumerable<string>>(BasicSettings.SupplyUserInput) ?? Array.Empty<string>());
 
 		public override string ReadNextUserInput()
 		{

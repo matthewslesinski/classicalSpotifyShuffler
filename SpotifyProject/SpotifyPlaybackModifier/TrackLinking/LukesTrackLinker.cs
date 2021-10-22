@@ -20,7 +20,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
-			var recordTrackInfoLocation = Settings.Get<string>(SettingsName.MetadataRecordFile);
+			var recordTrackInfoLocation = Settings.Get<string>(BasicSettings.MetadataRecordFile);
 			if (recordTrackInfoLocation != default)
 				RecordTrackInfo(recordTrackInfoLocation, infoInputArr);
 			var labels = new int[trackMetadataArr.Length];

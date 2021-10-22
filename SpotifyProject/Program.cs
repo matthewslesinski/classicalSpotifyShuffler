@@ -34,7 +34,7 @@ namespace SpotifyProject
                 Logger.Information("Starting Spotify Project");
 				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
 				var reorderer = new SpotifyPlaybackReorderer(spotify);
-                if (Settings.Get<bool>(SettingsName.AskUser))
+                if (Settings.Get<bool>(BasicSettings.AskUser))
                     await reorderer.ShuffleUserProvidedContext().WithoutContextCapture();
                 else
 				    await reorderer.ShuffleCurrentPlayback().WithoutContextCapture();
