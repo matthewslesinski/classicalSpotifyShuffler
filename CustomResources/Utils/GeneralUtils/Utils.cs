@@ -89,13 +89,13 @@ namespace CustomResources.Utils.GeneralUtils
 					if (!isLoadedGetter())
 					{
 						loadActionTask = loadAction();
+						isLoadedSetter(true);
 					}
 				}
 			}
 			if (loadActionTask != null)
 			{
 				await loadActionTask.WithoutContextCapture();
-				isLoadedSetter(true);
 				return true;
 			}
 			return false;
