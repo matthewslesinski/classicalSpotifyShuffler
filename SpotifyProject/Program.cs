@@ -7,6 +7,7 @@ using CustomResources.Utils.Extensions;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using SpotifyProject.SpotifyPlaybackModifier;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject
 {
@@ -24,7 +25,7 @@ namespace SpotifyProject
                 // Unreachable on purpose in case the compiler would want to get rid of the preceding while loop
                 Console.WriteLine("Terminating successfully");
                 Environment.Exit(0);
-            }, ApplicationConstants.XmlSettingsFileFlag);
+            }, ApplicationConstants.XmlSettingsFileFlag, typeof(SpotifySettings));
 		}
 
         static async Task Run()
@@ -34,7 +35,7 @@ namespace SpotifyProject
                 Logger.Information("Starting Spotify Project");
 				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
 				var reorderer = new SpotifyPlaybackReorderer(spotify);
-                if (Settings.Get<bool>(BasicSettings.AskUser))
+                if (Settings.Get<bool>(SpotifySettings.AskUser))
                     await reorderer.ShuffleUserProvidedContext().WithoutContextCapture();
                 else
 				    await reorderer.ShuffleCurrentPlayback().WithoutContextCapture();

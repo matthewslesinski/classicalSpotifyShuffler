@@ -55,7 +55,7 @@ namespace ApplicationResources.Logging
 		{
             var minConsoleLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.ConsoleLogLevel)];
             var minFileLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.OutputFileLogLevel)];
-            var logDirectoryParent = Settings.Get<string>(BasicSettings.SpotifyProjectRootDirectory);
+            var logDirectoryParent = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
             var logFileName = Settings.Get<string>(BasicSettings.LogFileName);
             NLog.GlobalDiagnosticsContext.Set(_logDirectoryParentKeyName, logDirectoryParent);
             NLog.GlobalDiagnosticsContext.Set(_logFileNameKeyName, logFileName);

@@ -6,6 +6,7 @@ using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 {
@@ -22,7 +23,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		public override Task Run(InputContextT context)
 		{
-			var maintainCurrentListening = Settings.Get<bool>(BasicSettings.MaintainCurrentlyPlaying);
+			var maintainCurrentListening = Settings.Get<bool>(SpotifySettings.MaintainCurrentlyPlaying);
 			return RunOnce(context, maintainCurrentListening);
 		}
 

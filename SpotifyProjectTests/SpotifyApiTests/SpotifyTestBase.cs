@@ -13,6 +13,7 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResourcesTests;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -29,8 +30,9 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			string authorizationSettingsFileName = ApplicationConstants.SuggestedAuthorizationSettingsFile;
 			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
 			{
+				Settings.RegisterSettings<SpotifySettings>();
 				if (File.Exists(authorizationSettingsFileName))
-					Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsFileName, BasicSettings.ClientInfoPath, BasicSettings.TokenPath, BasicSettings.RedirectUri));
+					Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsFileName, SpotifySettings.ClientInfoPath, SpotifySettings.TokenPath, SpotifySettings.RedirectUri));
 				else
 					throw new FileNotFoundException($"In order to run unit tests, you must provide authorization settings in a file located at {authorizationSettingsFileName}");
 				if (File.Exists(ApplicationConstants.StandardSettingsFile))

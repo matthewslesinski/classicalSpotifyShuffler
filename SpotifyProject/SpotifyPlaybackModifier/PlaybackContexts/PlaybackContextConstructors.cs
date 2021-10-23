@@ -5,6 +5,7 @@ using SpotifyAPI.Web;
 using ApplicationResources.Setup;
 using System.Linq;
 using CustomResources.Utils.Extensions;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -18,7 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			async (config, playlistId) => await ExistingPlaylistPlaybackContext.FromSimplePlaylist(config, playlistId).WithoutContextCapture();
 		private static readonly ContextConstructor<IOriginalArtistPlaybackContext> SimpleArtistContextConstructor =
 			async (config, artistId) => await ExistingArtistPlaybackContext.FromSimpleArtist(config, artistId,
-				Settings.Get<IEnumerable<string>>(BasicSettings.ArtistAlbumIncludeGroups)
+				Settings.Get<IEnumerable<string>>(SpotifySettings.ArtistAlbumIncludeGroups)
 					.Select(value => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(value, true))
 					.Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2)).WithoutContextCapture();
 		private static readonly ContextConstructor<IOriginalAllLikedTracksPlaybackContext> SimpleAllLikedSongsContextConstructor =

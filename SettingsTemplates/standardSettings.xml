@@ -10,5 +10,5 @@
   <Setting name="NumHTTPConnections">-1</Setting>
   <Setting name="ArtistAlbumIncludeGroups">Album,Single</Setting>
   <Setting name="DefaultToAlbumShuffle">false</Setting>
-  <Setting name="SpotifyProjectRootDirectory">../../../../</Setting>
+  <Setting name="ProjectRootDirectory">../../../../</Setting>
 </Settings>

@@ -8,6 +8,7 @@ using ApplicationResources.Setup;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -25,7 +26,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			_playlistTrackModifier = trackModifier;
 		}
 
-		public string PlaylistName => Settings.Get<string>(BasicSettings.SaveAsPlaylistName);
+		public string PlaylistName => Settings.Get<string>(SpotifySettings.SaveAsPlaylistName);
 
 		public async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, PlaybackStateArgs args)
 		{

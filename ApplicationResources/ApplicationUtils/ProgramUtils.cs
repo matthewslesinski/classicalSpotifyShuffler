@@ -4,18 +4,21 @@ using System.Linq;
 using ApplicationResources.Logging;
 using McMaster.Extensions.CommandLineUtils;
 using ApplicationResources.Setup;
+using System.Collections.Generic;
+using CustomResources.Utils.Extensions;
 
 namespace ApplicationResources.ApplicationUtils
 {
 	public static class ProgramUtils
 	{
-		public static void ExecuteProgram(string[] args, Action program, string xmlSettingsFileFlag = null)
+		public static void ExecuteProgram(string[] args, Action program, string xmlSettingsFileFlag = null, params Type[] settingsTypes)
 		{
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
 			var app = new CommandLineApplication();
 			var commandLineSettingsProvider = new CommandLineOptions(app);
 			Settings.RegisterProvider(commandLineSettingsProvider);
 			Settings.RegisterSettings<BasicSettings>();
+			settingsTypes.Each(Settings.RegisterSettings);
 			Action runner = Settings.Load + program;
 			if (!string.IsNullOrWhiteSpace(xmlSettingsFileFlag))
 			{

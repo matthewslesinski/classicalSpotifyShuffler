@@ -9,18 +9,18 @@ using ApplicationResources.Setup;
 using System.IO;
 using Newtonsoft.Json;
 using ApplicationResources.Logging;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
 	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, int>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-
 		IEnumerable<IGrouping<int, ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, int>.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata)
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
-			var recordTrackInfoLocation = Settings.Get<string>(BasicSettings.MetadataRecordFile);
+			var recordTrackInfoLocation = Settings.Get<string>(SpotifySettings.MetadataRecordFile);
 			if (recordTrackInfoLocation != default)
 				RecordTrackInfo(recordTrackInfoLocation, infoInputArr);
 			var labels = new int[trackMetadataArr.Length];

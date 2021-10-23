@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 
 namespace ApplicationResources.Setup
 {
@@ -17,7 +18,12 @@ namespace ApplicationResources.Setup
 		public static T Get<T>(Enum setting) => TryGet<T>(setting, out var value) ? value : default;
 		public static bool TryGet<T>(Enum setting, out T value) => _settingsStore.TryGetValue(setting, out value);
 
-		public static void RegisterSettings<EnumT>() where EnumT : struct, Enum => _settingsStore.RegisterSettings(typeof(EnumT));
+		public static void RegisterSettings<EnumT>() where EnumT : struct, Enum => RegisterSettings(typeof(EnumT));
+		public static void RegisterSettings(Type enumType)
+		{
+			if (enumType.IsEnum) _settingsStore.RegisterSettings(enumType);
+			else throw new InvalidOperationException($"Only enum types can be used to provide settings, but the given type, {enumType.Name} is not an enum type");
+		}
 		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers);
 		public static void RegisterProviders(IEnumerable<ISettingsProvider> providers) => providers.EachIndependently(RegisterProvider);
 		public static void RegisterProvider(ISettingsProvider provider) => _settingsStore.RegisterProvider(provider);

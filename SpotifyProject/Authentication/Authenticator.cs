@@ -11,6 +11,7 @@ using SpotifyProject.Utils;
 using CustomResources.Utils.GeneralUtils;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.Authentication
 {
@@ -52,16 +53,16 @@ namespace SpotifyProject.Authentication
 
         public static async Task<SpotifyClient> Authenticate(Func<SpotifyClientConfigHolder, string, Authenticator> authenticatorConstructor)
 		{
-            var tokenFilePath = Settings.Get<string>(BasicSettings.TokenPath);
-            var clientInfoFilePath = Settings.Get<string>(BasicSettings.ClientInfoPath);
-            var redirectUri = Settings.Get<string>(BasicSettings.RedirectUri);
-            var httpLoggerName = Settings.Get<string>(BasicSettings.HTTPLoggerName);
-            var httpLoggerCharLimit = Settings.Get<int?>(BasicSettings.HTTPLoggerCharacterLimit);
-            var retryHandlerName = Settings.Get<string>(BasicSettings.RetryHandlerName);
-            var paginatorName = Settings.Get<string>(BasicSettings.PaginatorName);
-            var apiConnectorName = Settings.Get<string>(BasicSettings.APIConnectorName);
+            var tokenFilePath = Settings.Get<string>(SpotifySettings.TokenPath);
+            var clientInfoFilePath = Settings.Get<string>(SpotifySettings.ClientInfoPath);
+            var redirectUri = Settings.Get<string>(SpotifySettings.RedirectUri);
+            var httpLoggerName = Settings.Get<string>(SpotifySettings.HTTPLoggerName);
+            var httpLoggerCharLimit = Settings.Get<int?>(SpotifySettings.HTTPLoggerCharacterLimit);
+            var retryHandlerName = Settings.Get<string>(SpotifySettings.RetryHandlerName);
+            var paginatorName = Settings.Get<string>(SpotifySettings.PaginatorName);
+            var apiConnectorName = Settings.Get<string>(SpotifySettings.APIConnectorName);
             Logger.Information("Starting Spotify authentication process");
-            ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(BasicSettings.NumHTTPConnections);
+            ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SpotifySettings.NumHTTPConnections);
             var httpLogger = SpotifyDefaults.HTTPLoggers.TryGetPropertyByName<ITruncatedHTTPLogger>(httpLoggerName, out var foundLogger)
                 ? foundLogger
                 : SpotifyDefaults.HTTPLoggers.InternalLoggingWrapper;

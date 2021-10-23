@@ -20,6 +20,7 @@ namespace ApplicationResourcesTests
 			string unitTestSettingsFileName = ApplicationConstants.StandardUnitTestSettingsFile;
 			Utils.LoadOnce(ref _isLoaded, _lock, () =>
 			{
+				Settings.RegisterSettings<BasicSettings>();
 				if (File.Exists(unitTestSettingsFileName))
 					Settings.RegisterProvider(new XmlSettingsProvider(unitTestSettingsFileName));
 				else

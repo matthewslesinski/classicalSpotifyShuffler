@@ -7,6 +7,7 @@ using ApplicationResources.Setup;
 using CustomResources.Utils.Extensions;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using ApplicationResources.Logging;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -36,7 +37,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var uris = context.PlaybackOrder
 				.Where(IsAllowedTrack)
 				.Select(context.GetUriForTrack).ToList();
-			var trackLimit = Settings.Get<int>(BasicSettings.TrackQueueSizeLimit);
+			var trackLimit = Settings.Get<int>(SpotifySettings.TrackQueueSizeLimit);
 			var limitUris = !useContextUri && trackLimit < uris.Count();
 			var useUri = uriToPlay != null && uris.Contains(uriToPlay);
 			List<string> trackUris;
