@@ -15,28 +15,12 @@ namespace ApplicationResources.Setup
 
 
 		public static T Get<T>(Enum setting) => TryGet<T>(setting, out var value) ? value : default;
-		public static bool TryGet<T>(Enum setting, out T value)
-		{
-			try
-			{
-				var foundValue = _settingsStore.TryGetValue(setting, out var uncastedValue);
-				value = uncastedValue == null ? default : (T)uncastedValue;
-				return foundValue;
-			}
-			catch (InvalidCastException e)
-			{
-				var message = $"Could not retrieve setting {setting} because its value is of the wrong type. Attempting to cast to type {typeof(T).Name}. {e}";
-				Console.Error.WriteLine(message);
-				Logger.Error(message);
-				value = default;
-				return false;
-			}
-		}
+		public static bool TryGet<T>(Enum setting, out T value) => _settingsStore.TryGetValue(setting, out value);
 
 		public static void RegisterSettings<EnumT>() where EnumT : struct, Enum => _settingsStore.RegisterSettings(typeof(EnumT));
-		public static void RegisterProviders(params ISettingsProvider<IEnumerable<string>>[] providers) => RegisterProviders(providers);
-		public static void RegisterProviders(IEnumerable<ISettingsProvider<IEnumerable<string>>> providers) => providers.EachIndependently(RegisterProvider);
-		public static void RegisterProvider(ISettingsProvider<IEnumerable<string>> provider) => _settingsStore.RegisterProvider(provider);
+		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers);
+		public static void RegisterProviders(IEnumerable<ISettingsProvider> providers) => providers.EachIndependently(RegisterProvider);
+		public static void RegisterProvider(ISettingsProvider provider) => _settingsStore.RegisterProvider(provider);
 		public static void Load() => _settingsStore.Load();
 
 		public static IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();

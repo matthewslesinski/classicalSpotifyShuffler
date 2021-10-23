@@ -8,7 +8,7 @@ using ApplicationResources.Logging;
 
 namespace ApplicationResources.Setup
 {
-	public class CommandLineOptions : SettingsProviderBase<IEnumerable<string>>
+	public class CommandLineOptions : SettingsParserBase
 	{
 		public CommandLineOptions(CommandLineApplication app)
 		{
@@ -24,7 +24,7 @@ namespace ApplicationResources.Setup
 			_isLoaded = true;
 		}
 
-		public override bool TryGetValue(Enum setting, out IEnumerable<string> values)
+		protected override bool TryGetValues(Enum setting, out IEnumerable<string> values)
 		{
 			var option = _options[setting];
 			if (option.HasValue())

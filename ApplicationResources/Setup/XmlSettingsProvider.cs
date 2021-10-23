@@ -7,7 +7,7 @@ using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public class XmlSettingsProvider : SettingsProviderBase<IEnumerable<string>>
+	public class XmlSettingsProvider : SettingsParserBase
 	{
 		private readonly string _fileName;
 		private readonly IEnumerable<Enum> _requiredSettings;
@@ -33,7 +33,7 @@ namespace ApplicationResources.Setup
 			});
 		}
 
-		public override bool TryGetValue(Enum setting, out IEnumerable<string> values) => _loadedValues.TryGetValue(setting, out values);
+		protected override bool TryGetValues(Enum setting, out IEnumerable<string> values) => _loadedValues.TryGetValue(setting, out values);
 
 		private const string _settingNodeName = "Setting";
 		private const string _settingNodeIdentifier = "name";

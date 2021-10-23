@@ -8,17 +8,18 @@ using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public interface ISettingsProvider<ValueType>
+	public interface ISettingsProvider
 	{
 		void Load();
 		bool IsLoaded { get; }
-		bool TryGetValue(Enum setting, out ValueType value);
+		bool TryGetValue<R>(Enum setting, out R value);
+		bool TryGetValue(Enum setting, out object value);
 
 		void OnSettingsAdded(IEnumerable<Enum> newSettings);
 		void OnSettingsAdded(IEnumerable<Enum> newSettings, Type settingType);
 	}
 
-	public abstract class SettingsProviderBase<ValueType> : ISettingsProvider<ValueType>
+	public abstract class SettingsProviderBase : ISettingsProvider
 	{
 		public IEnumerable<Type> SettingsTypes => AllSettings.Select(setting => setting.GetType()).Distinct();
 		public ICollection<Enum> AllSettings => AllSettingsNames.InputSpace;
@@ -26,7 +27,25 @@ namespace ApplicationResources.Setup
 		public bool IsLoaded => _isLoaded;
 
 		public abstract void Load();
-		public abstract bool TryGetValue(Enum setting, out ValueType value);
+
+		public abstract bool TryGetValue(Enum setting, out object value);
+		public bool TryGetValue<R>(Enum setting, out R value)
+		{
+			try
+			{
+				var foundValue = TryGetValue(setting, out var uncastedValue);
+				value = !foundValue ? default : (R)uncastedValue;
+				return foundValue;
+			}
+			catch (InvalidCastException e)
+			{
+				var message = $"Could not retrieve setting {setting} because its value is of the wrong type. Attempting to cast to type {typeof(R).Name}. {e}";
+				Console.Error.WriteLine(message);
+				Logger.Error(message);
+				value = default;
+				return false;
+			}
+		}
 
 		public void OnSettingsAdded(IEnumerable<Enum> newSettings) => newSettings.GroupBy(setting => setting.GetType()).EachIndependently(group => OnSettingsAdded(group, group.Key));
 		public void OnSettingsAdded(IEnumerable<Enum> settings, Type enumType)
@@ -46,18 +65,29 @@ namespace ApplicationResources.Setup
 			newSettings.EachIndependently(setting => AllSettingsNames.Expand(setting, setting.ToString()));
 		}
 
-		protected static object ParseSetting(Enum setting, IEnumerable<string> rawValueStrings)
+		protected readonly object _loadLock = new object();
+		protected bool _isLoaded = false;
+	}
+
+	public abstract class SettingsParserBase : SettingsProviderBase
+	{
+		public override bool TryGetValue(Enum setting, out object value)
+		{
+			var foundValue = TryGetValues(setting, out var rawValues);
+			value = !foundValue ? null : ParseSetting(setting, rawValues);
+			return foundValue;
+		}
+		protected abstract bool TryGetValues(Enum setting, out IEnumerable<string> values);
+
+		private static object ParseSetting(Enum setting, IEnumerable<string> rawValueStrings)
 		{
 			var specification = setting.GetExtension<ISettingsSpecification>();
 			var parsedValues = specification.ValueGetter(rawValueStrings);
 			return parsedValues;
 		}
-
-		protected readonly object _loadLock = new object();
-		protected bool _isLoaded = false;
 	}
 
-	public class SettingsStore : SettingsProviderBase<object>
+	public class SettingsStore : SettingsProviderBase
 	{
 		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
 
@@ -66,8 +96,8 @@ namespace ApplicationResources.Setup
 			SettingsAdded += OnSettingsAdded;
 		}
 
-		private readonly Dictionary<Enum, object> _parsedSettings = new Dictionary<Enum, object>();
-		private readonly List<ISettingsProvider<IEnumerable<string>>> _settingsProviders = new List<ISettingsProvider<IEnumerable<string>>>();
+		private readonly Dictionary<Enum, object> _parsedSettings = new();
+		private readonly List<ISettingsProvider> _settingsProviders = new();
 
 		public override void Load()
 		{
@@ -81,11 +111,11 @@ namespace ApplicationResources.Setup
 				AllSettings.EachIndependently(settingName =>
 				{
 					var specification = settingName.GetExtension<ISettingsSpecification>();
-					var didFindValue = _settingsProviders.Where(provider => provider != null && provider.IsLoaded)
-						.TryGetFirst((ISettingsProvider<IEnumerable<string>> provider, out IEnumerable<string> values) =>
-							provider.TryGetValue(settingName, out values), out var foundValues);
+					var didFindValue = _settingsProviders
+						.Where(provider => provider != null && provider.IsLoaded)
+						.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
 					if (didFindValue)
-						_parsedSettings[settingName] = ParseSetting(settingName, foundValues);
+						_parsedSettings[settingName] = foundValue;
 					else if (specification.IsRequired)
 						throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
 					else if (specification.Default != null)
@@ -107,7 +137,7 @@ namespace ApplicationResources.Setup
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
 		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => SettingsAdded?.Invoke(settings, enumType);
 
-		public void RegisterProvider(ISettingsProvider<IEnumerable<string>> provider)
+		public void RegisterProvider(ISettingsProvider provider)
 		{
 			if (provider.IsLoaded)
 				throw new ArgumentException($"Cannot accept an already loaded settings provider");
