@@ -8,6 +8,7 @@ namespace CustomResources.Utils.GeneralUtils
 	public static class EnumExtenders<ExtensionT>
 	{
 		private readonly static IDictionary<Enum, ExtensionT> _specificationMapping = new Dictionary<Enum, ExtensionT>();
+		private readonly static IDictionary<Type, IEnumerable<EnumExtensionProviderAttribute>> _extensionProviderAttributes = new Dictionary<Type, IEnumerable<EnumExtensionProviderAttribute>>();
 
 		public static ExtensionT GetEnumExtension(Enum enumValue) => _specificationMapping.TryGetValue(enumValue, out var foundExtension)
 			? foundExtension
@@ -17,10 +18,7 @@ namespace CustomResources.Utils.GeneralUtils
 		{
 			var enumValues = Enum.GetValues(enumType).Cast<Enum>();
 			var extensionType = typeof(ExtensionT);
-			var attributes = enumType
-				.GetCustomAttributes(typeof(EnumExtensionProviderAttribute), false)
-				.Cast<EnumExtensionProviderAttribute>()
-				.Where(attribute => attribute.EnumType == enumType && attribute.ExtensionType == extensionType);
+			var attributes = FindExtensionProviderAttributes(enumType);
 			if (attributes.Any())
 				attributes.Single().Instance.As<IGenericEnumExtensionProvider<ExtensionT>>().GetPairs().Each(pair => _specificationMapping.Add(pair.enumValue, pair.enumExtension));
 			else if (extensionType == typeof(EmptyEnumExtension))
@@ -32,6 +30,14 @@ namespace CustomResources.Utils.GeneralUtils
 				throw new NotImplementedException($"A specification of type {extensionType.Name} was not provided for the following enums of type {enumType.Name}: " +
 					$"{string.Join(", ", unImplementedEnums)}");
 			return _specificationMapping;
+		}
+
+		public static IEnumerable<EnumExtensionProviderAttribute> FindExtensionProviderAttributes(Type enumType)
+		{
+			return _extensionProviderAttributes.AddIfNotPresent(enumType, type =>
+				type.GetCustomAttributes(typeof(EnumExtensionProviderAttribute), false)
+					.Cast<EnumExtensionProviderAttribute>()
+					.Where(attribute => attribute.EnumType == enumType && attribute.ExtensionType.IsAssignableTo(typeof(ExtensionT))));
 		}
 	}
 
@@ -52,10 +58,12 @@ namespace CustomResources.Utils.GeneralUtils
 	[AttributeUsage(AttributeTargets.Enum, AllowMultiple = true)]
 	public class EnumExtensionProviderAttribute : Attribute
 	{
-		internal Type EnumType { get; }
-		internal Type ExtensionType { get; }
-		internal Type ProviderType { get; }
-		internal object Instance { get; }
+		public Type EnumType { get; }
+		public Type ExtensionType { get; }
+		public Type ProviderType { get; }
+		public object Instance { get; }
+
+
 		public EnumExtensionProviderAttribute(Type providerType)
 		{
 			if (!providerType.IsClass)
@@ -73,5 +81,4 @@ namespace CustomResources.Utils.GeneralUtils
 			ProviderType = providerType;
 		}
 	}
-
 }
