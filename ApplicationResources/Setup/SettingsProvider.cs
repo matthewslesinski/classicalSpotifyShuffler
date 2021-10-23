@@ -1,0 +1,133 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using ApplicationResources.Logging;
+using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
+using Util = CustomResources.Utils.GeneralUtils.Utils;
+
+namespace ApplicationResources.Setup
+{
+	public interface ISettingsProvider<ValueType>
+	{
+		void Load();
+		bool IsLoaded { get; }
+		bool TryGetValue(Enum setting, out ValueType value);
+
+		void OnSettingsAdded(IEnumerable<Enum> newSettings);
+		void OnSettingsAdded(IEnumerable<Enum> newSettings, Type settingType);
+	}
+
+	public abstract class SettingsProviderBase<ValueType> : ISettingsProvider<ValueType>
+	{
+		public IEnumerable<Type> SettingsTypes => AllSettings.Select(setting => setting.GetType()).Distinct();
+		public ICollection<Enum> AllSettings => AllSettingsNames.InputSpace;
+		public EnumNamesDictionary AllSettingsNames { get; } = new();
+		public bool IsLoaded => _isLoaded;
+
+		public abstract void Load();
+		public abstract bool TryGetValue(Enum setting, out ValueType value);
+
+		public void OnSettingsAdded(IEnumerable<Enum> newSettings) => newSettings.GroupBy(setting => setting.GetType()).EachIndependently(group => OnSettingsAdded(group, group.Key));
+		public void OnSettingsAdded(IEnumerable<Enum> settings, Type enumType)
+		{
+			if (IsLoaded)
+				throw new NotSupportedException("Cannot add new settings types after they have already been loaded");
+
+			var newSettings = settings.Where(AllSettings.NotContains).ToList();
+			if (newSettings.Any())
+				OnNewSettingsAdded(newSettings, enumType);
+		}
+
+		protected virtual void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
+		{
+			if (EnumExtenders<ISettingsSpecification>.FindExtensionProviderAttributes(enumType).Count() != 1)
+				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify a provider for {nameof(ISettingsSpecification)}s");
+			newSettings.EachIndependently(setting => AllSettingsNames.Expand(setting, setting.ToString()));
+		}
+
+		protected static object ParseSetting(Enum setting, IEnumerable<string> rawValueStrings)
+		{
+			var specification = setting.GetExtension<ISettingsSpecification>();
+			var parsedValues = specification.ValueGetter(rawValueStrings);
+			return parsedValues;
+		}
+
+		protected readonly object _loadLock = new object();
+		protected bool _isLoaded = false;
+	}
+
+	public class SettingsStore : SettingsProviderBase<object>
+	{
+		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
+
+		public SettingsStore()
+		{
+			SettingsAdded += OnSettingsAdded;
+		}
+
+		private readonly Dictionary<Enum, object> _parsedSettings = new Dictionary<Enum, object>();
+		private readonly List<ISettingsProvider<IEnumerable<string>>> _settingsProviders = new List<ISettingsProvider<IEnumerable<string>>>();
+
+		public override void Load()
+		{
+			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
+			{
+				_settingsProviders.EachIndependently(provider =>
+				{
+					if (!provider.IsLoaded)
+						provider.Load();
+				});
+				AllSettings.EachIndependently(settingName =>
+				{
+					var specification = settingName.GetExtension<ISettingsSpecification>();
+					var didFindValue = _settingsProviders.Where(provider => provider != null && provider.IsLoaded)
+						.TryGetFirst((ISettingsProvider<IEnumerable<string>> provider, out IEnumerable<string> values) =>
+							provider.TryGetValue(settingName, out values), out var foundValues);
+					if (didFindValue)
+						_parsedSettings[settingName] = ParseSetting(settingName, foundValues);
+					else if (specification.IsRequired)
+						throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
+					else if (specification.Default != null)
+						_parsedSettings[settingName] = specification.Default;
+				});
+				GetAllSettingsAsStrings().Each(kvp => Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
+					GetType().Name, kvp.setting.GetType().Name, kvp.setting, kvp.stringValue ?? "<null>"));
+			});
+		}
+
+		public override bool TryGetValue(Enum setting, out object value)
+		{
+			var foundValue = _parsedSettings.TryGetValue(setting, out var uncastedValue);
+			value = !foundValue ? null : uncastedValue;
+			return foundValue;
+		}
+
+		public void RegisterSettings(params Type[] enumTypes) => RegisterSettings(enumTypes.As<IEnumerable<Type>>());
+		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
+		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => SettingsAdded?.Invoke(settings, enumType);
+
+		public void RegisterProvider(ISettingsProvider<IEnumerable<string>> provider)
+		{
+			if (provider.IsLoaded)
+				throw new ArgumentException($"Cannot accept an already loaded settings provider");
+			_settingsProviders.Add(provider);
+			provider.OnSettingsAdded(AllSettings);
+			SettingsAdded -= provider.OnSettingsAdded;
+			SettingsAdded += provider.OnSettingsAdded;
+		}
+
+		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() =>
+			AllSettings.Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
+																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
+																			: null));
+	}
+
+	public interface ISettingsSpecification
+	{
+		bool IsRequired { get; set; }
+		object Default { get; set; }
+		Func<IEnumerable<string>, object> ValueGetter { get; set; }
+		Func<object, string> StringFormatter { get; set; }
+	}
+}

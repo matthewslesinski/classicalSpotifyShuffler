@@ -1,33 +1,29 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using ApplicationResources.Logging;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
-using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public class Settings
+	public static class Settings
 	{
-		private readonly static Dictionary<BasicSettings, object> _parsedSettings = new Dictionary<BasicSettings, object>();
-		private readonly static List<ISettingsProvider<BasicSettings>> _settingsProviders = new List<ISettingsProvider<BasicSettings>>();
-		private static readonly object _loadLock = new object();
-		private static bool _isLoaded = false;
+		public static ICollection<Enum> AllSettings => _settingsStore.AllSettings;
+		public static EnumNamesDictionary AllSettingsName => _settingsStore.AllSettingsNames;
+		private readonly static SettingsStore _settingsStore = new();
 
-		public static IEnumerable<(BasicSettings setting, string stringValue)> GetAllSettingsAsStrings() =>
-			Enum.GetValues<BasicSettings>().Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue) 
-																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
-																			: null));
 
-		public static T Get<T>(BasicSettings setting) => TryGet<T>(setting, out var value) ? value : default;
-		public static bool TryGet<T>(BasicSettings setting, out T value)
+		public static T Get<T>(Enum setting) => TryGet<T>(setting, out var value) ? value : default;
+		public static bool TryGet<T>(Enum setting, out T value)
 		{
 			try
 			{
-				var foundValue = _parsedSettings.TryGetValue(setting, out var uncastedValue);
-				value = !foundValue || uncastedValue == null ? default : (T) uncastedValue;
+				var foundValue = _settingsStore.TryGetValue(setting, out var uncastedValue);
+				value = uncastedValue == null ? default : (T)uncastedValue;
 				return foundValue;
-			} catch (InvalidCastException e)
+			}
+			catch (InvalidCastException e)
 			{
 				var message = $"Could not retrieve setting {setting} because its value is of the wrong type. Attempting to cast to type {typeof(T).Name}. {e}";
 				Console.Error.WriteLine(message);
@@ -37,68 +33,48 @@ namespace ApplicationResources.Setup
 			}
 		}
 
-		public static void RegisterProvider(ISettingsProvider<BasicSettings> provider) => _settingsProviders.Add(provider);
-		public static void RegisterProviders(params ISettingsProvider<BasicSettings>[] providers) => RegisterProviders(providers);
-		public static void RegisterProviders(IEnumerable<ISettingsProvider<BasicSettings>> providers) => _settingsProviders.AddRange(providers);
+		public static void RegisterSettings<EnumT>() where EnumT : struct, Enum => _settingsStore.RegisterSettings(typeof(EnumT));
+		public static void RegisterProviders(params ISettingsProvider<IEnumerable<string>>[] providers) => RegisterProviders(providers);
+		public static void RegisterProviders(IEnumerable<ISettingsProvider<IEnumerable<string>>> providers) => providers.EachIndependently(RegisterProvider);
+		public static void RegisterProvider(ISettingsProvider<IEnumerable<string>> provider) => _settingsStore.RegisterProvider(provider);
+		public static void Load() => _settingsStore.Load();
 
-		public static void Load()
-		{
-			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
-			{
-				_settingsProviders.Each(provider =>
-				{
-					try
-					{
-						if (!provider.IsLoaded)
-							provider.Load();
-					}
-					catch (Exception e)
-					{
-						Logger.Error($"An exception occurred while trying to load provider of type {provider.GetType().Name}: {e}");
-					}
-				});
-				var exceptions = new List<Exception>();
-				foreach (var settingName in Enum.GetValues<BasicSettings>())
-				{
-					var specification = settingName.GetExtension<ISettingsSpecification>();
-					var didFindValue = _settingsProviders.Where(provider => provider != null && provider.IsLoaded)
-						.TryGetFirst((ISettingsProvider<BasicSettings> provider, out IEnumerable<string> values) => provider.TryGetValues(settingName, out values), out var foundValues);
-					if (didFindValue)
-						_parsedSettings[settingName] = ParseSetting(settingName, foundValues);
-					else if (specification.IsRequired)
-						exceptions.Add(new KeyNotFoundException($"A value for setting {settingName} is required but nothing was provided"));
-					else if (specification.Default != null)
-						_parsedSettings[settingName] = specification.Default;
-				}
-				if (exceptions.Any())
-				{
-					var exception = exceptions.Count() > 1 ? new AggregateException(exceptions) : exceptions.First();
-					throw exception;
-				}
-				GetAllSettingsAsStrings().Each(kvp => Logger.Verbose("Setting {settingName} was set to value {settingValue}", kvp.setting, kvp.stringValue ?? "<null>"));
-			});
-		}
-
-		private static object ParseSetting(BasicSettings setting, IEnumerable<string> rawValueStrings)
-		{
-			var specification = setting.GetExtension<ISettingsSpecification>();
-			var parsedValues = specification.ValueGetter(rawValueStrings);
-			return parsedValues;
-		}
+		public static IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
 	}
 
-	public interface ISettingsSpecification
+	public class EnumNamesDictionary : BijectiveDictionary<Enum, string>, ICollection<Enum>, IEnumerable<string>, IReadOnlyDictionary<Enum, string>, IReadOnlyDictionary<string, Enum>
 	{
-		bool IsRequired { get; set; }
-		object Default { get; set; }
-		Func<IEnumerable<string>, object> ValueGetter { get; set; }
-		Func<object, string> StringFormatter { get; set; }
-	}
+		public EnumNamesDictionary(bool ignoreCase = true)
+			: base(destinationEquality: ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)
+		{ }
 
-	public interface ISettingsProvider<KeyType>
-	{
-		public void Load();
-		public bool IsLoaded { get; }
-		public bool TryGetValues(KeyType setting, out IEnumerable<string> values);
+		public int Count => _mapping.Count;
+		public bool IsReadOnly => false;
+
+		public IEnumerable<Enum> Keys => InputSpace;
+		public IEnumerable<string> Values => OutputSpace;
+		IEnumerable<string> IReadOnlyDictionary<string, Enum>.Keys => OutputSpace;
+		IEnumerable<Enum> IReadOnlyDictionary<string, Enum>.Values => InputSpace;
+
+		public string this[Enum key] => _mapping[key];
+		public Enum this[string key] => _inverseMapping[key];
+
+		public void Add(Enum item) => Expand(item, item.ToString());
+		public bool Contains(Enum item) => InputSpace.Contains(item);
+		public void CopyTo(Enum[] array, int arrayIndex) => InputSpace.CopyTo(array, arrayIndex);
+		IEnumerator<Enum> IEnumerable<Enum>.GetEnumerator() => InputSpace.GetEnumerator();
+		IEnumerator<string> IEnumerable<string>.GetEnumerator() => OutputSpace.GetEnumerator();
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+		public bool ContainsKey(Enum key) => _mapping.ContainsKey(key);
+		public bool TryGetValue(Enum key, out string value) => _mapping.TryGetValue(key, out value);
+		public IEnumerator<KeyValuePair<Enum, string>> GetEnumerator() => _mapping.GetEnumerator();
+
+		public bool ContainsKey(string key) => _inverseMapping.ContainsKey(key);
+		public bool TryGetValue(string key, out Enum value) => _inverseMapping.TryGetValue(key, out value);
+		IEnumerator<KeyValuePair<string, Enum>> IEnumerable<KeyValuePair<string, Enum>>.GetEnumerator() => _inverseMapping.GetEnumerator();
+
+		public bool Remove(Enum item) => throw new NotSupportedException();
+		public void Clear() => throw new NotSupportedException();
 	}
 }

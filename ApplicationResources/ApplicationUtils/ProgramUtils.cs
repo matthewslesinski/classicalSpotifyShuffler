@@ -13,12 +13,14 @@ namespace ApplicationResources.ApplicationUtils
 		{
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
 			var app = new CommandLineApplication();
-			Settings.RegisterProvider(CommandLineOptions.Initialize(app));
+			var commandLineSettingsProvider = new CommandLineOptions(app);
+			Settings.RegisterProvider(commandLineSettingsProvider);
+			Settings.RegisterSettings<BasicSettings>();
 			Action runner = Settings.Load + program;
 			if (!string.IsNullOrWhiteSpace(xmlSettingsFileFlag))
 			{
 				var xmlSettingsFileOption = app.Option(xmlSettingsFileFlag, "The file name for settings stored in xml format", CommandOptionType.MultipleValue);
-				Action settingsRegister = () =>
+				Action settingsProviderRegister = () =>
 				{
 					if (xmlSettingsFileOption.HasValue())
 						Settings.RegisterProviders(xmlSettingsFileOption.Values.Where(File.Exists).Select(fileName => new XmlSettingsProvider(fileName)));
@@ -27,7 +29,7 @@ namespace ApplicationResources.ApplicationUtils
 					if (File.Exists(ApplicationConstants.StandardSettingsFile))
 						Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
 				};
-				runner = settingsRegister + runner;
+				runner = settingsProviderRegister + runner;
 			}
 			app.OnExecute(runner);
 			app.Execute(args);

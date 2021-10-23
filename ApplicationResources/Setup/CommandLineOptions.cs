@@ -3,32 +3,28 @@ using System.Collections.Generic;
 using McMaster.Extensions.CommandLineUtils;
 using System.Linq;
 using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
+using ApplicationResources.Logging;
 
 namespace ApplicationResources.Setup
 {
-	public class CommandLineOptions : ISettingsProvider<BasicSettings>
+	public class CommandLineOptions : SettingsProviderBase<IEnumerable<string>>
 	{
-		private readonly Dictionary<BasicSettings, CommandOption> _options;
-		private CommandLineOptions(Dictionary<BasicSettings, CommandOption> options) => _options = options;
-
-		public static ISettingsProvider<BasicSettings> Initialize(CommandLineApplication app)
+		public CommandLineOptions(CommandLineApplication app)
 		{
+			_app = app;
 			app.HelpOption();
-			var result = Enum.GetValues<BasicSettings>()
-				.Select(setting => (setting, setting.GetExtension<ICommandLineOption>()))
-				.ToDictionary(kvp => kvp.setting, kvp => app.Option(kvp.Item2.Flag, kvp.Item2.Desc, kvp.Item2.Type));
-			var settingsProvider = new CommandLineOptions(result);
-			return settingsProvider;
 		}
 
-		public bool IsLoaded => true;
+		private readonly CommandLineApplication _app;
+		private readonly Dictionary<Enum, CommandOption> _options = new();
 
-		public void Load()
+		public override void Load()
 		{
-			// no need
+			_isLoaded = true;
 		}
 
-		public bool TryGetValues(BasicSettings setting, out IEnumerable<string> values)
+		public override bool TryGetValue(Enum setting, out IEnumerable<string> values)
 		{
 			var option = _options[setting];
 			if (option.HasValue())
@@ -38,6 +34,22 @@ namespace ApplicationResources.Setup
 			}
 			values = Array.Empty<string>();
 			return false;
+		}
+
+		protected override void OnNewSettingsAdded(IEnumerable<Enum> settings, Type enumType)
+		{
+			if (EnumExtenders<ICommandLineOption>.FindExtensionProviderAttributes(enumType).Count() == 1)
+			{
+				base.OnNewSettingsAdded(settings, enumType);
+				settings
+					.Select(setting => (setting, setting.GetExtension<ICommandLineOption>()))
+					.EachIndependently(kvp => _options.Add(kvp.setting, _app.Option(kvp.Item2.Flag, kvp.Item2.Desc, kvp.Item2.Type)));
+			}
+			else if (EnumExtenders<ICommandLineOption>.FindExtensionProviderAttributes(enumType).Count() > 1)
+				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify just one provider for {nameof(ICommandLineOption)}s");
+			else
+				Logger.Warning("{className}: Ignoring new settings of type {enumType} because they do not have a provider for {extensionType}s",
+					nameof(CommandLineOptions), enumType.Name, nameof(ICommandLineOption));
 		}
 
 		public interface ICommandLineOption
