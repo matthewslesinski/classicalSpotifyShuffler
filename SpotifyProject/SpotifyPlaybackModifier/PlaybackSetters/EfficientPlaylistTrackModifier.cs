@@ -46,8 +46,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var newUriCounts = newUris.ToFrequencyMap();
 			var tracksToKeep = currentUris.Where(uri => currentUriCounts.TryGetValue(uri, out var currentCount) && currentCount == 1
 														&& newUriCounts.TryGetValue(uri, out var intendedCount) && intendedCount == 1).ToHashSet();
-			var tracksToRemove = currentUris.Where(uri => !tracksToKeep.Contains(uri)).Distinct();
-			var tracksToAdd = newTracksCapped.Where(ShouldIncludeNonLocalTrack).Select(track => track.Uri).Where(uri => !tracksToKeep.Contains(uri));
+			var tracksToRemove = currentUris.Where(tracksToKeep.NotContains).Distinct();
+			var tracksToAdd = newTracksCapped.Where(ShouldIncludeNonLocalTrack).Select(track => track.Uri).Where(tracksToKeep.NotContains);
 
 			var removeOperations = tracksToKeep.Any() ? RemoveOperation.CreateOperations(tracksToRemove) : new IPlaylistModification[] { new ReplaceOperation() };
 			var addOperations = AddOperation.CreateOperations(tracksToAdd);

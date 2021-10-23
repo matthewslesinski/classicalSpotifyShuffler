@@ -57,7 +57,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 			if (other is not ISet<T> otherSet)
 				otherSet = other.ToHashSet();
-			var toRemoves = this.Where(e => !otherSet.Contains(e)).ToList();
+			var toRemoves = this.Where(otherSet.NotContains).ToList();
 			foreach (var toRemove in toRemoves)
 				Remove(toRemove);
 		}

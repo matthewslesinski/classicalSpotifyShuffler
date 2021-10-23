@@ -45,6 +45,28 @@ namespace CustomResources.Utils.Extensions
 		}
 
 		public static void Each<T>(this IEnumerable<T> sequence, Action<T> action) { foreach (var item in sequence) action(item); }
+		public static void EachIndependently<T>(this IEnumerable<T> sequence, Action<T> action)
+		{
+			List<Exception> exceptions = null;
+			foreach (var item in sequence)
+			{
+				try
+				{
+					action(item);
+				}
+				catch (Exception e)
+				{
+					if (exceptions == null)
+						exceptions = new List<Exception>();
+					exceptions.Add(e);
+				}
+			}
+			if (exceptions != null)
+			{
+				var exception = exceptions.Count > 1 ? new AggregateException(exceptions) : exceptions.Single();
+				throw exception;
+			}
+		}
 
 		public static IEnumerable<(T item, int index)> Enumerate<T>(this IEnumerable<T> sequence) => sequence.Select((t, i) => (t, i));
 
