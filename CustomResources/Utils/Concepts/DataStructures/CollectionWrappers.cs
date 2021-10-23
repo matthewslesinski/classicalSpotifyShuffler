@@ -45,7 +45,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected CollectionWrapper(CollectionT wrappedCollection, Bijection<T, WrappedElementT> mappingFunction) : base(wrappedCollection, mappingFunction.Inverse)
 		{
 			Ensure.ArgumentNotNull(mappingFunction, nameof(mappingFunction));
-
 			_mappingFunction = mappingFunction.Function;
 		}
 
@@ -59,6 +58,11 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 
 		public virtual bool Remove(T item) => _wrappedCollection.Remove(_mappingFunction.Invoke(item));
+	}
+
+	public abstract class CollectionWrapper<T, CollectionT> : CollectionWrapper<T, T, CollectionT> where CollectionT : ICollection<T>, IReadOnlyCollection<T>
+	{
+		protected CollectionWrapper(CollectionT wrappedCollection) : base(wrappedCollection, Bijections<T>.Identity) { }
 	}
 
 	public abstract class SetWrapper<T, WrappedElementT, SetT> : CollectionWrapper<T, WrappedElementT, SetT>, ISet<T>
