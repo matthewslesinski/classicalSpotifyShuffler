@@ -12,6 +12,7 @@ namespace ApplicationResources.Setup
 	{
 		void Load();
 		bool IsLoaded { get; }
+		IEnumerable<Enum> LoadedSettings { get; }
 		bool TryGetValue<R>(Enum setting, out R value);
 		bool TryGetValue(Enum setting, out object value);
 
@@ -24,6 +25,7 @@ namespace ApplicationResources.Setup
 		public IEnumerable<Type> SettingsTypes => AllSettings.Select(setting => setting.GetType()).Distinct();
 		public ICollection<Enum> AllSettings => AllSettingsNames.InputSpace;
 		public EnumNamesDictionary AllSettingsNames { get; } = new();
+		public abstract IEnumerable<Enum> LoadedSettings { get; }
 		public bool IsLoaded => _isLoaded;
 
 		public abstract void Load();
@@ -96,6 +98,8 @@ namespace ApplicationResources.Setup
 			SettingsAdded += OnSettingsAdded;
 		}
 
+		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.Keys;
+
 		private readonly Dictionary<Enum, object> _parsedSettings = new();
 		private readonly List<ISettingsProvider> _settingsProviders = new();
 
@@ -108,21 +112,7 @@ namespace ApplicationResources.Setup
 					if (!provider.IsLoaded)
 						provider.Load();
 				});
-				AllSettings.EachIndependently(settingName =>
-				{
-					var specification = settingName.GetExtension<ISettingsSpecification>();
-					var didFindValue = _settingsProviders
-						.Where(provider => provider != null && provider.IsLoaded)
-						.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
-					if (didFindValue)
-						_parsedSettings[settingName] = foundValue;
-					else if (specification.IsRequired)
-						throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
-					else if (specification.Default != null)
-						_parsedSettings[settingName] = specification.Default;
-				});
-				GetAllSettingsAsStrings().Each(kvp => Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
-					GetType().Name, kvp.setting.GetType().Name, kvp.setting, kvp.stringValue ?? "<null>"));
+				ResolveAndSetSettings(AllSettings);
 			});
 		}
 
@@ -135,22 +125,64 @@ namespace ApplicationResources.Setup
 
 		public void RegisterSettings(params Type[] enumTypes) => RegisterSettings(enumTypes.As<IEnumerable<Type>>());
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
-		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => SettingsAdded?.Invoke(settings, enumType);
+		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType)
+		{
+			lock (_loadLock)
+			{
+				if (IsLoaded)
+					throw new NotSupportedException("Cannot add more settings after the settings provider has already been loaded");
+				SettingsAdded?.Invoke(settings, enumType);
+			}
+		}
 
-		public void RegisterProvider(ISettingsProvider provider)
+		public void RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
+		public void RegisterProvider(ISettingsProvider provider, int position = -1)
 		{
 			if (provider.IsLoaded)
 				throw new ArgumentException($"Cannot accept an already loaded settings provider");
-			_settingsProviders.Add(provider);
-			provider.OnSettingsAdded(AllSettings);
-			SettingsAdded -= provider.OnSettingsAdded;
-			SettingsAdded += provider.OnSettingsAdded;
+			lock (_loadLock)
+			{
+				if (position < 0 || position >= _settingsProviders.Count)
+					_settingsProviders.Add(provider);
+				else
+					_settingsProviders.Insert(position, provider);
+				provider.OnSettingsAdded(AllSettings);
+				SettingsAdded -= provider.OnSettingsAdded;
+				SettingsAdded += provider.OnSettingsAdded;
+
+				if (IsLoaded)
+				{
+					if (!provider.IsLoaded)
+						provider.Load();
+					ResolveAndSetSettings(provider.LoadedSettings);
+				}
+			}
 		}
 
-		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() =>
-			AllSettings.Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
+		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
+			(enumsToGet ?? AllSettings).Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
 																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
 																			: null));
+
+		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
+		{
+			var settings = (settingsToResolve ?? AllSettings);
+			settings.EachIndependently(settingName =>
+			{
+				var specification = settingName.GetExtension<ISettingsSpecification>();
+				var didFindValue = _settingsProviders
+					.Where(provider => provider != null && provider.IsLoaded)
+					.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
+				if (didFindValue)
+					_parsedSettings[settingName] = foundValue;
+				else if (specification.IsRequired)
+					throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
+				else if (specification.Default != null)
+					_parsedSettings[settingName] = specification.Default;
+			});
+			GetAllSettingsAsStrings(settings).Each(kvp => Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
+				GetType().Name, kvp.setting.GetType().Name, kvp.setting, kvp.stringValue ?? "<null>"));
+		}
 	}
 
 	public interface ISettingsSpecification

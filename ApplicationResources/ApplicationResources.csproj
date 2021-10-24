@@ -23,7 +23,7 @@
     <Folder Include="ApplicationUtils\" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="NLog.config">
+    <None Include="NLog.config">
       <Link>NLog.config</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

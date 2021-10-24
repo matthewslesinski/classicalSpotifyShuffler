@@ -18,6 +18,8 @@ namespace ApplicationResources.Setup
 			_requiredSettings = requiredSettings;
 		}
 
+		public override IEnumerable<Enum> LoadedSettings => _loadedValues.Keys;
+
 		public override void Load()
 		{
 			Util.LoadOnce(ref _isLoaded, _fileName, () =>
@@ -32,6 +34,8 @@ namespace ApplicationResources.Setup
 					throw new KeyNotFoundException($"In order to use {_fileName} for settings, it must specify a value for the following settings: {string.Join(", ", missingSettings)}");
 			});
 		}
+
+		public override string ToString() => $"{nameof(XmlSettingsProvider)}({_fileName})";
 
 		protected override bool TryGetValues(Enum setting, out IEnumerable<string> values) => _loadedValues.TryGetValue(setting, out values);
 

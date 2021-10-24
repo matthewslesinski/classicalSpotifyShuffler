@@ -19,6 +19,8 @@ namespace ApplicationResources.Setup
 		private readonly CommandLineApplication _app;
 		private readonly Dictionary<Enum, CommandOption> _options = new();
 
+		public override IEnumerable<Enum> LoadedSettings => _options.Where(kvp => kvp.Value.HasValue()).Select(kvp => kvp.Key);
+
 		public override void Load()
 		{
 			_isLoaded = true;

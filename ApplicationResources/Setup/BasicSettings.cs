@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Extensions;
@@ -17,6 +18,7 @@ namespace ApplicationResources.Setup
 		ConsoleLogLevel,
 		OutputFileLogLevel,
 		LogFileName,
+		LoggerConfigurationFile,
 		RandomSeed,
 		SupplyUserInput,
 		ProjectRootDirectory,
@@ -26,7 +28,8 @@ namespace ApplicationResources.Setup
 		public IReadOnlyDictionary<BasicSettings, ISettingsSpecification> Specifications { get; } = new Dictionary<BasicSettings, ISettingsSpecification>
 		{
 			{ BasicSettings.LogFileName,                       new SettingsSpecification() },
-			{ BasicSettings.ProjectRootDirectory,			   new SettingsSpecification { Default = Environment.CurrentDirectory } },
+			{ BasicSettings.LoggerConfigurationFile,           new SettingsSpecification() },
+			{ BasicSettings.ProjectRootDirectory,			   new SettingsSpecification { ValueGetter = values => Path.GetFullPath(values.Single()), Default = Environment.CurrentDirectory } },
 			{ BasicSettings.RandomSeed,                        new SettingsSpecification { ValueGetter = values => int.Parse(values.Single()) } },
 			{ BasicSettings.ConsoleLogLevel,                   new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.Single(), true), Default = LogLevel.Info } },
 			{ BasicSettings.OutputFileLogLevel,                new SettingsSpecification { ValueGetter = values => Enum.Parse<LogLevel>(values.Single(), true), Default = LogLevel.Verbose } },
@@ -41,6 +44,7 @@ namespace ApplicationResources.Setup
 			{ BasicSettings.ConsoleLogLevel,                 new SingleValueOption { Flag = "-cl|--consoleLogLevel", Desc = "The lowest logging level to output to the console. A good default value to provide is \"Info\"" } },
 			{ BasicSettings.OutputFileLogLevel,              new SingleValueOption { Flag = "-fl|--fileLogLevel", Desc = "The lowest logging level to output to a file. A good default value to provide is \"Verbose\"" } },
 			{ BasicSettings.LogFileName,                     new SingleValueOption { Flag = "--logFileName", Desc = "The name to give to the log file. This should not include the extension or directories" } },
+			{ BasicSettings.LoggerConfigurationFile,         new SingleValueOption { Flag = "--loggerConfigFile", Desc = "Where to look for the logger config file (i.e. NLog.config) The default directory to resolve the file in will be the project root" } },
 			{ BasicSettings.RandomSeed,                      new SingleValueOption { Flag = "--randomSeed", Desc = "The seed to use for random numbers." } },
 			{ BasicSettings.SupplyUserInput,                 new MultiValueOption  { Flag = "--supplyUserInput", Desc = "For testing purposes. Predetermines user input to the terminal." } },
 			{ BasicSettings.ProjectRootDirectory,			 new SingleValueOption { Flag = "--projectRoot", Desc = "The root directory containing all the code for this project. This is probably the same as where git info is stored." } },

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Threading;
 using SpotifyProject.Authentication;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Extensions;
@@ -8,6 +7,8 @@ using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.Configuration;
+using SpotifyProject.SpotifyUtils;
+using System.IO;
 
 namespace SpotifyProject
 {
@@ -15,17 +16,12 @@ namespace SpotifyProject
     {
         static void Main(string[] args)
         {
-            ProgramUtils.ExecuteProgram(args, () =>
+            ProgramUtils.ExecuteProgramAsync(Run, new ProgramUtils.StartupArgs(args)
             {
-                var task = Run();
-                while (!task.IsCompleted)
-                {
-                    Thread.Sleep(Timeout.Infinite);
-                }
-                // Unreachable on purpose in case the compiler would want to get rid of the preceding while loop
-                Console.WriteLine("Terminating successfully");
-                Environment.Exit(0);
-            }, ApplicationConstants.XmlSettingsFileFlag, typeof(SpotifySettings));
+                XmlSettingsFileFlag = ApplicationConstants.XmlSettingsFileFlag,
+                SettingsTypes = new [] { typeof(SpotifySettings) },
+                AdditionalXmlSettingsFiles = new [] { GeneralConstants.StandardSpotifySettingsFile }
+            });
 		}
 
         static async Task Run()
@@ -33,6 +29,7 @@ namespace SpotifyProject
             try
             {
                 Logger.Information("Starting Spotify Project");
+                Settings.RegisterProvider(new XmlSettingsProvider(Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)));
 				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
 				var reorderer = new SpotifyPlaybackReorderer(spotify);
                 if (Settings.Get<bool>(SpotifySettings.AskUser))

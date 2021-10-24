@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using ApplicationResources.Setup;
 using MicrosoftLogLevel = Microsoft.Extensions.Logging.LogLevel;
+using System.IO;
 
 namespace ApplicationResources.Logging
 {
@@ -53,10 +54,20 @@ namespace ApplicationResources.Logging
 
         static Logger()
 		{
+            
             var minConsoleLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.ConsoleLogLevel)];
             var minFileLogLevel = LogLevelMappings[(int) Settings.Get<LogLevel>(BasicSettings.OutputFileLogLevel)];
             var logDirectoryParent = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
             var logFileName = Settings.Get<string>(BasicSettings.LogFileName);
+            if (Settings.TryGet<string>(BasicSettings.LoggerConfigurationFile, out var configFileLocation))
+			{
+                var filepath = Path.Combine(logDirectoryParent, configFileLocation);
+                if (File.Exists(filepath))
+                    NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(Path.Combine(logDirectoryParent, configFileLocation));
+                else
+                    throw new ArgumentException($"The filepath for the NLog configuration does not exist {filepath}");
+			}
+                
             NLog.GlobalDiagnosticsContext.Set(_logDirectoryParentKeyName, logDirectoryParent);
             NLog.GlobalDiagnosticsContext.Set(_logFileNameKeyName, logFileName);
             NLog.GlobalDiagnosticsContext.Set(_consoleMinLogLevelKeyName, minConsoleLogLevel);

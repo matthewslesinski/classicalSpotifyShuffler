@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using SpotifyProject.Authentication;
@@ -11,9 +10,10 @@ using CustomResources.Utils.Extensions;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using ApplicationResources.Logging;
-using ApplicationResources.ApplicationUtils;
 using ApplicationResourcesTests;
 using SpotifyProject.Configuration;
+using SpotifyProject.SpotifyUtils;
+using System.IO;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -27,19 +27,13 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[OneTimeSetUp]
 		public async Task OneTimeSetUp__SpotifyTestBase()
 		{
-			string authorizationSettingsFileName = ApplicationConstants.SuggestedAuthorizationSettingsFile;
+			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
 			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
-				if (File.Exists(authorizationSettingsFileName))
-					Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsFileName, SpotifySettings.ClientInfoPath, SpotifySettings.TokenPath, SpotifySettings.RedirectUri));
-				else
-					throw new FileNotFoundException($"In order to run unit tests, you must provide authorization settings in a file located at {authorizationSettingsFileName}");
-				if (File.Exists(ApplicationConstants.StandardSettingsFile))
-					Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
-				else
-					throw new FileNotFoundException($"In order to run unit tests, you must provide general settings in a file located at {ApplicationConstants.StandardSettingsFile}");
+				LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile);
 				Settings.Load();
+				LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile));
 				Logger.Information("Loading Spotify Configuration for tests");
 				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
 				_globalSpotifyAccessor = new SpotifyAccessorBase(client);

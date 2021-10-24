@@ -6,6 +6,9 @@ using CustomResources.Utils.GeneralUtils;
 using NUnit.Framework.Interfaces;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
+using System.Linq;
+using CustomResources.Utils.Extensions;
+using System.Collections.Generic;
 
 namespace ApplicationResourcesTests
 {
@@ -17,14 +20,11 @@ namespace ApplicationResourcesTests
 		[OneTimeSetUp]
 		public void OneTimeSetUp__UnitTestBase()
 		{
-			string unitTestSettingsFileName = ApplicationConstants.StandardUnitTestSettingsFile;
+			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
 			Utils.LoadOnce(ref _isLoaded, _lock, () =>
 			{
 				Settings.RegisterSettings<BasicSettings>();
-				if (File.Exists(unitTestSettingsFileName))
-					Settings.RegisterProvider(new XmlSettingsProvider(unitTestSettingsFileName));
-				else
-					throw new FileNotFoundException($"In order to run unit tests, you must provide settings in a file located at {unitTestSettingsFileName}");
+				LoadSettingsFiles(false, ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile);
 			});
 		}
 
@@ -36,6 +36,16 @@ namespace ApplicationResourcesTests
 		{
 			if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
 				Logger.Error("Test: {testName} failed with message {failureMessage}", TestContext.CurrentContext.Test.FullName, TestContext.CurrentContext.Result.Message);
+		}
+
+		protected void LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
+		{
+			Action<IEnumerable<ISettingsProvider>> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
+			var checkedSettingsFiles = settingsFiles.ToLookup(File.Exists);
+			if (checkedSettingsFiles.TryGetValues(true, out var existingFiles))
+				registerAction(existingFiles.Select(filename => new XmlSettingsProvider(filename)));
+			if (checkedSettingsFiles.TryGetValues(false, out var missingFiles))
+				missingFiles.EachIndependently(filename => throw new FileNotFoundException($"In order to run unit tests, you must provide general settings in a file located at {filename}"));
 		}
 	}
 }

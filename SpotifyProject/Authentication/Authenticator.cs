@@ -53,8 +53,9 @@ namespace SpotifyProject.Authentication
 
         public static async Task<SpotifyClient> Authenticate(Func<SpotifyClientConfigHolder, string, Authenticator> authenticatorConstructor)
 		{
-            var tokenFilePath = Settings.Get<string>(SpotifySettings.TokenPath);
-            var clientInfoFilePath = Settings.Get<string>(SpotifySettings.ClientInfoPath);
+            var projectRoot = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
+            var tokenFilePath = Path.Combine(projectRoot, Settings.Get<string>(SpotifySettings.TokenPath));
+            var clientInfoFilePath = Path.Combine(projectRoot, Settings.Get<string>(SpotifySettings.ClientInfoPath));
             var redirectUri = Settings.Get<string>(SpotifySettings.RedirectUri);
             var httpLoggerName = Settings.Get<string>(SpotifySettings.HTTPLoggerName);
             var httpLoggerCharLimit = Settings.Get<int?>(SpotifySettings.HTTPLoggerCharacterLimit);

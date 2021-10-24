@@ -35,7 +35,6 @@
     <None Remove="NLog" />
     <None Remove="NLog.Extensions.Logging" />
     <None Remove="SpotifyUtils\" />
-    <None Remove="NLog.config" />
     <None Remove="Setup\" />
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +49,10 @@
     </None>
     <None Include="..\SettingsTemplates\allLikedTracksSettings.xml">
       <Link>allLikedTracksSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\SettingsTemplates\standardSpotifySettings.xml">
+      <Link>standardSpotifySettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

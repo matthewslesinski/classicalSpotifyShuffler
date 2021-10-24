@@ -21,6 +21,12 @@
     <Folder Include="SpotifyApiTests\" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\SettingsTemplates\standardSpotifyUnitTestSettings.xml">
+      <Link>standardSpotifyUnitTestSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
     <ProjectReference Include="..\ApplicationResourcesTests\ApplicationResourcesTests.csproj" />
   </ItemGroup>

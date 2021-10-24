@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CustomResources.Utils.Concepts;
 
 namespace CustomResources.Utils.Extensions
@@ -80,6 +81,17 @@ namespace CustomResources.Utils.Extensions
 				return true;
 			}
 			value = default;
+			return false;
+		}
+
+		public static bool TryGetValues<K, V>(this ILookup<K, V> lookup, K key, out IEnumerable<V> values)
+		{
+			if (lookup.Contains(key))
+			{
+				values = lookup[key];
+				return true;
+			}
+			values = Array.Empty<V>();
 			return false;
 		}
 	}

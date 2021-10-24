@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using ApplicationResources.Logging;
+using System.Linq;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
-using CustomResources.Utils.GeneralUtils;
 
 namespace ApplicationResources.Setup
 {
@@ -13,7 +12,6 @@ namespace ApplicationResources.Setup
 		public static ICollection<Enum> AllSettings => _settingsStore.AllSettings;
 		public static EnumNamesDictionary AllSettingsName => _settingsStore.AllSettingsNames;
 		private readonly static SettingsStore _settingsStore = new();
-
 
 		public static T Get<T>(Enum setting) => TryGet<T>(setting, out var value) ? value : default;
 		public static bool TryGet<T>(Enum setting, out T value) => _settingsStore.TryGetValue(setting, out value);
@@ -24,9 +22,12 @@ namespace ApplicationResources.Setup
 			if (enumType.IsEnum) _settingsStore.RegisterSettings(enumType);
 			else throw new InvalidOperationException($"Only enum types can be used to provide settings, but the given type, {enumType.Name} is not an enum type");
 		}
-		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers);
+		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers.As<IEnumerable<ISettingsProvider>>());
 		public static void RegisterProviders(IEnumerable<ISettingsProvider> providers) => providers.EachIndependently(RegisterProvider);
 		public static void RegisterProvider(ISettingsProvider provider) => _settingsStore.RegisterProvider(provider);
+		public static void RegisterHighestPriorityProviders(params ISettingsProvider[] providers) => RegisterHighestPriorityProviders(providers.As<IEnumerable<ISettingsProvider>>());
+		public static void RegisterHighestPriorityProviders(IEnumerable<ISettingsProvider> providers) => providers.Reverse().EachIndependently(RegisterHighestPriorityProvider);
+		public static void RegisterHighestPriorityProvider(ISettingsProvider provider) => _settingsStore.RegisterHighestPriorityProvider(provider);
 		public static void Load() => _settingsStore.Load();
 
 		public static IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
