@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CustomResources.Utils.Extensions;
@@ -40,7 +41,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				prevUpperBound = upperBound;
 			}
 		}
-		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		public static ProbabilityDistribution<V> From(IEnumerable<KeyValuePair<V, int>> values) => From(values?.Select(kvp => (kvp.Key, (decimal)kvp.Value)));
 		public static ProbabilityDistribution<V> From(IEnumerable<KeyValuePair<V, double>> values) => From(values?.Select(kvp => (kvp.Key, (decimal)kvp.Value)));
