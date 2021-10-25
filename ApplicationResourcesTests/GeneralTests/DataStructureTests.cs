@@ -11,11 +11,179 @@ using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace ApplicationResourcesTests.GeneralTests
 {
 	public class DataStructureTests : GeneralTestBase
 	{
+
+		[Test]
+		public async Task TestOverridesDictionaryGlobal()
+		{
+			const int key = 1;
+			const int firstVal = 1;
+			const int secondVal = 2;
+			const int thirdVal = 3;
+			const int otherKey = 2;
+			const int otherVal = 5;
+			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, OverridesScope.Global);
+
+
+			async Task ChangeAction()
+			{
+				Assert.AreEqual(firstVal, overrides[key]);
+				using (overrides.AddOverride(key, secondVal))
+				{
+					Assert.AreEqual(secondVal, overrides[key]);
+					await Task.Delay(50);
+					using (overrides.AddOverride(key, thirdVal))
+					{
+						Assert.AreEqual(thirdVal, overrides[key]);
+						CollectionAssert.AreEquivalent(new KeyValuePair<int, int>[] { new KeyValuePair<int, int>(key, thirdVal), new KeyValuePair<int, int>(otherKey, otherVal) }, overrides);
+						await Task.Delay(50);
+					}
+					Assert.AreEqual(secondVal, overrides[key]);
+				}
+				Assert.AreEqual(firstVal, overrides[key]);
+			}
+			async Task CheckerThread()
+			{
+				await Task.Delay(25);
+				Assert.AreEqual(secondVal, overrides[key]);
+				await Task.Delay(50);
+				Assert.AreEqual(thirdVal, overrides[key]);
+				await Task.Delay(50);
+				Assert.AreEqual(firstVal, overrides[key]);
+			}
+			var changeTask = ChangeAction();
+			var checkTask = CheckerThread();
+			await Task.WhenAll(changeTask, checkTask);
+		}
+
+		[Test]
+		public async Task TestOverridesDictionaryThread()
+		{
+			const int key = 1;
+			const int firstVal = 1;
+			const int secondVal = 2;
+			const int thirdVal = 3;
+			const int otherKey = 2;
+			const int otherVal = 5;
+			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, OverridesScope.ThreadLocal);
+
+
+			async Task ChangeAction(bool addAnother)
+			{
+				Task another = null;
+				Assert.AreEqual(firstVal, overrides[key]);
+				using (overrides.AddOverride(key, secondVal))
+				{
+					Assert.AreEqual(secondVal, overrides[key]);
+					Thread.Sleep(50);
+					using (overrides.AddOverride(key, thirdVal))
+					{
+						if (addAnother)
+							another = Task.Run(() => ChangeAction(false));
+						Assert.AreEqual(thirdVal, overrides[key]);
+						CollectionAssert.AreEquivalent(new KeyValuePair<int, int>[] { new KeyValuePair<int, int>(key, thirdVal), new KeyValuePair<int, int>(otherKey, otherVal) }, overrides);
+						Thread.Sleep(50);
+					}
+					Assert.AreEqual(secondVal, overrides[key]);
+				}
+				Assert.AreEqual(firstVal, overrides[key]);
+				if (addAnother)
+					await another;
+			}
+			async Task CheckerThread()
+			{
+				await Task.Delay(25);
+				Assert.AreEqual(firstVal, overrides[key]);
+				await Task.Delay(50);
+				Assert.AreEqual(firstVal, overrides[key]);
+				await Task.Delay(50);
+				Assert.AreEqual(firstVal, overrides[key]);
+			}
+			var changeTask = ChangeAction(true);
+			var checkTask = CheckerThread();
+			await Task.WhenAll(changeTask, checkTask);
+		}
+
+		[Test]
+		public async Task TestOverridesDictionaryAsync()
+		{
+			const int key = 1;
+			const int firstVal = 1;
+			const int secondVal = 2;
+			const int thirdVal = 3;
+			const int fourthVal = 4;
+			const int otherKey = 2;
+			const int otherVal = 7;
+			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, OverridesScope.AsyncLocal);
+
+			async Task CheckerThread()
+			{
+				await Task.Delay(1);
+				var val = overrides[key];
+				for (int i = 0; i < 10; i++)
+				{
+					await Task.Delay(25);
+					Assert.AreEqual(val, overrides[key]);
+				}
+			}
+
+			overrides.AddOverride(key, secondVal);
+
+			async Task ChangeAction()
+			{
+				Task otherChecker;
+				Task otherChecker2;
+				Task otherChange;
+
+				Assert.AreEqual(secondVal, overrides[key]);
+				await Task.Delay(1);
+				Assert.AreEqual(secondVal, overrides[key]);
+				using (overrides.AddOverride(key, thirdVal))
+				{
+					Assert.AreEqual(thirdVal, overrides[key]);
+					otherChecker = CheckerThread();
+					otherChange = OtherChangeAction();
+					await Task.Delay(50);
+					using (overrides.AddOverride(key, fourthVal))
+					{
+						Assert.AreEqual(fourthVal, overrides[key]);
+						CollectionAssert.AreEquivalent(new KeyValuePair<int, int>[] { new KeyValuePair<int, int>(key, fourthVal), new KeyValuePair<int, int>(otherKey, otherVal) }, overrides);
+						otherChecker2 = CheckerThread();
+						await Task.Delay(50);
+					}
+					Assert.AreEqual(thirdVal, overrides[key]);
+				}
+				Assert.AreEqual(secondVal, overrides[key]);
+				await Task.WhenAll(otherChecker, otherChecker2);
+			}
+
+			async Task OtherChangeAction()
+			{
+				await Task.Delay(1);
+				using (overrides.AddOverride(key, firstVal))
+				{
+					await Task.Delay(50);
+					using (overrides.AddOverride(key, secondVal))
+					{
+						await Task.Delay(50);
+					}
+				}
+			}
+			var changeTask = ChangeAction();
+			var checkTask = CheckerThread();
+			await Task.WhenAll(changeTask, checkTask, OtherChangeAction());
+
+		}
+
 		[Test]
 		public void TestSortedSetExtensions()
 		{

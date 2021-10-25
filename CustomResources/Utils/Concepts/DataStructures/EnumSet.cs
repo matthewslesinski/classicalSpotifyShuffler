@@ -72,7 +72,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public bool IsReadOnly => false;
 
-		IEqualityComparer<uint> IInternalSet<uint, EnumSet>.EqualityComparer => _simpleEqualityComparer;
+		IEqualityComparer<uint> IInternalSet<uint>.EqualityComparer => _simpleEqualityComparer;
 
 		public bool Add(uint item) {
 			if (item >= Capacity)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
@@ -37,12 +38,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public override string ToString() => "{" + string.Join(", ", this) + "}";
 	}
 
-	public abstract class CollectionWrapper<T, WrappedElementT, CollectionT> : ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT>, IInternalCollection<T>
+	public class CollectionWrapper<T, WrappedElementT, CollectionT> : ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT>, IInternalCollection<T>
 		where CollectionT : ICollection<WrappedElementT>, IReadOnlyCollection<WrappedElementT>
 	{
 		protected readonly Func<T, WrappedElementT> _mappingFunction;
 
-		protected CollectionWrapper(CollectionT wrappedCollection, Bijection<T, WrappedElementT> mappingFunction) : base(wrappedCollection, mappingFunction.Inverse)
+		public CollectionWrapper(CollectionT wrappedCollection, Bijection<T, WrappedElementT> mappingFunction) : base(wrappedCollection, mappingFunction.Inverse)
 		{
 			Ensure.ArgumentNotNull(mappingFunction, nameof(mappingFunction));
 			_mappingFunction = mappingFunction.Function;
@@ -50,19 +51,18 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public override bool IsReadOnly => _wrappedCollection.IsReadOnly;
 
-		public virtual void Add(T item) => _wrappedCollection.Add(_mappingFunction.Invoke(item));
+		public void Add(T item) => _wrappedCollection.Add(_mappingFunction.Invoke(item));
 
-		public virtual void Clear() => _wrappedCollection.Clear();
+		public void Clear() => _wrappedCollection.Clear();
 
-		public virtual bool Contains(T item) => _wrappedCollection.Contains(_mappingFunction.Invoke(item));
+		public bool Contains(T item) => _wrappedCollection.Contains(_mappingFunction.Invoke(item));
 
-
-		public virtual bool Remove(T item) => _wrappedCollection.Remove(_mappingFunction.Invoke(item));
+		public bool Remove(T item) => _wrappedCollection.Remove(_mappingFunction.Invoke(item));
 	}
 
-	public abstract class CollectionWrapper<T, CollectionT> : CollectionWrapper<T, T, CollectionT> where CollectionT : ICollection<T>, IReadOnlyCollection<T>
+	public class CollectionWrapper<T, CollectionT> : CollectionWrapper<T, T, CollectionT> where CollectionT : ICollection<T>, IReadOnlyCollection<T>
 	{
-		protected CollectionWrapper(CollectionT wrappedCollection) : base(wrappedCollection, Bijections<T>.Identity) { }
+		public CollectionWrapper(CollectionT wrappedCollection, Bijection<T, T> mappingFunction = null) : base(wrappedCollection, mappingFunction ?? Bijections<T>.Identity) { }
 	}
 
 	public abstract class SetWrapper<T, WrappedElementT, SetT> : CollectionWrapper<T, WrappedElementT, SetT>, ISet<T>
@@ -100,5 +100,55 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		private IEnumerable<WrappedElementT> MapOtherIEnumerable(IEnumerable<T> other) => other is SetWrapper<T, WrappedElementT, SetT> otherWrapper
 			? otherWrapper._wrappedCollection
 			: other.Select(_mappingFunction);
+	}
+
+	public abstract class DictionaryWrapper<K, V, WrappedK, WrappedV, DictionaryT> : CollectionWrapper<KeyValuePair<K, V>, KeyValuePair<WrappedK, WrappedV>, DictionaryT>, IDictionary<K, V>, IReadOnlyDictionary<K, V>
+		where DictionaryT : IDictionary<WrappedK, WrappedV>, IReadOnlyDictionary<WrappedK, WrappedV>
+	{
+		protected readonly Bijection<K, WrappedK> _keyMapper;
+		protected readonly Bijection<V, WrappedV> _valueMapper;
+
+		// Note that wrappedEqualityComparer should be (equivalent to) the equality comparer used by the wrapped collection
+		protected DictionaryWrapper(DictionaryT wrappedCollection, Bijection<K, WrappedK> keyMappingFunction, Bijection<V, WrappedV> valueMappingFunction) : base(wrappedCollection, CombineMappingFunctions(keyMappingFunction, valueMappingFunction))
+		{
+			Ensure.ArgumentNotNull(keyMappingFunction, nameof(keyMappingFunction));
+			Ensure.ArgumentNotNull(valueMappingFunction, nameof(valueMappingFunction));
+			_keyMapper = keyMappingFunction;
+			_valueMapper = valueMappingFunction;
+		}
+
+		public ICollection<K> Keys => new CollectionWrapper<K, WrappedK, CollectionAsReadOnly<WrappedK>>(new CollectionAsReadOnly<WrappedK>(_wrappedCollection.As<IDictionary<WrappedK, WrappedV>>().Keys), _keyMapper);
+		public ICollection<V> Values => new CollectionWrapper<V, WrappedV, CollectionAsReadOnly<WrappedV>>(new CollectionAsReadOnly<WrappedV>(_wrappedCollection.As<IDictionary<WrappedK, WrappedV>>().Values), _valueMapper);
+		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
+		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
+
+		public V this[K key] {
+			get => _valueMapper.InvokeInverse(_wrappedCollection.As<IDictionary<WrappedK, WrappedV>>()[_keyMapper.Invoke(key)]);
+			set => _wrappedCollection.As<IDictionary<WrappedK, WrappedV>>()[_keyMapper.Invoke(key)] = _valueMapper.Invoke(value);
+		}
+
+		public void Add(K key, V value) => _wrappedCollection.Add(_keyMapper.Invoke(key), _valueMapper.Invoke(value));
+
+		public bool Remove(K key) => _wrappedCollection.Remove(_keyMapper.Invoke(key));
+
+		public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
+		{
+			var didFindValue = _wrappedCollection.As<IDictionary<WrappedK, WrappedV>>().TryGetValue(_keyMapper.Invoke(key), out var foundValue);
+			value = _valueMapper.InvokeInverse(foundValue);
+			return didFindValue;
+		}
+
+		private static Bijection<KeyValuePair<K, V>, KeyValuePair<WrappedK, WrappedV>> CombineMappingFunctions(Bijection<K, WrappedK> keyMappingFunction, Bijection<V, WrappedV> valueMappingFunction) =>
+			new Bijection<KeyValuePair<K, V>, KeyValuePair<WrappedK, WrappedV>>(
+				originalPair => new KeyValuePair<WrappedK, WrappedV>(keyMappingFunction.Invoke(originalPair.Key), valueMappingFunction.Invoke(originalPair.Value)),
+				wrappedPair => new KeyValuePair<K, V>(keyMappingFunction.InvokeInverse(wrappedPair.Key), valueMappingFunction.InvokeInverse(wrappedPair.Value)));
+
+		public bool ContainsKey(K key) => _wrappedCollection.As<IDictionary<WrappedK, WrappedV>>().ContainsKey(_keyMapper.Invoke(key));
+	}
+
+	public class DictionaryWrapper<K, V, DictionaryT> : DictionaryWrapper<K, V, K, V, DictionaryT> where DictionaryT : IDictionary<K, V>, IReadOnlyDictionary<K, V>
+	{
+		public DictionaryWrapper(DictionaryT wrappedCollection) : this(wrappedCollection, Bijections<K>.Identity, Bijections<V>.Identity) { }
+		public DictionaryWrapper(DictionaryT wrappedCollection, Bijection<K, K> keyMappingFunction, Bijection<V, V> valueMappingFunction) : base(wrappedCollection, keyMappingFunction, valueMappingFunction) { }
 	}
 }

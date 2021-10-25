@@ -109,14 +109,16 @@ namespace CustomResources.Utils.GeneralUtils
 		/// </summary>
 		/// <param name = "value">The argument value to check</param>
 		/// <param name = "name">The name of the argument</param>
-		public static void ArgumentNotNull(object value, string name)
+		public static T ArgumentNotNull<T>(T value, string name)
 		{
 			if (value != null)
 			{
-				return;
+				return value;
 			}
 
 			throw new ArgumentNullException(name);
 		}
+
+		public static T EnsureNotNull<T>(this T value, string name) => ArgumentNotNull(value, name);
 	}
 }

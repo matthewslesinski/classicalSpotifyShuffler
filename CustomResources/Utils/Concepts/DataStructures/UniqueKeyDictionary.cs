@@ -1,56 +1,24 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public class UniqueKeyDictionary<K, V> : IDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>, IReadOnlyDictionary<K, V>
+	public class UniqueKeyDictionary<K, V> : CustomDictionaryBase<K, V>
 	{
-		private readonly IEqualityComparer<K> _equalityComparer;
 		private Node[] _nodes;
 		private int _minHash;
-		private int _size = 0;
 
-		public UniqueKeyDictionary(IEqualityComparer<K> equalityComparer = null)
+		public UniqueKeyDictionary(IEqualityComparer<K> equalityComparer = null) : base(equalityComparer)
 		{
-			_equalityComparer = equalityComparer ?? EqualityComparer<K>.Default;
 			_minHash = int.MaxValue;
 			_nodes = Array.Empty<Node>();
 		}
 
-		public V this[K key] {
-			get
-			{
-				if (!TryGetValue(key, out var foundValue))
-					throw new KeyNotFoundException($"The specified key {key} does not exist in the dictionary");
-				return foundValue;
-			}
-			set
-			{
-				if (value == null)
-					Remove(key);
-				else if (ContainsKey(key))
-					_nodes[GetIndex(key)] = new Node(key, value);
-				else
-					Add(key, value);
-			}
-		}
-
-		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
-		public ICollection<K> Keys => new KeyCollectionView(this);
-
-		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
-		public ICollection<V> Values => new ValueCollectionView(this);
-
-		public int Count => _size;
-
-		public bool IsReadOnly => false;
-
-		public void Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
-		public void Add(K key, V value)
+		public override void Add(K key, V value)
 		{
+			Ensure.ArgumentNotNull(key, nameof(key));
 			var nodeToAdd = new Node(key, value);
 			if (_size == 0)
 			{
@@ -77,31 +45,19 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				_nodes = newArr;
 			}
 			if (_nodes[candidateIndex] != null)
-				throw new ArgumentException($"Key {key} already has an entry in the dictionary");
+				ThrowKeyAlreadyAddedException(key);
 			_nodes[candidateIndex] = nodeToAdd;
 			_size += 1;
 		}
 
-		public void Clear()
+		public override void Clear()
 		{
 			_size = 0;
 			_minHash = int.MaxValue;
 			_nodes = Array.Empty<Node>();
 		}
 
-		public bool Contains(KeyValuePair<K, V> item) => TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
-		public bool ContainsKey(K key) => TryGetValue(key, out _);
-		public bool ContainsValue(V value)
-		{
-			foreach (var kvp in this)
-			{
-				if (Equals(kvp.Value, value))
-					return true;
-			}
-			return false;
-		}
-
-		public IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+		public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
 		{
 			var seenSize = 0;
 			foreach (var node in _nodes)
@@ -115,9 +71,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			}
 		}
 
-		public bool Remove(KeyValuePair<K, V> item) => TryGetValue(item.Key, out var existingValue) && Equals(item.Value, existingValue) && Remove(item.Key);
-		public bool Remove(K key)
+		public override bool Remove(K key)
 		{
+			Ensure.ArgumentNotNull(key, nameof(key));
+
 			var index = GetIndex(key);
 			if (index < 0 || index >= _nodes.Length || _nodes[index] == null)
 				return false;
@@ -126,8 +83,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			return true;
 		}
 
-		public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
+		public override bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
 		{
+			Ensure.ArgumentNotNull(key, nameof(key));
+
 			var candidateIndex = GetIndex(key);
 			Node node;
 			if (candidateIndex < 0 || candidateIndex >= _nodes.Length || (node = _nodes[candidateIndex]) == null || !_equalityComparer.Equals(key, node.Key)) {
@@ -137,6 +96,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			value = node.Value;
 			return true;
 		}
+
+		public override void Update(K key, V value) => _nodes[GetIndex(key.EnsureNotNull(nameof(key)))] = new Node(key, value);
 
 		private int GetIndex(K key) => _equalityComparer.GetHashCode(key) - _minHash;
 
@@ -153,38 +114,5 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 			internal KeyValuePair<K, V> ToKeyValuePair() => new KeyValuePair<K, V>(Key, Value);
 		}
-
-		public abstract class CollectionView<T> : ReadOnlyCollectionWrapper<T, KeyValuePair<K, V>, UniqueKeyDictionary<K, V>>, IInternalCollection<T>
-		{
-			public CollectionView(UniqueKeyDictionary<K, V> wrappedCollection, Func<KeyValuePair<K, V>, T> translationFunction)
-				: base(wrappedCollection, translationFunction)
-			{ }
-
-			public void Add(T item) => throw new NotSupportedException("Cannot modify a readonly collection");
-			
-
-			public void Clear() => throw new NotSupportedException("Cannot modify a readonly collection");
-
-			public abstract bool Contains(T item);
-
-			public bool Remove(T item) => throw new NotSupportedException("Cannot modify a readonly collection");
-		}
-
-		public class KeyCollectionView : CollectionView<K>
-		{
-			public KeyCollectionView(UniqueKeyDictionary<K, V> wrappedCollection) : base(wrappedCollection, kvp => kvp.Key)
-			{ }
-
-			public override bool Contains(K item) => _wrappedCollection.ContainsKey(item);
-		}
-
-		public class ValueCollectionView : CollectionView<V>
-		{
-			public ValueCollectionView(UniqueKeyDictionary<K, V> wrappedCollection) : base(wrappedCollection, kvp => kvp.Value)
-			{ }
-
-			public override bool Contains(V item) => _wrappedCollection.ContainsValue(item);
-		}
 	}
-
 }
