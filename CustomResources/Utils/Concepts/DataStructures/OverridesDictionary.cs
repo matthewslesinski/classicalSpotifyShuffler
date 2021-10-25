@@ -23,18 +23,20 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	public class OverridesDictionary<K, V> : CustomDictionaryBase<K, V>, IOverriddenDictionary<K, V>
 	{
-		private readonly Dictionary<K, IOverridesBucket> _overrides;
+		private readonly IDictionary<K, IOverridesBucket> _overrides;
 		private readonly IDictionary<K, V> _wrappedDictionary;
 		private readonly OverridesScope _overridesScope;
 
-		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, OverridesScope overridesScope = OverridesScope.AsyncLocal) : this(wrappedDictionary, overridesScope, wrappedDictionary.Comparer) { }
-		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, OverridesScope overridesScope = OverridesScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
+		public OverridesDictionary(ConcurrentDictionary<K, V> wrappedDictionary, OverridesScope overridesScope = OverridesScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
+		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
+		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
+		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
 		{
 			Ensure.ArgumentNotNull(wrappedDictionary, nameof(wrappedDictionary));
 
 			_wrappedDictionary = wrappedDictionary;
 			_overridesScope = overridesScope;
-			_overrides = new Dictionary<K, IOverridesBucket>(_equalityComparer);
+			_overrides = shouldBeThreadSafe ? new ConcurrentDictionary<K, IOverridesBucket>(_equalityComparer) : new Dictionary<K, IOverridesBucket>(_equalityComparer);
 		}
 
 		public override void Add(K key, V value) => _wrappedDictionary.Add(key, value);

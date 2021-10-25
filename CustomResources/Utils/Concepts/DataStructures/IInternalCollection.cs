@@ -189,7 +189,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	public interface IInternalDictionary<K, V> : IDictionary<K, V>, IReadOnlyDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>
 	{
-		protected IEqualityComparer<K> EqualityComparer { get; }
+		public IEqualityComparer<K> EqualityComparer { get; }
 
 		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
 		ICollection<K> IDictionary<K, V>.Keys => Keys;
