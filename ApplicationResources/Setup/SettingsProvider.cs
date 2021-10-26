@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ApplicationResources.Logging;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
@@ -89,7 +90,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class SettingsStore : SettingsProviderBase
+	public class SettingsStore : SettingsProviderBase, IOverrideableDictionary<Enum, object>
 	{
 		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
 
@@ -98,9 +99,9 @@ namespace ApplicationResources.Setup
 			SettingsAdded += OnSettingsAdded;
 		}
 
-		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.Keys;
+		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.As<IDictionary<Enum, object>>().Keys;
 
-		private readonly Dictionary<Enum, object> _parsedSettings = new();
+		private readonly OverridesDictionary<Enum, object> _parsedSettings = new(new Dictionary<Enum, object>(), true);
 		private readonly List<ISettingsProvider> _settingsProviders = new();
 
 		public override void Load()
@@ -159,6 +160,10 @@ namespace ApplicationResources.Setup
 			}
 		}
 
+		public IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs);
+		public IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs);
+		public IDisposable AddOverride(Enum key, object value) => _parsedSettings.AddOverride(key, value);
+
 		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
 			(enumsToGet ?? AllSettings).Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
 																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
@@ -166,7 +171,7 @@ namespace ApplicationResources.Setup
 
 		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
 		{
-			var settings = (settingsToResolve ?? AllSettings);
+			var settings = settingsToResolve ?? AllSettings;
 			settings.EachIndependently(settingName =>
 			{
 				var specification = settingName.GetExtension<ISettingsSpecification>();

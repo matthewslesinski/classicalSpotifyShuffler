@@ -16,12 +16,16 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		ThreadLocal
 	}
 
-	public interface IOverriddenDictionary<K, V> : IReadOnlyDictionary<K, V>
+	public interface IOverrideableDictionary<K, V>
 	{
-		public IDisposable AddOverride(K key, V value);
+		IDisposable AddOverrides(params (K key, V value)[] keyValuePairs);
+		IDisposable AddOverrides(IEnumerable<(K key, V value)> keyValuePairs);
+		IDisposable AddOverride(K key, V value);
+
+		public bool TryGetValue(K key, out V value);
 	}
 
-	public class OverridesDictionary<K, V> : CustomDictionaryBase<K, V>, IOverriddenDictionary<K, V>
+	public class OverridesDictionary<K, V> : CustomDictionaryBase<K, V>, IOverrideableDictionary<K, V>
 	{
 		private readonly IDictionary<K, IOverridesBucket> _overrides;
 		private readonly IDictionary<K, V> _wrappedDictionary;
@@ -51,6 +55,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public override void Update(K key, V value) => _wrappedDictionary[key] = value;
 
+		public IDisposable AddOverrides(params (K key, V value)[] keyValuePairs) => AddOverrides(keyValuePairs.As<IEnumerable<(K key, V value)>>());
+		public IDisposable AddOverrides(IEnumerable<(K key, V value)> keyValuePairs) => new MultipleDisposables(keyValuePairs.Select(kvp => AddOverride(kvp.key, kvp.value)).ToArray());
 		public IDisposable AddOverride(K key, V value)
 		{
 			var bucket = _overrides.AddIfNotPresent(key, InstantiateBucket);

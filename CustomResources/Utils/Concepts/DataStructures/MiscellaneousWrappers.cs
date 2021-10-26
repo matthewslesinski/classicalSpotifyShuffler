@@ -25,16 +25,4 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool Remove(T item) => _wrappedCollection.Remove(item);
 		IEnumerator IEnumerable.GetEnumerator() => _wrappedCollection.As<IEnumerable>().GetEnumerator();
 	}
-
-	public sealed class DisposableAction : IDisposable
-	{
-		private readonly Action _disposeAction;
-		public DisposableAction(Action disposeAction)
-		{
-			Ensure.ArgumentNotNull(disposeAction, nameof(disposeAction));
-			_disposeAction = disposeAction;
-		}
-
-		public void Dispose() => _disposeAction();
-	}
 }

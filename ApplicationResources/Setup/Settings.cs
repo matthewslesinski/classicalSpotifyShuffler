@@ -30,6 +30,10 @@ namespace ApplicationResources.Setup
 		public static void RegisterHighestPriorityProvider(ISettingsProvider provider) => _settingsStore.RegisterHighestPriorityProvider(provider);
 		public static void Load() => _settingsStore.Load();
 
+		public static IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => _settingsStore.AddOverrides(keyValuePairs);
+		public static IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _settingsStore.AddOverrides(keyValuePairs);
+		public static IDisposable AddOverride(Enum key, object value) => _settingsStore.AddOverride(key, value);
+
 		public static IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
 	}
 
