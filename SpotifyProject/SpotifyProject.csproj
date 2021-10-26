@@ -28,14 +28,12 @@
     <Folder Include="SpotifyAdditions\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
     <Folder Include="SpotifyUtils\" />
-    <Folder Include="Setup\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.Extensions.Logging" />
     <None Remove="NLog" />
     <None Remove="NLog.Extensions.Logging" />
     <None Remove="SpotifyUtils\" />
-    <None Remove="Setup\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
