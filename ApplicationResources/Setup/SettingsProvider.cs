@@ -63,8 +63,8 @@ namespace ApplicationResources.Setup
 
 		protected virtual void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
 		{
-			if (EnumExtenders<ISettingsSpecification>.FindExtensionProviderAttributes(enumType).Count() != 1)
-				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify a provider for {nameof(ISettingsSpecification)}s");
+			if (EnumExtenders<ISettingSpecification>.FindExtensionProviderAttributes(enumType).Count() != 1)
+				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify a provider for {nameof(ISettingSpecification)}s");
 			newSettings.EachIndependently(setting => AllSettingsNames.Expand(setting, setting.ToString()));
 		}
 
@@ -84,7 +84,7 @@ namespace ApplicationResources.Setup
 
 		private static object ParseSetting(Enum setting, IEnumerable<string> rawValueStrings)
 		{
-			var specification = setting.GetExtension<ISettingsSpecification>();
+			var specification = setting.GetExtension<ISettingSpecification>();
 			var parsedValues = specification.ValueGetter(rawValueStrings);
 			return parsedValues;
 		}
@@ -166,7 +166,7 @@ namespace ApplicationResources.Setup
 
 		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
 			(enumsToGet ?? AllSettings).Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
-																			? setting.GetExtension<ISettingsSpecification>().StringFormatter(parsedSettingValue)
+																			? setting.GetExtension<ISettingSpecification>().StringFormatter(parsedSettingValue)
 																			: null));
 
 		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
@@ -174,7 +174,7 @@ namespace ApplicationResources.Setup
 			var settings = settingsToResolve ?? AllSettings;
 			settings.EachIndependently(settingName =>
 			{
-				var specification = settingName.GetExtension<ISettingsSpecification>();
+				var specification = settingName.GetExtension<ISettingSpecification>();
 				var didFindValue = _settingsProviders
 					.Where(provider => provider != null && provider.IsLoaded)
 					.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
@@ -182,19 +182,11 @@ namespace ApplicationResources.Setup
 					_parsedSettings[settingName] = foundValue;
 				else if (specification.IsRequired)
 					throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
-				else if (specification.Default != null)
+				else if (specification.HasDefault)
 					_parsedSettings[settingName] = specification.Default;
 			});
 			GetAllSettingsAsStrings(settings).Each(kvp => Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
 				GetType().Name, kvp.setting.GetType().Name, kvp.setting, kvp.stringValue ?? "<null>"));
 		}
-	}
-
-	public interface ISettingsSpecification
-	{
-		bool IsRequired { get; set; }
-		object Default { get; set; }
-		Func<IEnumerable<string>, object> ValueGetter { get; set; }
-		Func<object, string> StringFormatter { get; set; }
 	}
 }

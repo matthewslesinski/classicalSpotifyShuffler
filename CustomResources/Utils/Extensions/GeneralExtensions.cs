@@ -20,7 +20,9 @@ namespace CustomResources.Utils.Extensions
 		public static B GetSecond<A, B>(this (A item1, B item2) tuple) => tuple.item2;
 
 		public static string Replace(this string str, Regex regex, string replacement) => str == null ? null : regex.Replace(str, replacement);
-		
+
+		public static bool SupportsNullValues(this Type type) => !type.IsValueType || (Nullable.GetUnderlyingType(type) != null);
+
 		public static ConfiguredTaskAwaitable WithoutContextCapture(this Task task) => 
 			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredTaskAwaitable<V> WithoutContextCapture<V>(this Task<V> task) => 
