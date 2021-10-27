@@ -8,9 +8,9 @@ using ApplicationResources.Logging;
 
 namespace ApplicationResources.Setup
 {
-	public class CommandLineOptions : SettingsParserBase
+	public class CommandLineSettingsProvider : SettingsParserBase
 	{
-		public CommandLineOptions(CommandLineApplication app)
+		public CommandLineSettingsProvider(CommandLineApplication app)
 		{
 			_app = app;
 			app.HelpOption();
@@ -31,7 +31,7 @@ namespace ApplicationResources.Setup
 			var option = _options[setting];
 			if (option.HasValue())
 			{
-				values = setting.GetExtension<ICommandLineOption>().GetValues(option);
+				values = setting.GetExtension<ICommandLineSpecification>().GetValues(option);
 				return true;
 			}
 			values = Array.Empty<string>();
@@ -40,21 +40,21 @@ namespace ApplicationResources.Setup
 
 		protected override void OnNewSettingsAdded(IEnumerable<Enum> settings, Type enumType)
 		{
-			if (EnumExtenders<ICommandLineOption>.FindExtensionProviderAttributes(enumType).Count() == 1)
+			if (EnumExtenders<ICommandLineSpecification>.FindExtensionProviderAttributes(enumType).Count() == 1)
 			{
 				base.OnNewSettingsAdded(settings, enumType);
 				settings
-					.Select(setting => (setting, setting.GetExtension<ICommandLineOption>()))
+					.Select(setting => (setting, setting.GetExtension<ICommandLineSpecification>()))
 					.EachIndependently(kvp => _options.Add(kvp.setting, _app.Option(kvp.Item2.Flag, kvp.Item2.Desc, kvp.Item2.Type)));
 			}
-			else if (EnumExtenders<ICommandLineOption>.FindExtensionProviderAttributes(enumType).Count() > 1)
-				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify just one provider for {nameof(ICommandLineOption)}s");
+			else if (EnumExtenders<ICommandLineSpecification>.FindExtensionProviderAttributes(enumType).Count() > 1)
+				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify just one provider for {nameof(ICommandLineSpecification)}s");
 			else
 				Logger.Warning("{className}: Ignoring new settings of type {enumType} because they do not have a provider for {extensionType}s",
-					nameof(CommandLineOptions), enumType.Name, nameof(ICommandLineOption));
+					nameof(CommandLineSettingsProvider), enumType.Name, nameof(ICommandLineSpecification));
 		}
 
-		public interface ICommandLineOption
+		public interface ICommandLineSpecification
 		{
 			string Flag { get; set; }
 			string Desc { get; set; }

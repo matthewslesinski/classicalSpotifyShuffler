@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using ApplicationResources.Logging;
 using CustomResources.Utils.GeneralUtils;
-using static ApplicationResources.Setup.CommandLineOptions;
+using static ApplicationResources.Setup.CommandLineSettingsProvider;
 
 namespace ApplicationResources.Setup
 {
@@ -34,9 +34,9 @@ namespace ApplicationResources.Setup
 		};
 	}
 
-	public class SettingsCommandLineSpecifications : IEnumExtensionProvider<BasicSettings, ICommandLineOption>
+	public class SettingsCommandLineSpecifications : IEnumExtensionProvider<BasicSettings, ICommandLineSpecification>
 	{
-		public IReadOnlyDictionary<BasicSettings, ICommandLineOption> Specifications { get; } = new Dictionary<BasicSettings, ICommandLineOption>
+		public IReadOnlyDictionary<BasicSettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<BasicSettings, ICommandLineSpecification>
 		{
 			{ BasicSettings.ConsoleLogLevel,                 new SingleValueOption { Flag = "-cl|--consoleLogLevel", Desc = "The lowest logging level to output to the console. A good default value to provide is \"Info\"" } },
 			{ BasicSettings.OutputFileLogLevel,              new SingleValueOption { Flag = "-fl|--fileLogLevel", Desc = "The lowest logging level to output to a file. A good default value to provide is \"Verbose\"" } },

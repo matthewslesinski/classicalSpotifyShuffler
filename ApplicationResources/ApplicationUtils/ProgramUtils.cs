@@ -31,7 +31,7 @@ namespace ApplicationResources.ApplicationUtils
 		{
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
 			var app = new CommandLineApplication();
-			Settings.RegisterProvider(new CommandLineOptions(app));
+			Settings.RegisterProvider(new CommandLineSettingsProvider(app));
 			Settings.RegisterSettings<BasicSettings>();
 			startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
 			Action runner = Settings.Load + program + Terminate;
