@@ -12,7 +12,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public CustomDictionaryBase(IEqualityComparer<K> equalityComparer)
 		{
-			_equalityComparer = equalityComparer;
+			_equalityComparer = equalityComparer ?? EqualityComparer<K>.Default;
 		}
 
 		IEqualityComparer<K> IInternalDictionary<K, V>.EqualityComparer => _equalityComparer;
