@@ -48,7 +48,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		private readonly MemoryScope _overridesScope;
 
 
-		public OverridesDictionary(ConcurrentDictionary<K, V> wrappedDictionary, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
+		public OverridesDictionary(InternalConcurrentDictionary<K, V> wrappedDictionary, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
 		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
 		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
 		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
@@ -57,7 +57,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 			_wrappedDictionary = wrappedDictionary;
 			_overridesScope = overridesScope;
-			_overrides = shouldBeThreadSafe ? new ConcurrentDictionary<K, IOverridesBucket>(_equalityComparer) : new Dictionary<K, IOverridesBucket>(_equalityComparer);
+			_overrides = shouldBeThreadSafe ? new InternalConcurrentDictionary<K, IOverridesBucket>(_equalityComparer) : new Dictionary<K, IOverridesBucket>(_equalityComparer);
 			IsSynchronized = shouldBeThreadSafe;
 		}
 

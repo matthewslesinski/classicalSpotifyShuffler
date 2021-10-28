@@ -1,12 +1,30 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
+using CustomResources.Utils.Concepts.DataStructures;
 using NUnit.Framework;
 
 namespace ApplicationResourcesTests.GeneralTests
 {
 	public class Experiments : GeneralTestBase
 	{
+		[Test]
+		public void TestInternalConcurrentDictionaryOverrides()
+		{
+			var dict = new InternalConcurrentDictionary<int, int>();
+			ConcurrentDictionary<int, int> asConcurrent = dict;
+			IDictionary<int, int> asIDictionary = asConcurrent;
+			IReadOnlyDictionary<int, int> asReadOnly = asConcurrent;
+
+			Assert.AreEqual(typeof(HashSet<int>), dict.Keys.GetType());
+			Assert.AreEqual(typeof(ReadOnlyCollection<int>), asConcurrent.Keys.GetType());
+			Assert.AreEqual(typeof(HashSet<int>), asIDictionary.Keys.GetType());
+			Assert.AreEqual(typeof(HashSet<int>), asReadOnly.Keys.GetType());
+		}
+
 		[Test]
 		public async Task TestConfigureAwaitWithAsyncLocal()
 		{
