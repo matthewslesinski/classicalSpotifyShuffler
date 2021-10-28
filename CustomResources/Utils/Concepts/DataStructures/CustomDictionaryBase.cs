@@ -15,18 +15,21 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_equalityComparer = equalityComparer ?? EqualityComparer<K>.Default;
 		}
 
-		IEqualityComparer<K> IInternalDictionary<K, V>.EqualityComparer => _equalityComparer;
+		public IEqualityComparer<K> EqualityComparer => _equalityComparer;
 
 		public int Count => _size;
 
 		public bool IsReadOnly => false;
 
+		public abstract bool IsSynchronized { get; }
+		public abstract object SyncRoot { get; }
+
 		public abstract void Add(K key, V value);
 		public abstract void Clear();
-		public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
 		public abstract bool Remove(K key);
 		public abstract bool TryGetValue(K key, [MaybeNullWhen(false)] out V value);
 		public abstract void Update(K key, V value);
+		public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
 
 		public V this[K key]
 		{
@@ -40,7 +43,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			{
 				if (value == null)
 					Remove(key);
-				else if (this.As<IDictionary<K, V>>().ContainsKey(key))
+				else if (TryGetValue(key, out _))
 					Update(key, value);
 				else
 					Add(key, value);

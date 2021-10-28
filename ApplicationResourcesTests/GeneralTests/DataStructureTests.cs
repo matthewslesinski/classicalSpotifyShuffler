@@ -29,7 +29,7 @@ namespace ApplicationResourcesTests.GeneralTests
 			const int otherKey = 2;
 			const int otherVal = 5;
 			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
-			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, OverridesScope.Global);
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, MemoryScope.Global);
 
 
 			async Task ChangeAction()
@@ -73,7 +73,7 @@ namespace ApplicationResourcesTests.GeneralTests
 			const int otherKey = 2;
 			const int otherVal = 5;
 			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
-			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, OverridesScope.ThreadLocal);
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, MemoryScope.ThreadLocal);
 
 
 			async Task ChangeAction(bool addAnother)
@@ -123,7 +123,7 @@ namespace ApplicationResourcesTests.GeneralTests
 			const int otherKey = 2;
 			const int otherVal = 7;
 			var baseDictionary = new Dictionary<int, int> { { key, firstVal }, { otherKey, otherVal } };
-			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, OverridesScope.AsyncLocal);
+			var overrides = new OverridesDictionary<int, int>(baseDictionary, true, MemoryScope.AsyncLocal);
 
 			async Task CheckerThread()
 			{

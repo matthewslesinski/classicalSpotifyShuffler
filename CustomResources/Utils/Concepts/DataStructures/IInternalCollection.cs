@@ -7,28 +7,41 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public interface IInternalCollection<T> : ICollection<T>, IReadOnlyCollection<T>
+	public interface IInternalCollection<T> : ICollection<T>, IReadOnlyCollection<T>, ICollection
 	{
-		void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+		void ICollection.CopyTo(Array array, int index)
 		{
 			Ensure.ArgumentNotNull(array, nameof(array));
-			if (arrayIndex < 0)
-				throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-			var space = array.Length - arrayIndex;
+			if (index < 0)
+				throw new ArgumentOutOfRangeException(nameof(index));
+			var space = array.Length - index;
 			if (this.As<ICollection<T>>().Count > space)
 				throw new ArgumentException("Not enough space in destination array to fit the elements");
-			var elements = this.Select(i => i).ToArray();
-			Array.Copy(elements, 0, array, arrayIndex, elements.Length);
+			foreach (var element in this)
+				array.SetValue(element, index++);
 		}
+
+		void ICollection<T>.CopyTo(T[] array, int arrayIndex) => CopyTo(array.As<Array>(), arrayIndex);
 
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 
-
-	public interface IInternalSet<T> : ISet<T>, IReadOnlySet<T>, IInternalCollection<T>
+	public interface IElementContainer<T>
 	{
-		protected IEqualityComparer<T> EqualityComparer { get; }
+		IEqualityComparer<T> EqualityComparer { get; }
+	}
 
+	public interface IMappedElementContainer<S, T> : IElementContainer<S>
+	{
+		IEqualityComparer<T> WrappedEqualityComparer { get; }
+		Func<S, T> ElementMapper { get; }
+		IEqualityComparer<S> IElementContainer<S>.EqualityComparer => new KeyBasedEqualityComparer<S, T>(ElementMapper, WrappedEqualityComparer);
+	}
+
+	#region Set Interfaces
+
+	public interface IInternalSet<T> : ISet<T>, IReadOnlySet<T>, IInternalCollection<T>, IElementContainer<T>
+	{
 		void ICollection<T>.Add(T item)
 		{
 			if (IsReadOnly)
@@ -186,70 +199,30 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		bool UnionWith(SetT otherSet);
 	}
 
+	#endregion
 
-	public interface IInternalDictionary<K, V> : IDictionary<K, V>, IReadOnlyDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>
+	public interface IInternalDictionary<K, V> : IDictionary<K, V>, IReadOnlyDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>, IElementContainer<K>
 	{
-		public IEqualityComparer<K> EqualityComparer { get; }
-
 		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
 		ICollection<K> IDictionary<K, V>.Keys => Keys;
-		public new ISet<K> Keys => new KeyCollectionView(this);
+		public new KeyCollectionView<K, V, IInternalDictionary<K, V>> Keys => new KeyCollectionView<K, V, IInternalDictionary<K, V>>(this, EqualityComparer);
 
-		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => this.As<IDictionary<K, V>>().Values;
-		ICollection<V> IDictionary<K, V>.Values => new ValueCollectionView(this);
+		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
+		ICollection<V> IDictionary<K, V>.Values => Values;
+		public new ValueCollectionView<K, V, IInternalDictionary<K, V>> Values => new ValueCollectionView<K, V, IInternalDictionary<K, V>>(this);
 
 		void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
 
 		bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
 		bool IReadOnlyDictionary<K, V>.ContainsKey(K key) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(key, out _);
 		bool IDictionary<K, V>.ContainsKey(K key) => this.As<IDictionary<K, V>>().TryGetValue(key, out _);
-		public bool ContainsValue(V value)
+		public bool ContainsValue(V value, IEqualityComparer<V> equalityComparer = null)
 		{
-			foreach (var kvp in this)
-			{
-				if (Equals(kvp.Value, value))
-					return true;
-			}
-			return false;
+			var values = Values;
+			return equalityComparer == null ? values.Contains(value) : values.ContainsValue(value, equalityComparer);
 		}
 
 		bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
 			&& Equals(item.Value, existingValue) && Remove(item.Key);
-
-
-		public abstract class CollectionView<T> : ReadOnlyCollectionWrapper<T, KeyValuePair<K, V>, IInternalDictionary<K, V>>, IInternalCollection<T>
-		{
-			public CollectionView(IInternalDictionary<K, V> wrappedCollection, Func<KeyValuePair<K, V>, T> translationFunction)
-				: base(wrappedCollection, translationFunction)
-			{ }
-
-			public void Add(T item) => throw new NotSupportedException("Cannot modify a readonly collection");
-
-			public void Clear() => throw new NotSupportedException("Cannot modify a readonly collection");
-
-			public abstract bool Contains(T item);
-
-			public bool Remove(T item) => throw new NotSupportedException("Cannot modify a readonly collection");
-		}
-
-		public class KeyCollectionView : CollectionView<K>, IInternalSet<K>
-		{
-			public KeyCollectionView(IInternalDictionary<K, V> wrappedCollection) : base(wrappedCollection, kvp => kvp.Key)
-			{ }
-
-			IEqualityComparer<K> IInternalSet<K>.EqualityComparer => _wrappedCollection.EqualityComparer;
-
-			public new bool Add(K item) => throw new NotSupportedException("Cannot modify a readonly collection");
-
-			public override bool Contains(K item) => _wrappedCollection.As<IDictionary<K, V>>().ContainsKey(item);
-		}
-
-		public class ValueCollectionView : CollectionView<V>
-		{
-			public ValueCollectionView(IInternalDictionary<K, V> wrappedCollection) : base(wrappedCollection, kvp => kvp.Value)
-			{ }
-
-			public override bool Contains(V item) => _wrappedCollection.ContainsValue(item);
-		}
 	}
 }

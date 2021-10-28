@@ -16,6 +16,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_nodes = Array.Empty<Node>();
 		}
 
+		public override bool IsSynchronized => false;
+
+		public override object SyncRoot => _nodes;
+
 		public override void Add(K key, V value)
 		{
 			Ensure.ArgumentNotNull(key, nameof(key));

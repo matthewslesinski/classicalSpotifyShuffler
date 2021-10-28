@@ -72,7 +72,11 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public bool IsReadOnly => false;
 
-		IEqualityComparer<uint> IInternalSet<uint>.EqualityComparer => _simpleEqualityComparer;
+		public bool IsSynchronized => false;
+
+		public object SyncRoot => _bits;
+
+		public IEqualityComparer<uint> EqualityComparer => _simpleEqualityComparer;
 
 		public bool Add(uint item) {
 			if (item >= Capacity)
@@ -278,7 +282,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{ }
 
 		public EnumSet(EnumSet wrappedCollection, Bijection<T, uint> mappingFunction)
-			: base(wrappedCollection, mappingFunction)
+			: base(wrappedCollection, wrappedCollection.EqualityComparer, mappingFunction)
 		{ }
 	}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -9,11 +10,22 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public enum OverridesScope
+	public enum MemoryScope
 	{
 		Global,
 		AsyncLocal,
 		ThreadLocal
+	}
+
+	public interface IScopedCollection : ICollection
+	{
+		MemoryScope Scope { get; }
+	}
+
+	public interface IScopedCollectionWrapper<T, CollectionT> : IReadOnlyCollectionWrapper<T, CollectionT>, IScopedCollection
+		where CollectionT : IReadOnlyCollection<T>, IScopedCollection
+	{
+		MemoryScope IScopedCollection.Scope => WrappedCollection.Scope;
 	}
 
 	public interface IOverrideableDictionary<K, V>
@@ -25,22 +37,28 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool TryGetValue(K key, out V value);
 	}
 
-	public class OverridesDictionary<K, V> : CustomDictionaryBase<K, V>, IOverrideableDictionary<K, V>
+	public class OverridesDictionary<K, V> : CustomDictionaryBase<K, V>, IOverrideableDictionary<K, V>, IScopedCollection
 	{
+		public MemoryScope Scope => _overridesScope;
+		public override bool IsSynchronized { get; }
+		public override object SyncRoot { get; } = new object();
+
 		private readonly IDictionary<K, IOverridesBucket> _overrides;
 		private readonly IDictionary<K, V> _wrappedDictionary;
-		private readonly OverridesScope _overridesScope;
+		private readonly MemoryScope _overridesScope;
 
-		public OverridesDictionary(ConcurrentDictionary<K, V> wrappedDictionary, OverridesScope overridesScope = OverridesScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
-		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
-		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
-		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, OverridesScope overridesScope = OverridesScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
+
+		public OverridesDictionary(ConcurrentDictionary<K, V> wrappedDictionary, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
+		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
+		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
+		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
 		{
 			Ensure.ArgumentNotNull(wrappedDictionary, nameof(wrappedDictionary));
 
 			_wrappedDictionary = wrappedDictionary;
 			_overridesScope = overridesScope;
 			_overrides = shouldBeThreadSafe ? new ConcurrentDictionary<K, IOverridesBucket>(_equalityComparer) : new Dictionary<K, IOverridesBucket>(_equalityComparer);
+			IsSynchronized = shouldBeThreadSafe;
 		}
 
 		public override void Add(K key, V value) => _wrappedDictionary.Add(key, value);
@@ -74,9 +92,9 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			return _overridesScope switch
 			{
-				OverridesScope.Global => new GlobalBucket(),
-				OverridesScope.AsyncLocal => new AsyncLocalBucket(),
-				OverridesScope.ThreadLocal => new ThreadLocalBucket(),
+				MemoryScope.Global => new GlobalBucket(),
+				MemoryScope.AsyncLocal => new AsyncLocalBucket(),
+				MemoryScope.ThreadLocal => new ThreadLocalBucket(),
 				_ => throw new NotImplementedException("Handling for other scopes has not been implemented yet"),
 			};
 		}
