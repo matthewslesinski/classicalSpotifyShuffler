@@ -20,9 +20,9 @@ namespace CustomResources.Utils.GeneralUtils
 			var extensionType = typeof(ExtensionT);
 			var attributes = FindExtensionProviderAttributes(enumType);
 			if (attributes.Any())
-				attributes.Single().Instance.As<IGenericEnumExtensionProvider<ExtensionT>>().GetPairs().Each(pair => _specificationMapping.Add(pair.enumValue, pair.enumExtension));
+				attributes.Single().Instance.AsUnsafe<IGenericEnumExtensionProvider<ExtensionT>>().GetPairs().Each(pair => _specificationMapping.Add(pair.enumValue, pair.enumExtension));
 			else if (extensionType == typeof(EmptyEnumExtension))
-				enumValues.Each(val => _specificationMapping.Add(val, new EmptyEnumExtension().As<ExtensionT>()));
+				enumValues.Each(val => _specificationMapping.Add(val, new EmptyEnumExtension().AsUnsafe<ExtensionT>()));
 			else
 				throw new NotSupportedException($"There is no IEnumExtensionProvider designated to extend enums of type {enumType.Name} with extensions of type {extensionType.Name}");
 			var unImplementedEnums = enumValues.Except(_specificationMapping.Keys);

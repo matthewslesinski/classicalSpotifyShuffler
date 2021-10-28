@@ -14,7 +14,7 @@ namespace CustomResources.Utils.Extensions
 		public static (A first, B second, C third, D fourth, E fifth) Append<A, B, C, D, E>(this (A first, B second, C third, D fourth) firstFour, E fifth) => (firstFour.first, firstFour.second, firstFour.third, firstFour.fourth, fifth);
 
 		public static R As<R>(this R obj) where R : class => obj;
-		public static R As<R>(this object obj) => obj is R casted ? casted : throw new InvalidCastException($"Cannot cast object from {obj.GetType().Name} to {typeof(R).Name}");
+		public static R AsUnsafe<R>(this object obj) => obj is R casted ? casted : throw new InvalidCastException($"Cannot cast object from {obj.GetType().Name} to {typeof(R).Name}");
 
 		public static A GetFirst<A, B>(this (A item1, B item2) tuple) => tuple.item1;
 		public static B GetSecond<A, B>(this (A item1, B item2) tuple) => tuple.item2;
