@@ -5,6 +5,12 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.2.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="6.2.0" />
