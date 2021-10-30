@@ -7,24 +7,38 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public interface IInternalCollection<T> : ICollection<T>, IReadOnlyCollection<T>, ICollection
+	public interface IGenericInternalReadOnlyCollection<T> : IReadOnlyCollection<T>
 	{
-		void ICollection.CopyTo(Array array, int index)
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+		protected void CopyToImpl(Array array, int index, IEnumerable<T> elements)
 		{
 			Ensure.ArgumentNotNull(array, nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index));
 			var space = array.Length - index;
-			if (this.As<ICollection<T>>().Count > space)
+			if (this.As<IReadOnlyCollection<T>>().Count > space)
 				throw new ArgumentException("Not enough space in destination array to fit the elements");
-			foreach (var element in this)
+			foreach (var element in elements)
 				array.SetValue(element, index++);
 		}
-
-		void ICollection<T>.CopyTo(T[] array, int arrayIndex) => CopyTo(array.As<Array>(), arrayIndex);
-
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
+
+	public interface IGenericInternalCollection<T> : ICollection<T>, IGenericInternalReadOnlyCollection<T>
+	{
+		void ICollection<T>.CopyTo(T[] array, int index) => CopyToImpl(array, index, this);
+	}
+
+	public interface IInternalReadOnlyCollection<T> : IGenericInternalReadOnlyCollection<T>, ICollection
+	{
+		void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, this);
+	}
+
+	public interface IInternalCollection<T> : IInternalReadOnlyCollection<T>, IGenericInternalCollection<T> { }
+
+	public interface IReadOnlyDictionaryCollection<K, V> : IReadOnlyDictionary<K, V>, IInternalReadOnlyCollection<KeyValuePair<K, V>>, IElementContainer<K> { }
+
+	public interface IDictionaryCollection<K, V> : IReadOnlyDictionaryCollection<K, V>, IInternalCollection<KeyValuePair<K, V>>, IDictionary<K, V> { }
 
 	public interface IElementContainer<T>
 	{
@@ -201,28 +215,34 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	#endregion
 
-	public interface IInternalDictionary<K, V> : IDictionary<K, V>, IReadOnlyDictionary<K, V>, IInternalCollection<KeyValuePair<K, V>>, IElementContainer<K>
+	public interface IInternalReadOnlyDictionary<K, V> : IReadOnlyDictionary<K, V>, IReadOnlyDictionaryCollection<K, V>, IElementContainer<K>
 	{
-		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
-		ICollection<K> IDictionary<K, V>.Keys => Keys;
-		public new KeyCollectionView<K, V, IInternalDictionary<K, V>> Keys => new KeyCollectionView<K, V, IInternalDictionary<K, V>>(this, EqualityComparer);
+		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => this.Select(kvp => kvp.Key);
+		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => this.Select(kvp => kvp.Value);
 
-		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
-		ICollection<V> IDictionary<K, V>.Values => Values;
+		bool IReadOnlyDictionary<K, V>.ContainsKey(K key) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(key, out _);
+	}
+
+	public interface IInternalDictionary<K, V> : IDictionaryCollection<K, V>, IInternalReadOnlyDictionary<K, V>, IInternalReadOnlyCollection<KeyValuePair<K, V>>,
+		IGenericInternalCollection<KeyValuePair<K, V>>, IElementContainer<K>
+	{
+		public new KeyCollectionView<K, V, IInternalDictionary<K, V>> Keys => new KeyCollectionView<K, V, IInternalDictionary<K, V>>(this, EqualityComparer);
 		public new ValueCollectionView<K, V, IInternalDictionary<K, V>> Values => new ValueCollectionView<K, V, IInternalDictionary<K, V>>(this);
+		ICollection<K> IDictionary<K, V>.Keys => Keys;
+		ICollection<V> IDictionary<K, V>.Values => Values;
+		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
+		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
 
 		void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
+		bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
+			&& Equals(item.Value, existingValue) && Remove(item.Key);
 
-		bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
-		bool IReadOnlyDictionary<K, V>.ContainsKey(K key) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(key, out _);
+		bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
 		bool IDictionary<K, V>.ContainsKey(K key) => this.As<IDictionary<K, V>>().TryGetValue(key, out _);
 		public bool ContainsValue(V value, IEqualityComparer<V> equalityComparer = null)
 		{
 			var values = Values;
 			return equalityComparer == null ? values.Contains(value) : values.ContainsValue(value, equalityComparer);
 		}
-
-		bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
-			&& Equals(item.Value, existingValue) && Remove(item.Key);
 	}
 }

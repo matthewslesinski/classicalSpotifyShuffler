@@ -11,10 +11,12 @@ namespace CustomResources.Utils.Extensions
         public static UpgradeableReadLockToken UpgradeableToken(this ReaderWriterLockSlim rwLock) => new UpgradeableReadLockToken(rwLock);
         public static WriteLockToken WriteToken(this ReaderWriterLockSlim rwLock) => new WriteLockToken(rwLock);
 
-        public abstract class LockToken : IDisposable
+        public static MonitorLockToken FullLockToken(this object lockObj) => new MonitorLockToken(lockObj);
+
+        public abstract class LockToken<LockT> : IDisposable where LockT : class
 		{
-            protected ReaderWriterLockSlim _underlyingLock;
-            public LockToken(ReaderWriterLockSlim underlyingLock)
+            protected LockT _underlyingLock;
+            public LockToken(LockT underlyingLock)
             {
                 Ensure.ArgumentNotNull(underlyingLock, nameof(underlyingLock));
 
@@ -32,8 +34,8 @@ namespace CustomResources.Utils.Extensions
                 }
             }
 
-            protected abstract void EnterLock(ReaderWriterLockSlim rwLock);
-            protected abstract void ExitLock(ReaderWriterLockSlim rwLock);
+            protected abstract void EnterLock(LockT @lock);
+            protected abstract void ExitLock(LockT @lock);
 
             ~LockToken()
             {
@@ -42,7 +44,7 @@ namespace CustomResources.Utils.Extensions
             }
         }
 
-        public sealed class ReadLockToken : LockToken
+        public sealed class ReadLockToken : LockToken<ReaderWriterLockSlim>
 		{
             internal ReadLockToken(ReaderWriterLockSlim underlyingLock) : base(underlyingLock) { }
 
@@ -50,7 +52,7 @@ namespace CustomResources.Utils.Extensions
             protected override void ExitLock(ReaderWriterLockSlim rwLock) => rwLock.ExitReadLock();
         }
 
-        public sealed class UpgradeableReadLockToken : LockToken
+        public sealed class UpgradeableReadLockToken : LockToken<ReaderWriterLockSlim>
         {
             internal UpgradeableReadLockToken(ReaderWriterLockSlim underlyingLock) : base(underlyingLock) { }
 
@@ -66,12 +68,20 @@ namespace CustomResources.Utils.Extensions
 			}
         }
 
-        public sealed class WriteLockToken : LockToken
+        public sealed class WriteLockToken : LockToken<ReaderWriterLockSlim>
         {
             internal WriteLockToken(ReaderWriterLockSlim underlyingLock) : base(underlyingLock) { }
 
             protected override void EnterLock(ReaderWriterLockSlim rwLock) => rwLock.EnterWriteLock();
             protected override void ExitLock(ReaderWriterLockSlim rwLock) => rwLock.ExitWriteLock();
+        }
+
+        public sealed class MonitorLockToken : LockToken<object>
+		{
+            internal MonitorLockToken(object underlyingLock) : base(underlyingLock) { }
+
+            protected override void EnterLock(object @lock) => Monitor.Enter(@lock);
+            protected override void ExitLock(object @lock) => Monitor.Exit(@lock);
         }
     }
 }

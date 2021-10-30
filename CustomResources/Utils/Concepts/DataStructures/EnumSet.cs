@@ -282,7 +282,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{ }
 
 		public EnumSet(EnumSet wrappedCollection, Bijection<T, uint> mappingFunction)
-			: base(wrappedCollection, wrappedCollection.EqualityComparer, mappingFunction)
+			: base(wrappedCollection, mappingFunction, wrappedCollection.EqualityComparer)
 		{ }
 	}
 

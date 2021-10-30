@@ -16,14 +16,15 @@ namespace CustomResources.Utils.Concepts
 			Ensure.ArgumentNotNull(function, nameof(function));
 			Ensure.ArgumentNotNull(inverse, nameof(inverse));
 
-			this.Function = function;
-			this.Inverse = inverse;
+			Function = function;
+			Inverse = inverse;
 		}
 
 		public T Invoke(S arg) => Function(arg);
 		public S InvokeInverse(T arg) => Inverse(arg);
 
 		public Bijection<S, R> AndThen<R>(Bijection<T, R> next) => new Bijection<S, R>(Function.AndThen(next.Function), next.Inverse.AndThen(Inverse));
+		public Bijection<T, S> Invert() => new Bijection<T, S>(Inverse, Function);
 	}
 
 	public static class Bijections

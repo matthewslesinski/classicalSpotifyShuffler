@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Concepts.DataStructures;
 
 namespace CustomResources.Utils.Extensions
 {
@@ -94,5 +95,35 @@ namespace CustomResources.Utils.Extensions
 			values = Array.Empty<V>();
 			return false;
 		}
+
+		#region Collection Wrapper Creators
+
+		public static ReadOnlyCollectionWrapper<T, WrappedT> SelectAsReadOnlyCollection<T, WrappedT>(this IReadOnlyCollection<WrappedT> collection, Func<WrappedT, T> selector) =>
+			new ReadOnlyCollectionWrapper<T, WrappedT>(collection, selector);
+
+		public static CollectionWrapper<T, WrappedT, CollectionT> SelectAsCollection<T, WrappedT, CollectionT>(this CollectionT collection, Bijection<WrappedT, T> selector)
+			where CollectionT : ICollection<WrappedT>, IReadOnlyCollection<WrappedT>, ICollection =>
+				new CollectionWrapper<T, WrappedT, CollectionT>(collection, selector.Invert());
+
+		public static SetWrapper<T, WrappedT, SetT> SelectAsSet<T, WrappedT, SetT>(this SetT set, Bijection<WrappedT, T> selector, IEqualityComparer<WrappedT> equalityComparer = null)
+			where SetT : ISet<WrappedT>, IReadOnlySet<WrappedT>, ICollection =>
+				new SetWrapper<T, WrappedT, SetT>(set, selector.Invert(), equalityComparer);
+
+		public static ReadOnlyDictionaryWrapper<K1, V1, K2, V2, DictT> SelectAsDictionary<K1, V1, K2, V2, DictT>(this DictT dictionary, Bijection<K2, K1> keySelector,
+			Func<V2, V1> valueSelector, IEqualityComparer<K2> keyEqualityComparer = null) where DictT : IReadOnlyDictionary<K2, V2>, ICollection =>
+				new ReadOnlyDictionaryWrapper<K1, V1, K2, V2, DictT>(dictionary, keySelector.Invert(), valueSelector, keyEqualityComparer);
+
+		public static DictionaryWrapper<K1, V1, K2, V2, DictT> SelectAsDictionary<K1, V1, K2, V2, DictT>(this DictT dictionary, Bijection<K2, K1> keySelector,
+			Bijection<V2, V1> valueSelector, IEqualityComparer<K2> keyEqualityComparer = null) where DictT : IDictionary<K2, V2>, IReadOnlyDictionary<K2, V2>, ICollection =>
+				new DictionaryWrapper<K1, V1, K2, V2, DictT>(dictionary, keySelector.Invert(), valueSelector.Invert(), keyEqualityComparer);
+
+		public static ReadOnlyCollectionFilter<T, IReadOnlyCollection<T>> WhereAsCollection<T>(this IReadOnlyCollection<T> collection, Func<T, bool> filter) =>
+			new ReadOnlyCollectionFilter<T, IReadOnlyCollection<T>>(collection, filter);
+
+		public static ReadOnlyDictionaryFilter<K, V, DictT> WhereAsDictionary<K, V, DictT>(this DictT dictionary, Func<K, bool> keyFilter = null,
+			Func<V, bool> valueFilter = null, IEqualityComparer<K> keyEqualityComparer = null) where DictT : IReadOnlyDictionary<K, V>, ICollection =>
+				new ReadOnlyDictionaryFilter<K, V, DictT>(dictionary, keyFilter, valueFilter, keyEqualityComparer);
+
+		#endregion
 	}
 }

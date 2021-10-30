@@ -10,24 +10,6 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public enum MemoryScope
-	{
-		Global,
-		AsyncLocal,
-		ThreadLocal
-	}
-
-	public interface IScopedCollection : ICollection
-	{
-		MemoryScope Scope { get; }
-	}
-
-	public interface IScopedCollectionWrapper<T, CollectionT> : IReadOnlyCollectionWrapper<T, CollectionT>, IScopedCollection
-		where CollectionT : IReadOnlyCollection<T>, IScopedCollection
-	{
-		MemoryScope IScopedCollection.Scope => WrappedCollection.Scope;
-	}
-
 	public interface IOverrideableDictionary<K, V>
 	{
 		IDisposable AddOverrides(params (K key, V value)[] keyValuePairs);
@@ -47,11 +29,15 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		private readonly IDictionary<K, V> _wrappedDictionary;
 		private readonly MemoryScope _overridesScope;
 
-
-		public OverridesDictionary(InternalConcurrentDictionary<K, V> wrappedDictionary, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : this(wrappedDictionary, true, overridesScope, equalityComparer) { }
-		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
-		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal) : this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
-		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer ?? EqualityComparer<K>.Default)
+		public OverridesDictionary(IScopedDictionary<K, V> wrappedDictionary) : this(wrappedDictionary, wrappedDictionary.Scope, wrappedDictionary.EqualityComparer) { }
+		public OverridesDictionary(IConcurrentDictionary<K, V> wrappedDictionary, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null)
+			: this(wrappedDictionary, true, overridesScope, equalityComparer) { }
+		public OverridesDictionary(Dictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal)
+			: this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.Comparer) { }
+		public OverridesDictionary(IInternalDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal)
+			: this(wrappedDictionary, shouldBeThreadSafe, overridesScope, wrappedDictionary.EqualityComparer) { }
+		public OverridesDictionary(IDictionary<K, V> wrappedDictionary, bool shouldBeThreadSafe, MemoryScope overridesScope = MemoryScope.AsyncLocal, IEqualityComparer<K> equalityComparer = null)
+			: base(equalityComparer ?? EqualityComparer<K>.Default)
 		{
 			Ensure.ArgumentNotNull(wrappedDictionary, nameof(wrappedDictionary));
 
@@ -61,11 +47,45 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			IsSynchronized = shouldBeThreadSafe;
 		}
 
+		public override int Count => _wrappedDictionary.Count;
+
 		public override void Add(K key, V value) => _wrappedDictionary.Add(key, value);
+
+		public override V AddOrUpdate(K key, Func<K, V> addValueFactory, Func<K, V, V> updateValueFactory)
+		{
+			V newValue;
+			if (_wrappedDictionary.TryGetValue(key, out var existingValue))
+				Update(key, newValue = updateValueFactory(key, existingValue));
+			else
+				Add(key, newValue = addValueFactory(key));
+			return newValue;
+		}
 
 		public override void Clear() => _wrappedDictionary.Clear();
 
-		public override IEnumerator<KeyValuePair<K, V>> GetEnumerator() => _wrappedDictionary.Keys.Concat(_overrides.Keys).Distinct(_equalityComparer).Select(key => new KeyValuePair<K, V>(key, this.Get(key))).GetEnumerator();
+		public override IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+		{
+			IEnumerable<KeyValuePair<K, V>> wrappedElements = _wrappedDictionary is IConcurrentDictionary<K, V> concurrentWrappedDict
+				? concurrentWrappedDict.GetSnapshot()
+				: _wrappedDictionary;
+			IEnumerable<KeyValuePair<K, IOverridesBucket>> overrideBuckets = _overrides is IConcurrentDictionary<K, IOverridesBucket> concurrentOverrideDict
+				? concurrentOverrideDict.GetSnapshot()
+				: _overrides;
+			var seenKeys = new HashSet<K>(EqualityComparer);
+			foreach(var keyBucketPair in overrideBuckets)
+			{
+				if (keyBucketPair.Value.TryPeek(out var overrideValue))
+				{
+					seenKeys.Add(keyBucketPair.Key);
+					yield return new KeyValuePair<K, V>(keyBucketPair.Key, overrideValue);
+				}
+			}
+			foreach(var wrappedElement in wrappedElements)
+			{
+				if (!seenKeys.Contains(wrappedElement.Key))
+					yield return wrappedElement;
+			}
+		}
 
 		public override bool Remove(K key) => _wrappedDictionary.Remove(key);
 
@@ -111,7 +131,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		private class GlobalBucket : IOverridesBucket
 		{
-			private ConcurrentStack<V> _stack = new();
+			private readonly ConcurrentStack<V> _stack = new();
 
 			public V Pop() => _stack.TryPop(out var value) ? value : Exceptions.Throw<V>(new InvalidOperationException("Cannot pop an empty bucket's stack"));
 			public void Push(V value) => _stack.Push(value);

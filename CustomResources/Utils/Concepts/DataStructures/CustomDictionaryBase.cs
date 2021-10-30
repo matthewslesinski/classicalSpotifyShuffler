@@ -8,28 +8,27 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	public abstract class CustomDictionaryBase<K, V> : IInternalDictionary<K, V>
 	{
 		protected readonly IEqualityComparer<K> _equalityComparer;
-		protected int _size = 0;
 
-		public CustomDictionaryBase(IEqualityComparer<K> equalityComparer)
+		public CustomDictionaryBase(IEqualityComparer<K> equalityComparer = null)
 		{
 			_equalityComparer = equalityComparer ?? EqualityComparer<K>.Default;
 		}
 
 		public IEqualityComparer<K> EqualityComparer => _equalityComparer;
 
-		public int Count => _size;
-
 		public bool IsReadOnly => false;
 
 		public abstract bool IsSynchronized { get; }
 		public abstract object SyncRoot { get; }
-
+		public abstract int Count { get; }
 		public abstract void Add(K key, V value);
 		public abstract void Clear();
 		public abstract bool Remove(K key);
 		public abstract bool TryGetValue(K key, [MaybeNullWhen(false)] out V value);
 		public abstract void Update(K key, V value);
 		public abstract IEnumerator<KeyValuePair<K, V>> GetEnumerator();
+		public abstract V AddOrUpdate(K key, Func<K, V> addValueFactory, Func<K, V, V> updateValueFactory);
+
 
 		public V this[K key]
 		{
@@ -43,10 +42,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			{
 				if (value == null)
 					Remove(key);
-				else if (TryGetValue(key, out _))
-					Update(key, value);
-				else
-					Add(key, value);
+				AddOrUpdate(key, _ => value, (_, _) => value);
 			}
 		}
 

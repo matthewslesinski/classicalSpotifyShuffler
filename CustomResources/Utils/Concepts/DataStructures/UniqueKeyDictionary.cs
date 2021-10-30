@@ -9,6 +9,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		private Node[] _nodes;
 		private int _minHash;
+		private int _size;
 
 		public UniqueKeyDictionary(IEqualityComparer<K> equalityComparer = null) : base(equalityComparer)
 		{
@@ -19,6 +20,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public override bool IsSynchronized => false;
 
 		public override object SyncRoot => _nodes;
+
+		public override int Count => _size;
 
 		public override void Add(K key, V value)
 		{
@@ -52,6 +55,16 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				ThrowKeyAlreadyAddedException(key);
 			_nodes[candidateIndex] = nodeToAdd;
 			_size += 1;
+		}
+
+		public override V AddOrUpdate(K key, Func<K, V> addValueFactory, Func<K, V, V> updateValueFactory)
+		{
+			V newValue;
+			if (TryGetValue(key, out var existingValue))
+				Update(key, newValue = updateValueFactory(key, existingValue));
+			else
+				Add(key, newValue = addValueFactory(key));
+			return newValue;
 		}
 
 		public override void Clear()
