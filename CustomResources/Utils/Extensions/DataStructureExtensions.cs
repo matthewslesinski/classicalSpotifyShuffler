@@ -124,6 +124,13 @@ namespace CustomResources.Utils.Extensions
 			Func<V, bool> valueFilter = null, IEqualityComparer<K> keyEqualityComparer = null) where DictT : IReadOnlyDictionary<K, V>, ICollection =>
 				new ReadOnlyDictionaryFilter<K, V, DictT>(dictionary, keyFilter, valueFilter, keyEqualityComparer);
 
+
+
+		public static CollectionAsReadOnly<T> AsReadOnly<T>(this ICollection<T> collection) => new CollectionAsReadOnly<T>(collection);
+
+		public static ReadOnlyAsFullCollection<T> AsFullCollection<T>(this IReadOnlyCollection<T> collection, ReadOnlyAsFullCollection<T>.ContainsImplementation containsImplementation) =>
+			new ReadOnlyAsFullCollection<T>(collection, containsImplementation);
+
 		#endregion
 	}
 }

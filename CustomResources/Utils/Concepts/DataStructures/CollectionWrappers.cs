@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using CustomResources.Utils.Extensions;
@@ -230,11 +229,11 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		}
 
 		public new KeyCollectionView<K, WrappedK, WrappedV, DictionaryT> Keys => new KeyCollectionView<K, WrappedK, WrappedV, DictionaryT>(_wrappedCollection,
-			dict => new CollectionAsReadOnly<WrappedK>(dict.As<IDictionary<WrappedK, WrappedV>>().Keys),
+			dict => dict.As<IDictionary<WrappedK, WrappedV>>().Keys.AsReadOnly(),
 			_keyMapper,
 			WrappedEqualityComparer);
 		public new ValueCollectionView<V, WrappedK, WrappedV, DictionaryT> Values => new ValueCollectionView<V, WrappedK, WrappedV, DictionaryT>(_wrappedCollection,
-			dict => new CollectionAsReadOnly<WrappedV>(dict.As<IDictionary<WrappedK, WrappedV>>().Values),
+			dict => dict.As<IDictionary<WrappedK, WrappedV>>().Values.AsReadOnly(),
 			_valueTranslationFunc);
 		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
 		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;

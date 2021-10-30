@@ -98,14 +98,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		IReadOnlyDictionary<K, V> IConcurrentDictionary<K, V>.GetSnapshot() => GetSnapshot();
 		public ReadOnlyDictionaryWrapper<K, V, K, IScopedBucket<V>, IReadOnlyDictionaryCollection<K, IScopedBucket<V>>> GetSnapshot() =>
-			new ReadOnlyDictionaryWrapper<K, V, K, IScopedBucket<V>, IReadOnlyDictionaryCollection<K, IScopedBucket<V>>>(
-				new ReadOnlyDictionaryFilter<K, IScopedBucket<V>, ReadOnlyDictionary<K, IScopedBucket<V>>>(
-					_wrappedDictionary.GetSnapshot(),
-					valueFilter: bucket => bucket.HasValue,
-					keyEqualityComparer: EqualityComparer),
-				Bijections<K>.Identity,
-				bucket => bucket.Value,
-				EqualityComparer);
+			_wrappedDictionary.GetSnapshot()
+				.WhereAsDictionary<K, IScopedBucket<V>, ReadOnlyDictionary<K, IScopedBucket<V>>>(valueFilter: bucket => bucket.HasValue, keyEqualityComparer: EqualityComparer)
+				.SelectAsDictionary<K, V, K, IScopedBucket<V>, IReadOnlyDictionaryCollection<K, IScopedBucket<V>>>(
+					Bijections<K>.Identity,
+					bucket => bucket.Value,
+					EqualityComparer);
 
 		public override bool Remove(K key) => TryRemove(key, out _);
 
