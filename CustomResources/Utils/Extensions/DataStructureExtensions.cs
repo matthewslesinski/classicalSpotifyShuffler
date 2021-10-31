@@ -132,5 +132,29 @@ namespace CustomResources.Utils.Extensions
 			new ReadOnlyAsFullCollection<T>(collection, containsImplementation);
 
 		#endregion
+
+		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, params (K key, V value)[] overrides) =>
+			dict.AddOverrides(overrides.As<IEnumerable<(K key, V value)>>());
+		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, IEnumerable<(K key, V value)> overrides) =>
+			new MultipleDisposables(overrides.Select(@override => dict.AddOverride(@override.key, @override.value)).ToList().Reversed());
+		public static IDisposable AddOverride<K, V>(this IDictionary<K, V> dict, K key, V value)
+		{
+			var valueAlreadyExists = dict.TryGetValue(key, out var existingValue);
+			dict[key] = value;
+
+			void RemoveOverride()
+			{
+				if (!dict.TryGetValue(key, out var laterExistingValue) || !Equals(laterExistingValue, value))
+					throw new Exception($"The override for key {key} has already been removed or replaced in the dictionary. " +
+						$"Expected {value} to be the current value, but found {laterExistingValue} while trying to " +
+						(valueAlreadyExists ? $"put {existingValue} back in." : "remove it"));
+				if (valueAlreadyExists)
+					dict[key] = existingValue;
+				else
+					dict.Remove(key);
+			}
+
+			return new DisposableAction(RemoveOverride);
+		}
 	}
 }
