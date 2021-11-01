@@ -133,13 +133,18 @@ namespace CustomResources.Utils.Extensions
 
 		#endregion
 
-		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, params (K key, V value)[] overrides) =>
-			dict.AddOverrides(overrides.As<IEnumerable<(K key, V value)>>());
-		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, IEnumerable<(K key, V value)> overrides) =>
-			new MultipleDisposables(overrides.Select(@override => dict.AddOverride(@override.key, @override.value)).ToList().Reversed());
-		public static IDisposable AddOverride<K, V>(this IDictionary<K, V> dict, K key, V value)
+		#region Dictionary Overrides
+
+		public delegate void OnOverrideAction<in K, in V>(K key, bool wasKeyAlreadyPresent, V existingValue, V overrideValue);
+
+		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, OnOverrideAction<K, V> OnAddAction = null, OnOverrideAction<K, V> OnRemoveAction = null, params(K key, V value)[] overrides) =>
+			dict.AddOverrides(overrides, OnAddAction, OnRemoveAction);
+		public static IDisposable AddOverrides<K, V>(this IDictionary<K, V> dict, IEnumerable<(K key, V value)> overrides, OnOverrideAction<K, V> OnAddAction = null, OnOverrideAction<K, V> OnUndoAction = null) =>
+			new MultipleDisposables(overrides.Select(@override => dict.AddOverride(@override.key, @override.value, OnAddAction, OnUndoAction)).ToList().Reversed());
+		public static IDisposable AddOverride<K, V>(this IDictionary<K, V> dict, K key, V value, OnOverrideAction<K, V> OnAddAction = null, OnOverrideAction<K, V> OnUndoAction = null)
 		{
 			var valueAlreadyExists = dict.TryGetValue(key, out var existingValue);
+			OnAddAction?.Invoke(key, valueAlreadyExists, existingValue, value);
 			dict[key] = value;
 
 			void RemoveOverride()
@@ -148,6 +153,7 @@ namespace CustomResources.Utils.Extensions
 					throw new Exception($"The override for key {key} has already been removed or replaced in the dictionary. " +
 						$"Expected {value} to be the current value, but found {laterExistingValue} while trying to " +
 						(valueAlreadyExists ? $"put {existingValue} back in." : "remove it"));
+				OnUndoAction?.Invoke(key, valueAlreadyExists, existingValue, value);
 				if (valueAlreadyExists)
 					dict[key] = existingValue;
 				else
@@ -156,5 +162,7 @@ namespace CustomResources.Utils.Extensions
 
 			return new DisposableAction(RemoveOverride);
 		}
+
+		#endregion
 	}
 }
