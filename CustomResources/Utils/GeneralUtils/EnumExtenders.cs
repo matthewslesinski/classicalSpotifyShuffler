@@ -20,7 +20,7 @@ namespace CustomResources.Utils.GeneralUtils
 			var extensionType = typeof(ExtensionT);
 			var attributes = FindExtensionProviderAttributes(enumType);
 			if (attributes.Any())
-				attributes.Single().Instance.AsUnsafe<IGenericEnumExtensionProvider<ExtensionT>>().GetPairs().Each(pair => _specificationMapping.Add(pair.enumValue, pair.enumExtension));
+				attributes.Single().Instance.AsUnsafe<IGenericEnumExtensionProvider<ExtensionT>>().GetPairs().Each(pair => _specificationMapping.Add(pair.EnumValue, pair.Extension));
 			else if (extensionType == typeof(EmptyEnumExtension))
 				enumValues.Each(val => _specificationMapping.Add(val, new EmptyEnumExtension().AsUnsafe<ExtensionT>()));
 			else
@@ -41,16 +41,35 @@ namespace CustomResources.Utils.GeneralUtils
 		}
 	}
 
-	public interface IGenericEnumExtensionProvider<ExtensionT>
+	public interface IGenericEnumExtensionProvider<out ExtensionT>
 	{
-		internal IEnumerable<(Enum enumValue, ExtensionT enumExtension)> GetPairs();
+		internal IEnumerable<IEnumExtensionPair<ExtensionT>> GetPairs();
 	}
 
 	public interface IEnumExtensionProvider<EnumT, ExtensionT> : IGenericEnumExtensionProvider<ExtensionT> where EnumT : struct, Enum
 	{
-		IEnumerable<(Enum enumValue, ExtensionT enumExtension)> IGenericEnumExtensionProvider<ExtensionT>.GetPairs() => Specifications.Select(pair => ((Enum) pair.Key, pair.Value));
+		IEnumerable<IEnumExtensionPair<ExtensionT>> IGenericEnumExtensionProvider<ExtensionT>.GetPairs() =>
+			Specifications.Select<KeyValuePair<EnumT, ExtensionT>, IEnumExtensionPair<ExtensionT>>(pair => new EnumExtensionPair<ExtensionT>(pair.Key, pair.Value));
 
 		IReadOnlyDictionary<EnumT, ExtensionT> Specifications { get; }
+	}
+
+	internal interface IEnumExtensionPair<out ExtensionT>
+	{
+		Enum EnumValue { get; }
+		ExtensionT Extension { get; }
+	}
+
+	internal struct EnumExtensionPair<ExtensionT> : IEnumExtensionPair<ExtensionT>
+	{
+		internal EnumExtensionPair(Enum enumValue, ExtensionT extension)
+		{
+			EnumValue = enumValue;
+			Extension = extension;
+		}
+
+		public Enum EnumValue { get; }
+		public ExtensionT Extension { get; }
 	}
 
 	public struct EmptyEnumExtension { }
