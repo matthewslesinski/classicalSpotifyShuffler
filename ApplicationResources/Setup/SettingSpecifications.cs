@@ -8,9 +8,9 @@ using ApplicationExtensions = ApplicationResources.Utils.GeneralExtensions;
 namespace ApplicationResources.Setup
 {
 	public delegate object GeneralValueGetter(IEnumerable<string> values);
-	public delegate T ValueGetter<T>(IEnumerable<string> values);
+	public delegate T ValueGetter<out T>(IEnumerable<string> values);
 	public delegate string GeneralStringFormatter(object obj);
-	public delegate string StringFormatter<T>(T obj);
+	public delegate string StringFormatter<in T>(T obj);
 
 	public interface ISettingSpecification
 	{
@@ -19,6 +19,17 @@ namespace ApplicationResources.Setup
 		object Default { get; set; }
 		GeneralValueGetter ValueGetter { get; set; }
 		GeneralStringFormatter StringFormatter { get; set; }
+		bool IsValueAllowed(object value);
+	}
+
+	public interface IParameterSpecification : ISettingSpecification
+	{
+		Type Type { get; }
+	}
+
+	public interface IParameterSpecification<in T> : IParameterSpecification
+	{
+		bool IsValueAllowed(T value);
 	}
 
 	public abstract class SettingSpecification : ISettingSpecification
@@ -29,11 +40,11 @@ namespace ApplicationResources.Setup
 
 		public GeneralStringFormatter StringFormatter { get; set; } = obj => obj?.ToString();
 
-		public Type ValueTypeConstraint { get; set; }
-
 		public bool HasDefault { get; set; } = false;
 		public object Default { get => _default; set { HasDefault = true; _default = value; } }
 		private object _default = null;
+
+		public abstract bool IsValueAllowed(object value);
 	}
 
 	public class SettingSpecification<T> : SettingSpecification
@@ -60,7 +71,7 @@ namespace ApplicationResources.Setup
 				base.ValueGetter = values =>
 				{
 					var parsedValue = value(values);
-					if (Validator != null && !Validator(parsedValue))
+					if (!IsValueAllowed(parsedValue))
 						throw new ArgumentException($"The supplied value did not pass validation {values}");
 					return parsedValue;
 				};
@@ -68,9 +79,30 @@ namespace ApplicationResources.Setup
 		}
 		public Type Type { get; } = typeof(T);
 		public Func<T, bool> Validator { get; set; }
+
+		public override bool IsValueAllowed(object value)
+		{
+			var allowedType = Type;
+			if (value is null)
+			{
+				// Note that default should always end up being null, but the compiler doesn't know that
+				return !allowedType.IsValueType && IsValueAllowed(default);
+			}
+			var valueType = value.GetType();
+			if (!valueType.IsAssignableTo(allowedType))
+				return false;
+			var castedValue = value.AsUnsafe<T>();
+			return IsValueAllowed(castedValue);
+		}
+
+		public bool IsValueAllowed(T value) => Validator == null || Validator(value);
 	}
 
-	public class StringSettingSpecification : SettingSpecification<string>
+	public class ParameterSpecification<T> : SettingSpecification<T>, IParameterSpecification<T>
+	{
+	}
+
+	public class StringSettingSpecification : ParameterSpecification<string>
 	{
 		public StringSettingSpecification()
 		{
@@ -78,7 +110,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class MultipleStringsSettingSpecification : SettingSpecification<IEnumerable<string>>
+	public class MultipleStringsSettingSpecification : ParameterSpecification<IEnumerable<string>>
 	{
 		public MultipleStringsSettingSpecification()
 		{
@@ -87,7 +119,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class ConvertibleSettingSpecification<T> : SettingSpecification<T> where T : struct, IConvertible
+	public class ConvertibleSettingSpecification<T> : ParameterSpecification<T> where T : struct, IConvertible
 	{
 		internal static readonly ValueGetter<T> DefaultValueGetter = values => (T)Convert.ChangeType(values.Single(), typeof(T));
 		public ConvertibleSettingSpecification()
@@ -96,7 +128,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class NullableConvertibleSettingSpecification<T> : SettingSpecification<T?> where T : struct, IConvertible
+	public class NullableConvertibleSettingSpecification<T> : ParameterSpecification<T?> where T : struct, IConvertible
 	{
 		public NullableConvertibleSettingSpecification()
 		{
@@ -104,7 +136,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class BoolSettingSpecification : SettingSpecification<bool>
+	public class BoolSettingSpecification : ParameterSpecification<bool>
 	{
 		public BoolSettingSpecification()
 		{
@@ -113,7 +145,7 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class EnumSettingSpecification<T> : SettingSpecification<T> where T : struct, Enum
+	public class EnumSettingSpecification<T> : ParameterSpecification<T> where T : struct, Enum
 	{
 		public EnumSettingSpecification()
 		{
