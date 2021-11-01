@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using System.Linq;
+using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
@@ -40,15 +41,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			foreach (var divider in _dividers)
 			{
 				var dividerAppearances = matches.Skip(2).Where(match => Equals(match.token, divider)).ToList();
-				if (dividerAppearances.Count() == 1)
+				if (dividerAppearances.Count == 1)
 					return trackName.Substring(0, dividerAppearances.Last().index + 1);
-				if (dividerAppearances.Count() > 1)
+				if (dividerAppearances.Count > 1)
 				{
 					for (int i = 2; i < matches.Length - 1; i++)
 					{
 						if (matches[i].token.Contains(divider)
 							&& (int.TryParse(matches[i + 1].token, out var movementNumber)
-								|| (Utils.Utils.IsRomanNumeral(matches[i + 1].token, out var romanNumeral) && (movementNumber = romanNumeral.NumericValue) > 0)))
+								|| (Util.IsRomanNumeral(matches[i + 1].token, out var romanNumeral) && (movementNumber = romanNumeral.NumericValue) > 0)))
 							return trackName.Substring(0, matches[i].index + 1);
 					}
 				}

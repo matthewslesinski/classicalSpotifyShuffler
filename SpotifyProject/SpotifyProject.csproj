@@ -5,11 +5,15 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="SpotifyAPI.Web.Auth" Version="6.2.0" />
     <PackageReference Include="SpotifyAPI.Web" Version="6.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
     <PackageReference Include="System.Linq.Async" Version="5.0.0" />
     <PackageReference Include="System.Reactive" Version="5.0.0" />
     <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
@@ -18,40 +22,29 @@
     <PackageReference Include="System.Reactive.PlatformServices" Version="5.0.0" />
     <PackageReference Include="Reactive.Streams" Version="1.0.2" />
     <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-    <PackageReference Include="NLog" Version="4.7.10" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Authentication\" />
-    <Folder Include="Logging\" />
-    <Folder Include="Utils\" />
+    <Folder Include="..\CustomResources\Utils\" />
     <Folder Include="SpotifyPlaybackModifier\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackContexts\" />
     <Folder Include="SpotifyPlaybackModifier\Transformations\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackModifiers\" />
-    <Folder Include="Setup\" />
     <Folder Include="SpotifyPlaybackModifier\TrackLinking\" />
     <Folder Include="SpotifyAdditions\" />
     <Folder Include="SpotifyPlaybackModifier\PlaybackSetters\" />
+    <Folder Include="SpotifyUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.Extensions.Logging" />
     <None Remove="NLog" />
     <None Remove="NLog.Extensions.Logging" />
+    <None Remove="SpotifyUtils\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="NLog.config">
-      <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\SettingsTemplates\standardSettings.xml">
-      <Link>standardSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\SettingsTemplates\lukesShuffleSettings.xml">
@@ -62,5 +55,13 @@
       <Link>allLikedTracksSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\SettingsTemplates\standardSpotifySettings.xml">
+      <Link>standardSpotifySettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />
+    <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
   </ItemGroup>
 </Project>

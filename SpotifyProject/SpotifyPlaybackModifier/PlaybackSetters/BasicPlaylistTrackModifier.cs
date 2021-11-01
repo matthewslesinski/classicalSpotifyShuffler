@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.Utils;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

@@ -1,5 +1,4 @@
-﻿
-using static SpotifyProject.Utils.SpotifyConstants;
+﻿using static SpotifyProject.Utils.SpotifyConstants;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {

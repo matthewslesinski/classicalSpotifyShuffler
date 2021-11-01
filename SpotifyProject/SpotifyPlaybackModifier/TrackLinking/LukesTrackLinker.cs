@@ -1,25 +1,26 @@
-﻿using SpotifyProject.Utils;
-using System;
+﻿using System;
+using CustomResources.Utils.Extensions;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 using System.Linq;
 using System.Runtime.InteropServices;
-using SpotifyProject.Setup;
+using ApplicationResources.Setup;
 using System.IO;
 using Newtonsoft.Json;
+using ApplicationResources.Logging;
+using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
 	public class LukesTrackLinker<ContextT, TrackT> : ISimpleTrackLinker<ContextT, TrackT, int>
 		where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-
 		IEnumerable<IGrouping<int, ITrackLinkingInfo<TrackT>>> IMetadataBasedTrackLinker<ContextT, TrackT, int>.GroupTracksIntoWorks(IEnumerable<ITrackLinkingInfo<TrackT>> trackMetadata)
 		{
 			var trackMetadataArr = trackMetadata as ITrackLinkingInfo<TrackT>[] ?? trackMetadata.ToArray();
 			var infoInputArr = trackMetadataArr.Select(metadata => new TrackLinkingInfoInput(metadata)).ToArray();
-			var recordTrackInfoLocation = Settings.Get<string>(SettingsName.MetadataRecordFile);
+			var recordTrackInfoLocation = Settings.Get<string>(SpotifySettings.MetadataRecordFile);
 			if (recordTrackInfoLocation != default)
 				RecordTrackInfo(recordTrackInfoLocation, infoInputArr);
 			var labels = new int[trackMetadataArr.Length];

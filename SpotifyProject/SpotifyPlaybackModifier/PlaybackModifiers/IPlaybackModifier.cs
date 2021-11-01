@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
-using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
-using SpotifyProject.SpotifyPlaybackModifier.Transformations;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 {

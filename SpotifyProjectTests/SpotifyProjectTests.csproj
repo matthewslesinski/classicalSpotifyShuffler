@@ -13,20 +13,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="GeneralTests\" />
     <None Remove="SpotifyApiTests\" />
+    <None Remove="BenchmarkDotNet" />
+    <None Remove="System.Reflection.Emit" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="GeneralTests\" />
     <Folder Include="SpotifyApiTests\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\SettingsTemplates\standardUnitTestSettings.xml">
-      <Link>standardUnitTestSettings.xml</Link>
+    <None Include="..\SettingsTemplates\standardSpotifyUnitTestSettings.xml">
+      <Link>standardSpotifyUnitTestSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
+    <ProjectReference Include="..\ApplicationResourcesTests\ApplicationResourcesTests.csproj" />
   </ItemGroup>
 </Project>

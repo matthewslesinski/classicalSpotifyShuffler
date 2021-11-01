@@ -1,7 +1,7 @@
 ﻿using System;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
-using APIConnectorConstructor = SpotifyProject.Authentication.APIConnectors.APIConnectorConstructor;
+using static SpotifyProject.Authentication.APIConnectors;
 
 namespace SpotifyProject.SpotifyAdditions
 {

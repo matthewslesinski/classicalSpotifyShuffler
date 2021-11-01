@@ -4,12 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using SpotifyAPI.Web;
-using SpotifyProject.Setup;
 using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
+using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Extensions;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -94,6 +95,11 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[TestCase("BrahmsSymphonies", 1, "order by album index")]
 		public async Task TestReorderingPlaylist(string albumToUse, int testCaseIndex, string testCaseDescriptor)
 		{
+			IComparer<ITrackLinkingInfo>[] TestCasesForTestReorderingPlaylist = new [] {
+				ITrackLinkingInfo.TrackOrderWithinAlbums.Reversed(),
+				ITrackLinkingInfo.TrackOrderWithinAlbums,
+			};
+
 			var albumEnum = Enum.Parse<SampleAlbums>(albumToUse, true);
 			var testCaseOrdering = TestCasesForTestReorderingPlaylist[testCaseIndex];
 			var playlist = await SpotifyAccessor.AddOrGetPlaylistByName(GetPlaylistNameForTest(nameof(TestReorderingPlaylist)));
@@ -113,20 +119,5 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			CollectionAssert.AreEqual(trackInfos.Select(track => track.Uri), newTracks.Select(track => track.Uri), "The playlist resulted in the wrong order. " +
 				$"The expected order was: \n{TurnTracksIntoString(trackInfos)}\n but the retrieved order was \n {TurnTracksIntoString(newTracks.Select(existingPlaylistContext.GetMetadataForTrack))}");
 		}
-
-		private static readonly IComparer<ITrackLinkingInfo>[] TestCasesForTestReorderingPlaylist = new[] {
-			ITrackLinkingInfo.TrackOrderWithinAlbums.Reversed(),
-			ITrackLinkingInfo.TrackOrderWithinAlbums,
-		};
-
-
-		private static string TurnTracksIntoString(IEnumerable<ITrackLinkingInfo> tracks) => TurnUrisIntoString(tracks.Select(track => (track.Uri, track.AlbumName, track.AlbumIndex.discNumber, track.AlbumIndex.trackNumber, track.Name)));
-
-		private static string TurnUrisIntoString(IEnumerable<string> uris, Func<string, string> trackNameGetter, Func<string, (int discNumber, int trackNumber)> albumIndexGetter, Func<string, string> albumNameGetter) =>
-			TurnUrisIntoString(uris.Zip(uris.Select(albumNameGetter), uris.Select(uri => albumIndexGetter(uri).discNumber), uris.Select(uri => albumIndexGetter(uri).trackNumber), uris.Select(trackNameGetter)));
-
-		private static string TurnUrisIntoString(IEnumerable<(string uri, string albumName, int discNumber, int trackNumber, string trackName)> trackInfos) =>
-			$"{string.Join("\n", trackInfos.Select(info => $"\t{info.ToDescriptiveString()}"))}";
-
 	}
 }
