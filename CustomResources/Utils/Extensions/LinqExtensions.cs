@@ -44,8 +44,8 @@ namespace CustomResources.Utils.Extensions
 			foreach (var element in sequence) if (set.Add(element)) yield return element;
 		}
 
-		public static void Each<T>(this IEnumerable<T> sequence, Action<T> action) { foreach (var item in sequence) action(item); }
-		public static void EachIndependently<T>(this IEnumerable<T> sequence, Action<T> action)
+		public static IEnumerable<T> Each<T>(this IEnumerable<T> sequence, Action<T> action) { foreach (var item in sequence) action(item); return sequence; }
+		public static IEnumerable<T> EachIndependently<T>(this IEnumerable<T> sequence, Action<T> action)
 		{
 			List<Exception> exceptions = null;
 			foreach (var item in sequence)
@@ -66,6 +66,7 @@ namespace CustomResources.Utils.Extensions
 				var exception = exceptions.Count > 1 ? new AggregateException(exceptions) : exceptions.Single();
 				throw exception;
 			}
+			return sequence;
 		}
 
 		public static IEnumerable<(T item, int index)> Enumerate<T>(this IEnumerable<T> sequence) => sequence.Select((t, i) => (t, i));
