@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
@@ -32,7 +33,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		}
 
 		public new KeyCollectionView<K, V, InternalConcurrentDictionary<K, V>> Keys =>
-			new KeyCollectionView<K, V, InternalConcurrentDictionary<K, V>>(this, dict => new CollectionAsReadOnly<K>(dict.Keys), EqualityComparer);
+			new KeyCollectionView<K, V, InternalConcurrentDictionary<K, V>>(this, dict => new CollectionAsReadOnly<K>(dict.As<ConcurrentDictionary<K, V>>().Keys), EqualityComparer);
 		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
 		ICollection<K> IDictionary<K, V>.Keys => Keys;
 
