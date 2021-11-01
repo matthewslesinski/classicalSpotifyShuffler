@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using CustomResources.Utils.Extensions;
 using System.Threading.Tasks;
 using System.Threading;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace ApplicationResources.ApplicationUtils
 {
@@ -34,6 +35,7 @@ namespace ApplicationResources.ApplicationUtils
 			Settings.RegisterProvider(new CommandLineSettingsProvider(app));
 			Settings.RegisterSettings<BasicSettings>();
 			startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
+			startupArgs.ParameterTypes.Each(TaskParameters.RegisterParameters);
 			Action runner = Settings.Load + program + Terminate;
 			if (!string.IsNullOrWhiteSpace(startupArgs.XmlSettingsFileFlag))
 			{
@@ -65,6 +67,7 @@ namespace ApplicationResources.ApplicationUtils
 			public string[] CommandLineArgs { get; }
 			public string XmlSettingsFileFlag { get; set; } = null;
 			public IEnumerable<Type> SettingsTypes { get; set; } = Array.Empty<Type>();
+			public IEnumerable<Type> ParameterTypes { get; set; } = Array.Empty<Type>();
 			public IEnumerable<string> AdditionalXmlSettingsFiles { get; set; } = Array.Empty<string>();
 
 			public StartupArgs(string[] commandLineArgs)

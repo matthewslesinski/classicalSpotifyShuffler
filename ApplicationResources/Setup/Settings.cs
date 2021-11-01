@@ -34,7 +34,7 @@ namespace ApplicationResources.Setup
 		public static IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _settingsStore.AddOverrides(keyValuePairs);
 		public static IDisposable AddOverride(Enum key, object value) => _settingsStore.AddOverride(key, value);
 
-		public static IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
+		public static IEnumerable<(Enum setting, bool isValueSet, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
 	}
 
 	public class EnumNamesDictionary : BijectiveDictionary<Enum, string>, ICollection<Enum>, IEnumerable<string>, IReadOnlyDictionary<Enum, string>, IReadOnlyDictionary<string, Enum>

@@ -14,6 +14,7 @@ using ApplicationResourcesTests;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyUtils;
 using System.IO;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -31,6 +32,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
+				TaskParameters.RegisterParameters<SpotifyParameters>();
 				LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile);
 				Settings.Load();
 				LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile));

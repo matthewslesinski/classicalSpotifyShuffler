@@ -95,7 +95,7 @@ namespace ApplicationResources.Setup
 	public class SettingsStore : SettingsProviderBase, IOverrideableDictionary<Enum, object>
 	{
 		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
-		public event Action OnLoad;
+		public event Action<IEnumerable<Enum>> OnLoad;
 
 		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.Keys;
 
@@ -110,7 +110,7 @@ namespace ApplicationResources.Setup
 		public override void Load()
 		{
 			bool wasPerformed = false;
-			Util.LoadOnce(ref _isLoaded, _loadLock, (() =>
+			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
 			{
 				_settingsProviders.EachIndependently(provider =>
 				{
@@ -119,9 +119,9 @@ namespace ApplicationResources.Setup
 				});
 				ResolveAndSetSettings(AllSettings);
 				wasPerformed = true;
-			}));
+			});
 			if (wasPerformed)
-				OnLoad?.Invoke();
+				OnLoad?.Invoke(AllSettings);
 		}
 
 		public override bool TryGetValue(Enum setting, out object value)
@@ -155,18 +155,40 @@ namespace ApplicationResources.Setup
 					if (!provider.IsLoaded)
 						provider.Load();
 					ResolveAndSetSettings(provider.LoadedSettings);
+					OnLoad?.Invoke(provider.LoadedSettings);
 				}
 			}
 		}
 
-		public IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs);
-		public IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs);
-		public IDisposable AddOverride(Enum key, object value) => _parsedSettings.AddOverride(key, value);
+		#region Overrides
 
-		internal IEnumerable<(Enum setting, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
-			(enumsToGet ?? AllSettings).Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
-																			? setting.GetExtension<ISettingSpecification>().StringFormatter(parsedSettingValue)
-																			: null));
+		public IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => AddOverrides(keyValuePairs.As<IEnumerable<(Enum key, object value)>>());
+		public IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs, OnAddOverride, OnRemoveOverride);
+		public IDisposable AddOverride(Enum key, object value) => _parsedSettings.AddOverride(key, value, OnAddOverride, OnRemoveOverride);
+
+		private void OnAddOverride(Enum key, bool settingAlreadySet, object existingValue, object overrideValue)
+		{
+			EnsureSettingValueIsAllowed(key, overrideValue);
+			var settingStringFormatter = key.GetExtension<ISettingSpecification>().StringFormatter;
+			Logger.Verbose("{className}: Overriding {settingType}.{settingName} to value {overrideValue} from value {existingValue}",
+				GetType().Name, key.GetType().Name, key, settingStringFormatter(overrideValue), settingAlreadySet ? settingStringFormatter(existingValue) : "<Not Set>");
+		}
+
+		private void OnRemoveOverride(Enum key, bool wasSettingAlreadySet, object existingValue, object overrideValue)
+		{
+			var settingStringFormatter = key.GetExtension<ISettingSpecification>().StringFormatter;
+			Logger.Verbose("{className}: Removing override for {settingType}.{settingName}. Removing the override {overrideValue} and setting it back to {existingValue}",
+				GetType().Name, key.GetType().Name, key, settingStringFormatter(overrideValue), wasSettingAlreadySet ? settingStringFormatter(existingValue) : "<Not Set>");
+		}
+
+		#endregion
+
+		internal IEnumerable<(Enum setting, bool isValueSet, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
+			(enumsToGet ?? AllSettings).Select(setting =>
+			{
+				var isValueSet = _parsedSettings.TryGetValue(setting, out var parsedSettingValue);
+				return (setting, isValueSet, isValueSet ? setting.GetExtension<ISettingSpecification>().StringFormatter(parsedSettingValue) : null);
+			});
 
 		protected override void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
 		{
@@ -174,10 +196,25 @@ namespace ApplicationResources.Setup
 			SettingsAdded?.Invoke(newSettings, enumType);
 		}
 
+		protected void OnSettingsReloaded(IEnumerable<Enum> settingsToReload)
+		{
+			ResolveAndSetSettings(settingsToReload);
+			OnLoad?.Invoke(settingsToReload);
+		}
+
+		protected void EnsureSettingValueIsAllowed(Enum setting, object value)
+		{
+			if (!AllSettings.ContainsKey(setting))
+				throw new ArgumentException($"Cannot set a {setting.GetType().Name} that has not been registered, {setting}");
+			var specification = setting.GetExtension<ISettingSpecification>();
+			if (!specification.IsValueAllowed(value))
+				throw new ArgumentException($"The {setting.GetType().Name} {setting} does not allow the given value {value}");
+		}
+
 		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
 		{
 			var settings = settingsToResolve ?? AllSettings;
-			settings.EachIndependently(settingName =>
+			settings.Where(AllSettings.Contains).EachIndependently(settingName =>
 			{
 				var specification = settingName.GetExtension<ISettingSpecification>();
 				var didFindValue = _settingsProviders
@@ -190,8 +227,14 @@ namespace ApplicationResources.Setup
 				else if (specification.HasDefault)
 					_parsedSettings[settingName] = specification.Default;
 			});
-			GetAllSettingsAsStrings(settings).Each(kvp => Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
-				GetType().Name, kvp.setting.GetType().Name, kvp.setting, kvp.stringValue ?? "<null>"));
+			GetAllSettingsAsStrings(settings).Each(settingState =>
+			{
+				if (settingState.isValueSet)
+					Logger.Verbose("{className}: {settingType}.{settingName} was set to value {settingValue}",
+									GetType().Name, settingState.setting.GetType().Name, settingState.setting, settingState.stringValue ?? "<null>");
+				else
+					Logger.Verbose("{className}: {settingType}.{settingName} was not set to any value", GetType().Name, settingState.setting.GetType().Name, settingState.setting);
+			});
 		}
 	}
 }

@@ -13,7 +13,7 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 		public ParameterStore(SettingsStore defaultValueProvider) : base(MemoryScope.AsyncLocal)
 		{
 			RegisterProvider(defaultValueProvider);
-			defaultValueProvider.OnLoad += Load;
+			defaultValueProvider.OnLoad += OnProviderLoaded;
 			if (defaultValueProvider.IsLoaded)
 				Load();
 		}
@@ -23,6 +23,14 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 			if (EnumExtenders<IParameterSpecification>.FindExtensionProviderAttributes(enumType).Count() != 1)
 				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify a provider for {nameof(IParameterSpecification)}s");
 			base.OnNewSettingsAdded(newSettings, enumType);
+		}
+
+		private void OnProviderLoaded(IEnumerable<Enum> loadedSettings)
+		{
+			if (!IsLoaded)
+				Load();
+			else
+				OnSettingsReloaded(loadedSettings);
 		}
 
 		public ParameterBuilder GetBuilder() => new ParameterBuilder(this);
@@ -45,11 +53,7 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 			public ParameterBuilder With(Enum parameter, object value)
 			{
-				if (!_paramStore.AllSettings.ContainsKey(parameter))
-					throw new ArgumentException($"Cannot set a parameter that has not been registered, {parameter}");
-				var specification = parameter.GetExtension<IParameterSpecification>();
-				if (!specification.IsValueAllowed(value))
-					throw new ArgumentException($"The parameter {parameter} does not allow the given value {value}");
+				_paramStore.EnsureSettingValueIsAllowed(parameter, value);
 				paramsToSet.Add((parameter, value));
 				return this;
 			}

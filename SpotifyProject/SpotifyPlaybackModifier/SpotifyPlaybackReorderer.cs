@@ -7,12 +7,12 @@ using CustomResources.Utils.GeneralUtils;
 using SpotifyProject.Utils;
 using System;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using ApplicationResources.Setup;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
 using SpotifyProject.Configuration;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace SpotifyProject.SpotifyPlaybackModifier
 {
@@ -51,7 +51,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                         UserInterface.Instance.NotifyUser("Please provide a new Uri");
                     else
                     {
-                        if (Settings.Get<bool>(SpotifySettings.DefaultToAlbumShuffle))
+                        if (TaskParameters.Get<bool>(SpotifyParameters.DefaultToAlbumShuffle))
                             await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
                         return;
                     }
@@ -67,7 +67,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             bool result = contextUri != null && await ModifyContext(contextUri).WithoutContextCapture();
             if (result)
                 return result;
-            if (Settings.Get<bool>(SpotifySettings.DefaultToAlbumShuffle))
+            if (TaskParameters.Get<bool>(SpotifyParameters.DefaultToAlbumShuffle))
                 return await ShuffleCurrentAlbumOfCurrentTrack().WithoutContextCapture();
             Logger.Error("Playback could not be modified because the current context is unrecognized");
             return false;
@@ -137,10 +137,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                     return false;
                 }
 
-                var transformationName = Settings.Get<string>(SpotifySettings.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
+                var transformationName = TaskParameters.Get<string>(SpotifyParameters.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
                 var transformation = transformations.GetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName);
                 var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
-                var playbackSetterName = Settings.Get<string>(SpotifySettings.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
+                var playbackSetterName = TaskParameters.Get<string>(SpotifyParameters.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
                 var playbackSetter = playbackSetters.GetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
 
                 var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);

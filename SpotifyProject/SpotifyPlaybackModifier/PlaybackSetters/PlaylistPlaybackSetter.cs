@@ -4,11 +4,11 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using System.Linq;
 using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using ApplicationResources.Setup;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
 using SpotifyProject.Configuration;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -26,7 +26,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			_playlistTrackModifier = trackModifier;
 		}
 
-		public string PlaylistName => Settings.Get<string>(SpotifySettings.SaveAsPlaylistName);
+		public string PlaylistName => TaskParameters.Get<string>(SpotifyParameters.SaveAsPlaylistName);
 
 		public async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, PlaybackStateArgs args)
 		{

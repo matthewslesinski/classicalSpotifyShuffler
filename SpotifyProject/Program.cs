@@ -20,6 +20,7 @@ namespace SpotifyProject
             {
                 XmlSettingsFileFlag = ApplicationConstants.XmlSettingsFileFlag,
                 SettingsTypes = new [] { typeof(SpotifySettings) },
+                ParameterTypes = new [] { typeof(SpotifyParameters) },
                 AdditionalXmlSettingsFiles = new [] { GeneralConstants.StandardSpotifySettingsFile }
             });
 		}
