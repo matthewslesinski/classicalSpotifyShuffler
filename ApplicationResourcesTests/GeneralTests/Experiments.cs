@@ -19,10 +19,10 @@ namespace ApplicationResourcesTests.GeneralTests
 			IDictionary<int, int> asIDictionary = asConcurrent;
 			IReadOnlyDictionary<int, int> asReadOnly = asConcurrent;
 
-			Assert.AreEqual(typeof(HashSet<int>), dict.Keys.GetType());
+			Assert.AreEqual(typeof(KeyCollectionView<int, int, InternalConcurrentDictionary<int, int>>), dict.Keys.GetType());
 			Assert.AreEqual(typeof(ReadOnlyCollection<int>), asConcurrent.Keys.GetType());
-			Assert.AreEqual(typeof(HashSet<int>), asIDictionary.Keys.GetType());
-			Assert.AreEqual(typeof(HashSet<int>), asReadOnly.Keys.GetType());
+			Assert.AreEqual(typeof(KeyCollectionView<int, int, InternalConcurrentDictionary<int, int>>), asIDictionary.Keys.GetType());
+			Assert.AreEqual(typeof(KeyCollectionView<int, int, InternalConcurrentDictionary<int, int>>), asReadOnly.Keys.GetType());
 		}
 
 		[Test]
@@ -47,7 +47,6 @@ namespace ApplicationResourcesTests.GeneralTests
 			await task2;
 			Assert.AreEqual(2, checks);
 			Assert.AreEqual(0, asyncLocal.Value);
-
 		}
 
 		[Test]
