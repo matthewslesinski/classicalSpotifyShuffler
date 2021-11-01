@@ -23,9 +23,8 @@ namespace ApplicationResources.Setup
 
 	public abstract class SettingsProviderBase : ISettingsProvider
 	{
-		public IEnumerable<Type> SettingsTypes => AllSettings.Select(setting => setting.GetType()).Distinct();
-		public ICollection<Enum> AllSettings => AllSettingsNames.InputSpace;
-		public EnumNamesDictionary AllSettingsNames { get; } = new();
+		public IEnumerable<Type> SettingsTypes => AllSettings.Select<Enum, Type>(setting => setting.GetType()).Distinct();
+		public EnumNamesDictionary AllSettings { get; } = new();
 		public abstract IEnumerable<Enum> LoadedSettings { get; }
 		public bool IsLoaded => _isLoaded;
 
@@ -53,19 +52,22 @@ namespace ApplicationResources.Setup
 		public void OnSettingsAdded(IEnumerable<Enum> newSettings) => newSettings.GroupBy(setting => setting.GetType()).EachIndependently(group => OnSettingsAdded(group, group.Key));
 		public void OnSettingsAdded(IEnumerable<Enum> settings, Type enumType)
 		{
-			if (IsLoaded)
-				throw new NotSupportedException("Cannot add new settings types after they have already been loaded");
+			lock (_loadLock)
+			{
+				if (IsLoaded)
+					throw new NotSupportedException("Cannot add new settings types after they have already been loaded");
 
-			var newSettings = settings.Where(AllSettings.NotContains).ToList();
-			if (newSettings.Any())
-				OnNewSettingsAdded(newSettings, enumType);
+				var newSettings = settings.Where(AllSettings.NotContains).ToList();
+				if (newSettings.Any())
+					OnNewSettingsAdded(newSettings, enumType);
+			}
 		}
 
 		protected virtual void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
 		{
 			if (EnumExtenders<ISettingSpecification>.FindExtensionProviderAttributes(enumType).Count() != 1)
 				throw new ArgumentException($"The provided type, {enumType.Name}, does not specify a provider for {nameof(ISettingSpecification)}s");
-			newSettings.EachIndependently(setting => AllSettingsNames.Expand(setting, setting.ToString()));
+			newSettings.EachIndependently(setting => AllSettings.Expand(setting, setting.ToString()));
 		}
 
 		protected readonly object _loadLock = new object();
@@ -93,20 +95,22 @@ namespace ApplicationResources.Setup
 	public class SettingsStore : SettingsProviderBase, IOverrideableDictionary<Enum, object>
 	{
 		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
+		public event Action OnLoad;
 
-		public SettingsStore()
+		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.Keys;
+
+		public SettingsStore(MemoryScope? scope = null)
 		{
-			SettingsAdded += OnSettingsAdded;
+			_parsedSettings = scope.HasValue ? new ScopedConcurrentDictionary<Enum, object>(scope.Value) : new Dictionary<Enum, object>();
 		}
 
-		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.As<IDictionary<Enum, object>>().Keys;
-
-		private readonly OverridesDictionary<Enum, object> _parsedSettings = new(new Dictionary<Enum, object>(), true);
+		protected readonly IDictionary<Enum, object> _parsedSettings = new Dictionary<Enum, object>();
 		private readonly List<ISettingsProvider> _settingsProviders = new();
 
 		public override void Load()
 		{
-			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
+			bool wasPerformed = false;
+			Util.LoadOnce(ref _isLoaded, _loadLock, (() =>
 			{
 				_settingsProviders.EachIndependently(provider =>
 				{
@@ -114,7 +118,10 @@ namespace ApplicationResources.Setup
 						provider.Load();
 				});
 				ResolveAndSetSettings(AllSettings);
-			});
+				wasPerformed = true;
+			}));
+			if (wasPerformed)
+				OnLoad?.Invoke();
 		}
 
 		public override bool TryGetValue(Enum setting, out object value)
@@ -126,15 +133,7 @@ namespace ApplicationResources.Setup
 
 		public void RegisterSettings(params Type[] enumTypes) => RegisterSettings(enumTypes.As<IEnumerable<Type>>());
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
-		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType)
-		{
-			lock (_loadLock)
-			{
-				if (IsLoaded)
-					throw new NotSupportedException("Cannot add more settings after the settings provider has already been loaded");
-				SettingsAdded?.Invoke(settings, enumType);
-			}
-		}
+		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => OnSettingsAdded(settings, enumType);
 
 		public void RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
 		public void RegisterProvider(ISettingsProvider provider, int position = -1)
@@ -168,6 +167,12 @@ namespace ApplicationResources.Setup
 			(enumsToGet ?? AllSettings).Select(setting => (setting, _parsedSettings.TryGetValue(setting, out var parsedSettingValue)
 																			? setting.GetExtension<ISettingSpecification>().StringFormatter(parsedSettingValue)
 																			: null));
+
+		protected override void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
+		{
+			base.OnNewSettingsAdded(newSettings, enumType);
+			SettingsAdded?.Invoke(newSettings, enumType);
+		}
 
 		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
 		{

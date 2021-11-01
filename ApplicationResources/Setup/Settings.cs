@@ -9,8 +9,8 @@ namespace ApplicationResources.Setup
 {
 	public static class Settings
 	{
-		public static ICollection<Enum> AllSettings => _settingsStore.AllSettings;
-		public static EnumNamesDictionary AllSettingsName => _settingsStore.AllSettingsNames;
+		public static EnumNamesDictionary AllSettings => _settingsStore.AllSettings;
+		internal static SettingsStore UnderlyingSettingsStore => _settingsStore;
 		private readonly static SettingsStore _settingsStore = new();
 
 		public static T Get<T>(Enum setting) => TryGet<T>(setting, out var value) ? value : default;
@@ -57,13 +57,13 @@ namespace ApplicationResources.Setup
 		public void Add(Enum item) => Expand(item, item.ToString());
 		public bool Contains(Enum item) => InputSpace.Contains(item);
 		public void CopyTo(Enum[] array, int arrayIndex) => InputSpace.CopyTo(array, arrayIndex);
-		IEnumerator<Enum> IEnumerable<Enum>.GetEnumerator() => InputSpace.GetEnumerator();
+		public IEnumerator<Enum> GetEnumerator() => InputSpace.GetEnumerator();
 		IEnumerator<string> IEnumerable<string>.GetEnumerator() => OutputSpace.GetEnumerator();
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		public bool ContainsKey(Enum key) => _mapping.ContainsKey(key);
 		public bool TryGetValue(Enum key, out string value) => _mapping.TryGetValue(key, out value);
-		public IEnumerator<KeyValuePair<Enum, string>> GetEnumerator() => _mapping.GetEnumerator();
+		IEnumerator<KeyValuePair<Enum, string>> IEnumerable<KeyValuePair<Enum, string>>.GetEnumerator() => _mapping.GetEnumerator();
 
 		public bool ContainsKey(string key) => _inverseMapping.ContainsKey(key);
 		public bool TryGetValue(string key, out Enum value) => _inverseMapping.TryGetValue(key, out value);

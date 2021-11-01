@@ -28,7 +28,7 @@ namespace ApplicationResources.Setup
 				_loadedValues = doc.Descendants(_settingNodeName)
 					.Select(node => (node.Attribute(_settingNodeIdentifier).Value, node.Value))
 					.GroupBy(GeneralExtensions.GetFirst, GeneralExtensions.GetSecond)
-					.ToDictionary<IGrouping<string, string>, Enum, IEnumerable<string>>(group => AllSettingsNames[group.Key], group => group.ToList());
+					.ToDictionary<IGrouping<string, string>, Enum, IEnumerable<string>>(group => AllSettings[group.Key], group => group.ToList());
 				var missingSettings = _requiredSettings.Where(_loadedValues.NotContainsKey);
 				if (missingSettings.Any())
 					throw new KeyNotFoundException($"In order to use {_fileName} for settings, it must specify a value for the following settings: {string.Join(", ", missingSettings)}");
