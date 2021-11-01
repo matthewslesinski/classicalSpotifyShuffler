@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Microsoft.Extensions.Logging;
 using SpotifyProject.Setup;
 using MicrosoftLogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -9,6 +11,7 @@ namespace SpotifyProject
      */
     public static class Logger
     {
+
         public static void Information(string msg, params object[] args) => Loggers.GeneralLogger.Log(LogLevel.Info, msg, args);
         public static void Warning(string msg, params object[] args) => Loggers.GeneralLogger.Log(LogLevel.Warning, msg, args);
         public static void Verbose(string msg, params object[] args) => Loggers.GeneralLogger.Log(LogLevel.Verbose, msg, args);
@@ -19,6 +22,7 @@ namespace SpotifyProject
         public static void Warning(this LoggerWrapper logger, string msg, params object[] args) => logger.Log(LogLevel.Warning, msg, args);
         public static void Verbose(this LoggerWrapper logger, string msg, params object[] args) => logger.Log(LogLevel.Verbose, msg, args);
         public static void Error(this LoggerWrapper logger, string msg, params object[] args) => logger.Log(LogLevel.Error, msg, args);
+
 
         private static void Log(this LoggerWrapper logger, LogLevel level, string msg, object[] args)
         {

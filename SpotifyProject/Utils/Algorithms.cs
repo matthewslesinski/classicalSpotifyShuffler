@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using SpotifyProject.Utils.Extensions;
-using SpotifyProject.Utils.Concepts;
 
-namespace SpotifyProject.Utils.Algorithms
+namespace SpotifyProject.Utils
 {
 	public static class LCS
 	{

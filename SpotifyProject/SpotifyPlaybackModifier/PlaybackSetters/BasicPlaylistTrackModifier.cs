@@ -5,7 +5,6 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.Utils;
-using SpotifyProject.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {

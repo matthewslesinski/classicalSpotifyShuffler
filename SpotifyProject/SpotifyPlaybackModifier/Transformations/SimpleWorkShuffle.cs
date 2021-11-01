@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyProject.Utils.Concepts;
-using SpotifyProject.Utils.Extensions;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {

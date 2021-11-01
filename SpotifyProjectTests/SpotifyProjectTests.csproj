@@ -10,15 +10,11 @@
     <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.16.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.0" />
-    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="GeneralTests\" />
     <None Remove="SpotifyApiTests\" />
-    <None Remove="BenchmarkDotNet" />
-    <None Remove="System.Reflection.Emit" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="GeneralTests\" />

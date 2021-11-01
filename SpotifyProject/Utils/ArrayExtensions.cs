@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SpotifyProject.Utils.Extensions
+namespace SpotifyProject.Utils
 {
     public static class ArrayExtensions
     {
