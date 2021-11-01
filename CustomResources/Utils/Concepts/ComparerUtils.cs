@@ -125,8 +125,9 @@ namespace CustomResources.Utils.Concepts
 		private static ToleranceCompareFunc<T> GetToleranceFuncForType() {
 			if (ToleranceComparers.TryCreateToleranceFuncForType(out ToleranceCompareFunc<T> toleranceFunc))
 				return toleranceFunc;
-			else if (typeof(T).IsAssignableTo(typeof(IConvertible)) && ToleranceComparers.FuncsForTypes.TryGetCastedValue(typeof(decimal), out ToleranceCompareFunc<decimal> decimalToleranceFunc))
-				return (i, j, delta) => decimalToleranceFunc(Convert.ToDecimal(i), Convert.ToDecimal(j), Convert.ToDecimal(delta));
+			else if (typeof(T).IsAssignableTo(typeof(IConvertible))
+				&& ToleranceComparers.FuncsForTypes.TryGetCastedValue(typeof(decimal), out ToleranceCompareFunc<decimal> decimalToleranceFunc))
+					return (i, j, delta) => decimalToleranceFunc(Convert.ToDecimal(i), Convert.ToDecimal(j), Convert.ToDecimal(delta));
 			throw new ArgumentException($"Cannot create a tolerance comparer for type {typeof(T).Name}");
 		}
 	}
