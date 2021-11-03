@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ApplicationResources.Setup;
 using CustomResources.Utils.GeneralUtils;
+using SpotifyProject.Utils;
 using static ApplicationResources.Setup.CommandLineSettingsProvider;
 
 namespace SpotifyProject.Configuration
@@ -24,7 +25,9 @@ namespace SpotifyProject.Configuration
 		APIConnectorName,
 		PlaybackSetterName,
 		SaveAsPlaylistName,
-
+		PlaylistRequestBatchSize,
+		SerializeOperations,
+		NumberOfRetriesForServerError
 	}
 
 
@@ -43,6 +46,9 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.RedirectUri,                       new StringSettingSpecification() },
 			{ SpotifyParameters.DefaultToAlbumShuffle,             new BoolSettingSpecification() },
 			{ SpotifyParameters.MaintainCurrentlyPlaying,          new BoolSettingSpecification() },
+			{ SpotifyParameters.SerializeOperations,			   new BoolSettingSpecification() },
+			{ SpotifyParameters.NumberOfRetriesForServerError,     new ConvertibleSettingSpecification<int> { Default = 10, Validator = v => v > 0 } },
+			{ SpotifyParameters.PlaylistRequestBatchSize,          new ConvertibleSettingSpecification<int> { Default = SpotifyConstants.PlaylistRequestBatchSize, Validator = v => v > 0 } },
 			{ SpotifyParameters.ArtistAlbumIncludeGroups,          new MultipleStringsSettingSpecification { ValueGetter = values => values.Single().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() } },
 		};
 	}
@@ -57,12 +63,15 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.DefaultToAlbumShuffle,           new NoValueOption     { Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback" } },
 			{ SpotifyParameters.ArtistAlbumIncludeGroups,        new SingleValueOption { Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums" } },
 			{ SpotifyParameters.MaintainCurrentlyPlaying,        new NoValueOption     { Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing" } },
+			{ SpotifyParameters.SerializeOperations,	         new NoValueOption     { Flag = "--serializeOperations", Desc = "Makes operations sent to spotify happen in a sequential manner as opposed to in parallel" } },
 			{ SpotifyParameters.TransformationName,              new SingleValueOption { Flag = "--transformation", Desc = "The name of the transformation to be used." } },
 			{ SpotifyParameters.PaginatorName,                   new SingleValueOption { Flag = "--paginator", Desc = "The name of the paginator to be used." } },
 			{ SpotifyParameters.RetryHandlerName,                new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
 			{ SpotifyParameters.APIConnectorName,                new SingleValueOption { Flag = "--apiConnector", Desc = "The name of the APIConnector to be used." } },
 			{ SpotifyParameters.PlaybackSetterName,              new SingleValueOption { Flag = "--playbackSetter", Desc = "The name of the playback setter to be used." } },
 			{ SpotifyParameters.SaveAsPlaylistName,              new SingleValueOption { Flag = "--playlistName", Desc = "The name of the playlist to save the playback in." } },
+			{ SpotifyParameters.PlaylistRequestBatchSize,        new SingleValueOption { Flag = "--playlistRequestBatchSize", Desc = "The max number of tracks to include in each playlist modification request" } },
+			{ SpotifyParameters.NumberOfRetriesForServerError,   new SingleValueOption { Flag = "--numberOfRetriesForServerError", Desc = "The number of times to retry a request when the server returns an error" } },
 		};
 	}
 }

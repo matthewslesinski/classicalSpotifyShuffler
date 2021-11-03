@@ -9,6 +9,7 @@ using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
+using SpotifyAPI.Web;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -34,8 +35,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			if (string.IsNullOrWhiteSpace(name))
 				name = await UserInterface.Instance.RequestResponseAsync("Please provide a playlist name to save to").WithoutContextCapture();
 			var reorderedPlaylist = await SaveContextAsPlaylist(context, name).WithoutContextCapture();
-			args.AllowUsingContextUri = true;
-			await _underlyingPlaybackSetter.SetPlayback(reorderedPlaylist, args).WithoutContextCapture();
+			if (_underlyingPlaybackSetter != null)
+			{
+				args.AllowUsingContextUri = true;
+				await _underlyingPlaybackSetter.SetPlayback(reorderedPlaylist, args).WithoutContextCapture();
+			}
 		}
 
 		private async Task<IPlaylistPlaybackContext<TrackT>> SaveContextAsPlaylist(ISpotifyPlaybackContext<TrackT> context, string playlistName)
@@ -44,7 +48,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var existingPlaylistContext = new ExistingPlaylistPlaybackContext(SpotifyConfiguration, playlistObject);
 			await existingPlaylistContext.FullyLoad().WithoutContextCapture();
 			Logger.Information($"Saving new track list to playlist {playlistName}");
-			await _playlistTrackModifier.ModifyPlaylistTracks(existingPlaylistContext, context.PlaybackOrder.Select(context.GetMetadataForTrack)).WithoutContextCapture();
+			// Set number of retries to 1 because empirically there are a lot of errors that occur
+			using (TaskParameters.GetBuilder().With(SpotifyParameters.NumberOfRetriesForServerError, 1).Apply())
+			{
+				await _playlistTrackModifier.ModifyPlaylistTracks(existingPlaylistContext, context.PlaybackOrder.Select(context.GetMetadataForTrack)).WithoutContextCapture();
+			}
 			return new ConstructedPlaylistContext<TrackT, ISpotifyPlaybackContext<TrackT>>(context, existingPlaylistContext);
 		}
 
@@ -66,5 +74,20 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	public interface IPlaylistModification
 	{
 		Task<string> SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId = null);
+
+		async Task<(bool ranSuccessfuly, string resultingSnapshotId)> TrySendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId = null)
+		{
+			try
+			{
+				return (true, await SendRequest(spotifyAccessor, playlistId, previousSnapshotId));
+			}
+			catch (APIException e)
+			{
+				Logger.Error("An error occurred on the server's end while trying to perform the {modificationType} operation on a playlist. " +
+					"The exception has been caught and the operation may be retried. The operation occurred while editing playlist with id {playlistId}," +
+					"with provided snapshotId {snapshotId}: {exception}", GetType().Name, playlistId, previousSnapshotId, e);
+				return (false, null);
+			}
+		}
 	}
 }
