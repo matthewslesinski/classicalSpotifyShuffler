@@ -18,9 +18,11 @@ namespace SpotifyProject.Authentication
 		public RetryHandlers()
 		{
 			SimpleRetryHandler = new SimpleRetryHandler();
+			ProtectedSimpleRetryHandler = new ProtectedSimpleRetryHandler();
 		}
 
 		public IRetryHandler SimpleRetryHandler { get; }
+		public IRetryHandler ProtectedSimpleRetryHandler { get; }
 	}
 
 	public class Paginators
