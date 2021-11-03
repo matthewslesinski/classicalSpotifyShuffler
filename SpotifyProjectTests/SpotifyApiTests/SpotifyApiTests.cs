@@ -11,6 +11,8 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Extensions;
+using SpotifyProject.Configuration;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -39,7 +41,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[Test]
 		public async Task TestAlbumGetTracks()
 		{
-			var albumId = SpotifyDependentUtils.TryParseSpotifyUri(SampleAlbumUris[SampleAlbums.BeethovenPianoSonatasAndConcerti], out _, out var parsedId, out _) ? parsedId : null;
+			var albumId = SampleAlbumIds[SampleAlbums.BeethovenPianoSonatasAndConcerti];
 			var beethovenPianoSonatasTracks = await SpotifyAccessor.GetAllAlbumTracks(albumId, batchSize: 1);
 			var beethovenPianoSonatasAlbum = await SpotifyAccessor.GetAlbum(albumId);
 			var beethovenPianoSonatasTrackInfos = beethovenPianoSonatasTracks.Select(track => new SimpleTrackAndAlbumWrapper(track, beethovenPianoSonatasAlbum));
@@ -57,7 +59,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			var yannickTracks = (await SpotifyAccessor.GetAllArtistTracks(yannickId, SpotifyAPI.Web.ArtistsAlbumsRequest.IncludeGroups.Album)).ToArray();
 			var yannickTrackUris = yannickTracks.Select(track => track.OriginalTrack.Uri);
 			var yannickUrisToTracks = yannickTracks.GroupBy(track => track.OriginalTrack.Uri).ToDictionary(group => group.Key, group => group.First());
-			var trackBatches = yannickTrackUris.Batch(SpotifyConstants.PlaylistRequestBatchSize);
+			var trackBatches = yannickTrackUris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize));
 			var addTracksTasks = trackBatches.Select(batch => SpotifyAccessor.AddPlaylistItems(playlist.Id, batch)).ToList();
 			foreach (var task in addTracksTasks)
 				await task;

@@ -15,6 +15,9 @@ using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyUtils;
 using System.IO;
 using ApplicationResources.ApplicationUtils.Parameters;
+using CustomResources.Utils.Concepts.DataStructures;
+using CustomResources.Utils.Concepts;
+using SpotifyProject.Utils;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -44,6 +47,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 
 		protected enum SampleAlbums
 		{
+			ShostakovichQuartets,
 			BeethovenPianoSonatasAndConcerti,
 			BrahmsSymphonies,
 			BachKeyboardWorks,
@@ -57,20 +61,30 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			HilaryHahn
 		}
 
-		protected static readonly IReadOnlyDictionary<SampleAlbums, string> SampleAlbumUris = new Dictionary<SampleAlbums, string>
+		protected static IReadOnlyDictionary<SampleAlbums, string> SampleAlbumUris => _sampleAlbumUris;
+		private static readonly Dictionary<SampleAlbums, string> _sampleAlbumUris = new Dictionary<SampleAlbums, string>
 		{
+			{ SampleAlbums.ShostakovichQuartets, "spotify:album:46ZSRWpa4VTsGWaPA1AxPy" },
 			{ SampleAlbums.BeethovenPianoSonatasAndConcerti, "spotify:album:62VlldLNKK8OGw8vbyIFED" },
 			{ SampleAlbums.BrahmsSymphonies, "spotify:album:0kJBUtCkSBYRyc8Jiyyecz" },
 			{ SampleAlbums.BachKeyboardWorks, "spotify:album:1FfjKB0aGdGU52uQOuTA6I" },
 			{ SampleAlbums.HilaryHahnIn27Pieces, "spotify:album:7GiMQKT1Twq3MOVAGQekF7" }
 		};
 
-		protected static readonly IReadOnlyDictionary<SampleArtists, string> SampleArtistUris = new Dictionary<SampleArtists, string>
+		protected static IReadOnlyDictionary<SampleAlbums, string> SampleAlbumIds => _sampleAlbumUris
+			.SelectAsDictionary<SampleAlbums, string, Dictionary<SampleAlbums, string>>(
+				valueSelector: contextUri => SpotifyDependentUtils.TryParseSpotifyUri(contextUri, out _, out var parsedId, out _) ? parsedId : null);
+
+		protected static IReadOnlyDictionary<SampleArtists, string> SampleArtistUris = _sampleArtistUris;
+		private static readonly Dictionary<SampleArtists, string> _sampleArtistUris = new Dictionary<SampleArtists, string>
 		{
 			{ SampleArtists.YannickNezetSeguin, "spotify:artist:5ZGyCOrODWwaVtLSDjayl5" },
 			{ SampleArtists.PhiladelphiaOrchestra, "spotify:artist:6tdexW8bZTG8NgOFUCYQn1" },
 			{ SampleArtists.HilaryHahn, "spotify:artist:5JdT0LYJdlPbTC58p60WTX" }
 		};
+		protected static IReadOnlyDictionary<SampleArtists, string> SampleArtistIds => _sampleArtistUris
+			.SelectAsDictionary<SampleArtists, string, Dictionary<SampleArtists, string>>(
+				valueSelector: contextUri => SpotifyDependentUtils.TryParseSpotifyUri(contextUri, out _, out var parsedId, out _) ? parsedId : null);
 
 		protected string GetPlaylistNameForTest(string testName) => $"TestPlaylist_{GetType().Name}_{testName}";
 
