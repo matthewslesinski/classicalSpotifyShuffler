@@ -33,7 +33,7 @@ namespace SpotifyProject.Authentication
 		public async Task<SpotifyClient> Authenticate(AuthorizationSource authorizationSource)
 		{
             var authenticator = await GetAuthenticator(authorizationSource).WithoutContextCapture();
-            var authenticatedConfig = _config.WithAuthenticator(authenticator).Finalized();
+            _config.WithAuthenticator(authenticator).Finalized();
             return new SpotifyClient(_config.UnderlyingSpotifyClientConfig);
 		}
 
