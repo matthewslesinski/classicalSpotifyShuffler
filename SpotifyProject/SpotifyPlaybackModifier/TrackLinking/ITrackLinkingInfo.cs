@@ -22,6 +22,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			(t1, t2) => Equals(t1.Uri, t2.Uri) || (Equals(t1.Name, t2.Name) && Equals(t1.AlbumName, t2.AlbumName) && Equals(t1.AlbumIndex, t2.AlbumIndex) && t1.ArtistNames.ContainsSameElements(t2.ArtistNames)),
 			t => HashCode.Combine(t.Name, t.AlbumUri, t.AlbumIndex));
 
+		static readonly IEqualityComparer<ITrackLinkingInfo> EqualityByUris = new KeyBasedEqualityComparer<ITrackLinkingInfo, string>(track => track.Uri);
+
 		static readonly IComparer<ITrackLinkingInfo> TrackOrderWithinAlbums =
 			ComparerUtils.ComparingBy<ITrackLinkingInfo, (int discNumber, int trackNumber)>(t => t.AlbumIndex,
 				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber));

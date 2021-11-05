@@ -6,6 +6,7 @@ using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyProject.Configuration;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -84,10 +85,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		public IList<string> UrisToAdd { get; }
 
-		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris)
-		{
-			return uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new AddOperation(batch));
-		}
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<ITrackLinkingInfo> tracks) => CreateOperations(tracks.Select(track => track.Uri));
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris) =>
+			uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new AddOperation(batch));
 	}
 
 	internal class RemoveOperation : IRemoveTracksOperation
@@ -101,10 +101,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		public IList<string> UrisToRemove { get; }
 
-		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris)
-		{
-			return uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new RemoveOperation(batch));
-		}
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<ITrackLinkingInfo> tracks) => CreateOperations(tracks.Select(track => track.Uri));
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris) =>
+			uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new RemoveOperation(batch));
 	}
 
 	internal class ReorderOperation : IReorderTracksOperation

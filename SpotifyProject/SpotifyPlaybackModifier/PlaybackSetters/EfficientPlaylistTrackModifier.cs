@@ -22,7 +22,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		public EfficientPlaylistTrackModifier(SpotifyConfiguration spotifyConfiguration) : base(spotifyConfiguration)
 		{ }
 
-		private static bool ShouldIncludeNonLocalTrack(ITrackLinkingInfo track)
+		private static bool CanIncludeTrackInAddOperation(ITrackLinkingInfo track)
 		{
 			if (!track.IsLocal)
 				return true;
@@ -32,67 +32,67 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		async Task IPlaylistTrackModifier.SendOperations(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracks)
 		{
-			var newTracksCapped = newTracks.Take(SpotifyConstants.PlaylistSizeLimit).ToArray();
+			var currentTrackCounts = currentTracks.ToFrequencyMap(ITrackLinkingInfo.EqualityByUris);
+			bool CanIncludeTrack(ITrackLinkingInfo track, int occurrenceNumber) =>
+				occurrenceNumber <= currentTrackCounts.GetValueOrDefault(track) || CanIncludeTrackInAddOperation(track);
+			var newTracksCapped = newTracks.FilterByOccurrenceNumber(CanIncludeTrack, ITrackLinkingInfo.EqualityByUris)
+				.Take(SpotifyConstants.PlaylistSizeLimit).ToArray();
+			var newTrackCounts = newTracksCapped.ToFrequencyMap(ITrackLinkingInfo.EqualityByUris);
 			// Make sure the playlist contains the right set of tracks
-			await PutCorrectTracksInPlaylist(playlistId, currentTracks, newTracksCapped).WithoutContextCapture();
+			await PutCorrectTracksInPlaylist(playlistId, currentTracks, newTracksCapped, currentTrackCounts, newTrackCounts).WithoutContextCapture();
 			// Load the playlist to see what needs to be reordered
 			var jumbledContentsPlaylistVersion = await ExistingPlaylistPlaybackContext.FromSimplePlaylist(SpotifyConfiguration, playlistId);
 			await jumbledContentsPlaylistVersion.FullyLoad().WithoutContextCapture();
 			var initialSnapshotId = jumbledContentsPlaylistVersion.SpotifyContext.SnapshotId;
-			var jumbledUris = jumbledContentsPlaylistVersion.PlaybackOrder.Select(track => track.Uri).ToArray();
-			var newUris = newTracksCapped.Select(track => track.Uri).ToArray();
+			var jumbledTracksUpdated = jumbledContentsPlaylistVersion.PlaybackOrder.Select(jumbledContentsPlaylistVersion.GetMetadataForTrack).ToArray();
 			// Reorder the tracks in the playlist
-			await ReorderPlaylist(playlistId, initialSnapshotId, jumbledUris, newUris).WithoutContextCapture();
+			await ReorderPlaylist(playlistId, initialSnapshotId, jumbledTracksUpdated, newTracksCapped).WithoutContextCapture();
 		}
 
-		private async Task PutCorrectTracksInPlaylist(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracksCapped)
+		private async Task PutCorrectTracksInPlaylist(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracksCapped,
+			IReadOnlyDictionary<ITrackLinkingInfo, int> currentTrackCounts, IReadOnlyDictionary<ITrackLinkingInfo, int> newTrackCounts)
 		{
-			var currentUris = currentTracks.Select(track => track.Uri);
-			var newUris = newTracksCapped.Select(track => track.Uri);
-			var currentUriCounts = currentUris.ToFrequencyMap();
-			var newUriCounts = newUris.ToFrequencyMap();
-			// Keep tracks that appear once in both the old track list and the new track list
-			var tracksToKeep = currentUris.Where(uri => currentUriCounts.TryGetValue(uri, out var currentCount) && currentCount == 1
-														&& newUriCounts.TryGetValue(uri, out var intendedCount) && intendedCount == 1).ToHashSet();
-			// Remove all other tracks currently in the playlist
-			var tracksToRemove = currentUris.Where(tracksToKeep.NotContains).Distinct();
-			// Add all tracks not currently in the playlist and being kept. Also exclude local tracks because they can't be added to playlists
-			var tracksToAdd = newTracksCapped.Where(ShouldIncludeNonLocalTrack).Select(track => track.Uri).Where(tracksToKeep.NotContains);
+			// Remove all tracks that occur more often currently than intended, since at least one equivalent track will need to be removed, which will remove all of them
+			bool ShouldRemoveTrack(ITrackLinkingInfo track) => currentTrackCounts.GetValueOrDefault(track) > newTrackCounts.GetValueOrDefault(track);
+			// Add any track that will be removed or that doesn't map to an instance of currentTracks
+			bool ShouldAddTrack(ITrackLinkingInfo track, int occurrenceNumber) => ShouldRemoveTrack(track) || occurrenceNumber > currentTrackCounts.GetValueOrDefault(track);
+
+			var tracksToRemove = currentTracks.Where(ShouldRemoveTrack).ToHashSet(ITrackLinkingInfo.EqualityByUris);
+			var tracksToAdd = newTracksCapped.FilterByOccurrenceNumber(ShouldAddTrack, ITrackLinkingInfo.EqualityByUris);
 
 			// If no tracks are being kept, we can just clear the playlist
-			var removeOperations = tracksToKeep.Any() ? RemoveOperation.CreateOperations(tracksToRemove) : new IPlaylistModification[] { new ReplaceOperation() };
+			var removeOperations = tracksToRemove.Count != currentTrackCounts.Count
+				? RemoveOperation.CreateOperations(tracksToRemove)
+				: new IPlaylistModification[] { new ReplaceOperation() };
 			var addOperations = AddOperation.CreateOperations(tracksToAdd);
 
-			async Task<bool> SendRequest(IPlaylistModification operation) => (await operation.TrySendRequest(this, playlistId).WithoutContextCapture()).ranSuccessfuly;
-
 			// First remove tracks, then add them
-			var uncompletedRemoveOperations = removeOperations;
-			while (uncompletedRemoveOperations.Any())
-				uncompletedRemoveOperations = (await RunAllOperations(uncompletedRemoveOperations, SendRequest).WithoutContextCapture())
-					.TryGetValues(false, out var unsuccessfulOperations)
-						? unsuccessfulOperations
-						: Array.Empty<IPlaylistModification>();
+			await RunAllOperationsToCompletion(playlistId, removeOperations);
+			await RunAllOperationsToCompletion(playlistId, addOperations);
+		}
 
-			var uncompletedAddOperations = addOperations;
-			while (uncompletedAddOperations.Any())
-				uncompletedAddOperations = (await RunAllOperations(uncompletedAddOperations, SendRequest).WithoutContextCapture())
+		private async Task RunAllOperationsToCompletion(string playlistId, IEnumerable<IPlaylistModification> operations)
+		{
+			async Task<bool> SendRequest(IPlaylistModification operation) => (await operation.TrySendRequest(this, playlistId).WithoutContextCapture()).ranSuccessfuly;
+			var uncompletedOperations = operations;
+			while (uncompletedOperations.Any())
+				uncompletedOperations = (await RunAllOperations(uncompletedOperations, SendRequest).WithoutContextCapture())
 					.TryGetValues(false, out var unsuccessfulOperations)
 						? unsuccessfulOperations
 						: Array.Empty<IPlaylistModification>();
 		}
 
-		private async Task ReorderPlaylist(string playlistId, string snapshotId, string[] jumbledOrder, string[] intendedOrder)
+		private async Task ReorderPlaylist(string playlistId, string snapshotId, ITrackLinkingInfo[] jumbledOrder, ITrackLinkingInfo[] intendedOrder)
 		{
 			// Creates the initial set of batches, which have not been combined yet, so they each just contain one track
-			Batch[] GetInitialBatches(string[] jumbledUris)
+			Batch[] GetInitialBatches(ITrackLinkingInfo[] jumbledTracks)
 			{
-				var intendedMoves = GetIntendedMoves(jumbledUris, intendedOrder);
-				var jumbledBatches = jumbledUris.Select((uri, index) => new Batch(uri, index, intendedMoves[index])).ToArray();
+				var intendedMoves = GetIntendedMoves(jumbledTracks, intendedOrder);
+				var jumbledBatches = jumbledTracks.Select((track, index) => new Batch(track, index, intendedMoves[index])).ToArray();
 				return jumbledBatches;
 			}
 
 			Task<string> QueryCurrentSnapshotId() => (new GetCurrentSnapshotIdOperation() as IPlaylistModification).SendRequest(this, playlistId);
-
 
 			var playlistSize = jumbledOrder.Length;
 			if (playlistSize != intendedOrder.Length)
@@ -102,8 +102,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var jumbledBatches = GetInitialBatches(jumbledOrder);
 
 			// Gets the operations that can all be done without impacting each other. OperationsAndBatches contains pairs of operations with the batch the operation moves.
-			// PaddedBatches is just jumbledBatches with padding, but it's necessary for calling SimulateReordering below. NewlyPrecedingBatches is a map from batch to the batch
-			// That gets moved before it in the outputted operations.
+			// PaddedBatches is just jumbledBatches with padding and condensed, but it's necessary for calling SimulateReordering below.
+			// NewlyPrecedingBatches is a map from batch to the batch that gets moved before it in the outputted operations.
 			while (TryGetOperations(jumbledBatches, playlistSize, out var operationsAndBatches, out var paddedBatches, out var newlyPrecedingBatches))
 			{
 				// Run each operation, and if it's successful, add its batch to the movedBatches set
@@ -121,23 +121,23 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			}			
 		}
 
-		private async Task<ILookup<bool, OperationT>> RunAllOperations<OperationT>(
+		private static async Task<ILookup<bool, OperationT>> RunAllOperations<OperationT>(
 			IEnumerable<OperationT> operations, Func<OperationT, Task<bool>> sendAction)
 		{
 			// Based on the SerializeOperations parameter, run all the operations either sequentially or in parallel
 			var inputsWithResults = TaskParameters.Get<bool>(SpotifyParameters.SerializeOperations)
 				? await operations.ToAsyncEnumerable().SelectAwait(async operation => (operation, await sendAction(operation).WithoutContextCapture())).ToArrayAsync().WithoutContextCapture()
 				: await Task.WhenAll(operations.Select(async operation => (operation, await sendAction(operation).WithoutContextCapture())).ToArray()).WithoutContextCapture();
-			return inputsWithResults.ToLookup(inputWithResult => inputWithResult.Item2, inputWithResult => inputWithResult.Item1);
+			return inputsWithResults.ToLookup(inputWithResult => inputWithResult.Item2, inputWithResult => inputWithResult.operation);
 		}
 
-		private static Dictionary<int, int> GetIntendedMoves(string[] jumbledOrder, string[] intendedOrder)
+		private static Dictionary<int, int> GetIntendedMoves(ITrackLinkingInfo[] jumbledOrder, ITrackLinkingInfo[] intendedOrder)
 		{
-			// get maps from each uri to its index in its ordering
-			var jumbledIndexMap = jumbledOrder.ToIndexMap<string, List<int>>();
-			var intendedIndexMap = intendedOrder.ToIndexMap<string, List<int>>();
-			// Make a dictionary that has each index for the jumbled order associated with the index its uri ends up in the intended order
-			return jumbledIndexMap.Keys.SelectMany(uri => jumbledIndexMap[uri].Zip(intendedIndexMap[uri]))
+			// get maps from each track to its index in its ordering
+			var jumbledIndexMap = jumbledOrder.ToIndexMap(ITrackLinkingInfo.EqualityByUris);
+			var intendedIndexMap = intendedOrder.ToIndexMap(ITrackLinkingInfo.EqualityByUris);
+			// Make a dictionary that has each index for the jumbled order associated with the index its track ends up in the intended order
+			return jumbledIndexMap.Keys.SelectMany(track => jumbledIndexMap[track].Zip(intendedIndexMap[track]))
 				.ToDictionary(pair => pair.First, pair => pair.Second);
 		}
 
@@ -239,20 +239,20 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		/*
 		 * Represents a group of tracks in the original track order that remain as a group in the intended order and therefore can be moved with one reorder operation
 		 */
-		private class Batch : IComparable<Batch>, IEnumerable<string>
+		private class Batch : IComparable<Batch>, IEnumerable<ITrackLinkingInfo>
 		{
 			internal static KeyBasedComparer<Batch, (int target, int length)> TargetIndexComparer { get; } = new KeyBasedComparer<Batch, (int target, int length)>(
 				batch => (batch.TargetIndex, batch.Length),
 				ComparerUtils.ComparingBy<(int target, int length)>(batch => batch.target).ThenBy(batch => batch.length));
 
-			internal Batch(string uri, int rangeStart, int targetIndex) : this(new[] { uri }, rangeStart, 1, targetIndex)
+			internal Batch(ITrackLinkingInfo track, int rangeStart, int targetIndex) : this(new[] { track }, rangeStart, 1, targetIndex)
 			{ }
 
-			internal Batch(IEnumerable<string> uris, int rangeStart, int length, int targetIndex)
+			internal Batch(IEnumerable<ITrackLinkingInfo> tracks, int rangeStart, int length, int targetIndex)
 			{
 				RangeStart = rangeStart;
 				Length = length;
-				Uris = uris;
+				Tracks = tracks;
 				TargetIndex = targetIndex;
 			}
 
@@ -260,7 +260,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			{
 				RangeStart = batchToCopy.RangeStart;
 				Length = batchToCopy.Length;
-				Uris = batchToCopy.Uris;
+				Tracks = batchToCopy.Tracks;
 				TargetIndex = batchToCopy.TargetIndex;
 			}
 
@@ -286,21 +286,21 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				var sizeLimit = TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize);
 				if (batch1.Length + batch2.Length > sizeLimit)
 				{
-					var allUris = lower.Uris.Concat(upper.Uris).ToList();
+					var allTracks = lower.Tracks.Concat(upper.Tracks).ToList();
 					return new List<Batch>
 					{
-						new Batch(allUris.GetRange(0, sizeLimit), lower.RangeStart, sizeLimit, lower.TargetIndex),
-						new Batch(allUris.GetRange(sizeLimit, allUris.Count - sizeLimit), lower.RangeStart + sizeLimit, allUris.Count - sizeLimit, lower.TargetIndex + sizeLimit)
+						new Batch(allTracks.GetRange(0, sizeLimit), lower.RangeStart, sizeLimit, lower.TargetIndex),
+						new Batch(allTracks.GetRange(sizeLimit, allTracks.Count - sizeLimit), lower.RangeStart + sizeLimit, allTracks.Count - sizeLimit, lower.TargetIndex + sizeLimit)
 					};
 				}
 				else
-					return new List<Batch> { new Batch(lower.Uris.Concat(upper.Uris), lower.RangeStart, lower.Length + upper.Length, lower.TargetIndex) };
+					return new List<Batch> { new Batch(lower.Tracks.Concat(upper.Tracks), lower.RangeStart, lower.Length + upper.Length, lower.TargetIndex) };
 			}
 
 			internal int RangeStart { get; set; }
 			internal int Length { get; }
 			internal int TargetIndex { get; }
-			internal IEnumerable<string> Uris { get; }
+			internal IEnumerable<ITrackLinkingInfo> Tracks { get; }
 
 			public override bool Equals(object obj)
 			{
@@ -325,10 +325,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				return _comparer.Compare(this, other);
 			}
 
-			IEnumerator IEnumerable.GetEnumerator() => Uris.GetEnumerator();
-			public IEnumerator<string> GetEnumerator()
+			IEnumerator IEnumerable.GetEnumerator() => Tracks.GetEnumerator();
+			public IEnumerator<ITrackLinkingInfo> GetEnumerator()
 			{
-				return Uris.GetEnumerator();
+				return Tracks.GetEnumerator();
 			}
 
 			private readonly static IComparer<Batch> _comparer = ComparerUtils.ComparingBy<Batch>(batch => batch.RangeStart).ThenBy(batch => batch.Length);
@@ -336,7 +336,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		private class BoundaryBatch : Batch
 		{
-			internal BoundaryBatch(int boundary) : base(Array.Empty<string>(), boundary, 0, boundary)
+			internal BoundaryBatch(int boundary) : base(Array.Empty<ITrackLinkingInfo>(), boundary, 0, boundary)
 			{ }
 		}
 	}
