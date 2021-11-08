@@ -26,7 +26,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 
 		static readonly IComparer<ITrackLinkingInfo> TrackOrderWithinAlbums =
 			ComparerUtils.ComparingBy<ITrackLinkingInfo, (int discNumber, int trackNumber)>(t => t.AlbumIndex,
-				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber));
+				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber))
+					.ThenBy(t => t.Name);
 	}
 
 	public interface ITrackLinkingInfo<TrackT> : ITrackLinkingInfo

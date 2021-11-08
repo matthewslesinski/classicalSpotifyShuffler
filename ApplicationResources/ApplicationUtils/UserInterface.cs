@@ -14,10 +14,10 @@ namespace ApplicationResources.ApplicationUtils
 		public static UserInterface Instance = Default;
 
 		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput).WithoutContextCapture();
-		public async Task<string> RequestResponseAsync(string requestNotification)
+		public Task<string> RequestResponseAsync(string requestNotification)
 		{
 			NotifyUser(requestNotification);
-			return await ReadNextUserInputAsync().WithoutContextCapture();
+			return ReadNextUserInputAsync();
 		}
 		public abstract string ReadNextUserInput();
 		public abstract void NotifyUser(string notification);

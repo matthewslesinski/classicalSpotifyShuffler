@@ -50,16 +50,26 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             return result;
         }
 
-        private async Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
+        private Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
+		{
+            if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
+            {
+                Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
+                return Task.FromResult(false);
+            }
+            Task<OriginalContextT> ProvideContextPromise() => initialContextConstructor(SpotifyConfiguration, contextId);
+            return ModifyContext<OriginalContextT, TrackT>(ProvideContextPromise, contextType, contextId);
+
+        }
+
+        internal async Task<bool> ModifyContext<OriginalContextT, TrackT>(Func<Task<OriginalContextT>> contextPromiseProvider, PlaybackContextType contextType, string contextId)
+            where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
         {
             try
             {
                 Logger.Information($"Attempting to modify context of type {contextType}{(string.IsNullOrWhiteSpace(contextId) ? "" : $" and with id {contextId}")}");
-                if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
-                {
-                    Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
-                    return false;
-                }
+                var contextPromise = contextPromiseProvider();
+
                 if (!PlaybackTransformations.TryGetTransformation<OriginalContextT, TrackT>(contextType, out var transformations))
                 {
                     Logger.Warning($"There was no transformation set found for the context type {contextType}");
@@ -70,11 +80,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                 var transformation = transformations.GetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName);
                 var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
                 var playbackSetterName = TaskParameters.Get<string>(SpotifyParameters.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
-                var playbackSetter = playbackSetters.GetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
-
-                var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);
-
+                var playbackSetter = playbackSetters.GetPropertyByName<IContextSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
                 var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(SpotifyConfiguration, transformation, playbackSetter);
+
+                var initialContext = await contextPromise.WithoutContextCapture();
 
                 await modifier.Run(initialContext).WithoutContextCapture();
                 return true;

@@ -28,7 +28,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			foreach (var opusSymbol in _opusIndicators)
 			{
 				var appearances = matches.Where(match => Equals(match.token, opusSymbol)).ToList();
-				if (appearances.Count() == 1)
+				if (appearances.Count == 1)
 				{
 					for (int i = 0; i < matches.Length - 1; i++)
 					{

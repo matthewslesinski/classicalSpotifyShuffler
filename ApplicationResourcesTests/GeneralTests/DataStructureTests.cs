@@ -192,26 +192,26 @@ namespace ApplicationResourcesTests.GeneralTests
 			// Query with .5
 			Assert.IsNull(sortedSet.TryGetFloor(.5d, out var result) ? result : null);
 			Assert.IsNull(sortedSet.TryGetPrevious(.5d, out result) ? result : null);
-			Assert.AreEqual(1d, sortedSet.TryGetNext(.5d, out result) ? result : null, .01);
-			Assert.AreEqual(1d, sortedSet.TryGetCeiling(.5d, out result) ? result : null, .01);
+			Assert.AreEqual(1d, sortedSet.TryGetNext(.5d, out result) ? result : -1d, .01);
+			Assert.AreEqual(1d, sortedSet.TryGetCeiling(.5d, out result) ? result : -1d, .01);
 
 			// Query with 5
 			Assert.IsNull(sortedSet.TryGetCeiling(5d, out result) ? result : null);
 			Assert.IsNull(sortedSet.TryGetNext(5d, out result) ? result : null);
-			Assert.AreEqual(4d, sortedSet.TryGetPrevious(5d, out result) ? result : null, .01);
-			Assert.AreEqual(4d, sortedSet.TryGetFloor(5d, out result) ? result : null, .01);
+			Assert.AreEqual(4d, sortedSet.TryGetPrevious(5d, out result) ? result : -1d, .01);
+			Assert.AreEqual(4d, sortedSet.TryGetFloor(5d, out result) ? result : -1d, .01);
 
 			// Query with 2.5
-			Assert.AreEqual(3d, sortedSet.TryGetCeiling(2.5d, out result) ? result : null, .01);
-			Assert.AreEqual(3d, sortedSet.TryGetNext(2.5d, out result) ? result : null, .01);
-			Assert.AreEqual(2d, sortedSet.TryGetPrevious(2.5d, out result) ? result : null, .01);
-			Assert.AreEqual(2d, sortedSet.TryGetFloor(2.5d, out result) ? result : null, .01);
+			Assert.AreEqual(3d, sortedSet.TryGetCeiling(2.5d, out result) ? result : -1d, .01);
+			Assert.AreEqual(3d, sortedSet.TryGetNext(2.5d, out result) ? result : -1d, .01);
+			Assert.AreEqual(2d, sortedSet.TryGetPrevious(2.5d, out result) ? result : -1d, .01);
+			Assert.AreEqual(2d, sortedSet.TryGetFloor(2.5d, out result) ? result : -1d, .01);
 
 			// Query with 2
-			Assert.AreEqual(2d, sortedSet.TryGetCeiling(2d, out result) ? result : null, .01);
-			Assert.AreEqual(3d, sortedSet.TryGetNext(2d, out result) ? result : null, .01);
-			Assert.AreEqual(1d, sortedSet.TryGetPrevious(2d, out result) ? result : null, .01);
-			Assert.AreEqual(2d, sortedSet.TryGetFloor(2d, out result) ? result : null, .01);
+			Assert.AreEqual(2d, sortedSet.TryGetCeiling(2d, out result) ? result : -1d, .01);
+			Assert.AreEqual(3d, sortedSet.TryGetNext(2d, out result) ? result : -1d, .01);
+			Assert.AreEqual(1d, sortedSet.TryGetPrevious(2d, out result) ? result : -1d, .01);
+			Assert.AreEqual(2d, sortedSet.TryGetFloor(2d, out result) ? result : -1d, .01);
 		}
 
 		[TestCase(300, 0, 200, 0, 0)]
