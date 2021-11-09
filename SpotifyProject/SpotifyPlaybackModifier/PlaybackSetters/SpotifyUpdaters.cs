@@ -8,15 +8,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		public SpotifyUpdaters(SpotifyConfiguration config)
 		{
 			QueuePlaybackSetter = new QueuePlaybackSetter<TrackT>(config);
-			PlaylistPlaybackSetter = new PlaylistPlaybackSetter<TrackT>(config, QueuePlaybackSetter, new BasicPlaylistTrackModifier(config));
-			EfficientPlaylistPlaybackSetter = new PlaylistPlaybackSetter<TrackT>(config, QueuePlaybackSetter);
-			EfficientPlaylistSetterWithoutPlayback = new PlaylistPlaybackSetter<TrackT>(config, null);
+			PlaylistPlaybackSetter = new PlaylistSetter<TrackT>(config, QueuePlaybackSetter, new BasicPlaylistTrackModifier(config));
+			EfficientPlaylistPlaybackSetter = new PlaylistSetter<TrackT>(config, QueuePlaybackSetter);
+			EfficientPlaylistSetterWithoutPlayback = new PlaylistSetter<TrackT>(config, null);
 		}
 
-		public IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs> QueuePlaybackSetter { get; }
-		public IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs> PlaylistPlaybackSetter { get; }
-		public IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs> EfficientPlaylistPlaybackSetter { get; }
-		public IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs> EfficientPlaylistSetterWithoutPlayback { get; }
+		public IContextSetter<ISpotifyPlaybackContext<TrackT>, IPlaybackSetterArgs> QueuePlaybackSetter { get; }
+		public IContextSetter<ISpotifyPlaybackContext<TrackT>, IPlaybackSetterArgs> PlaylistPlaybackSetter { get; }
+		public IContextSetter<ISpotifyPlaybackContext<TrackT>, IPlaybackSetterArgs> EfficientPlaylistPlaybackSetter { get; }
+		public IContextSetter<ISpotifyPlaybackContext<TrackT>, IPlaybackSetterArgs> EfficientPlaylistSetterWithoutPlayback { get; }
 	}
 
 }

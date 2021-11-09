@@ -70,7 +70,7 @@ namespace SpotifyProject.SpotifyAdditions
             if (nextUri == null)
                 return true;
 
-            if (!totalItems.HasValue || firstOffset != 0 || !firstLimit.HasValue)
+            if (!totalItems.HasValue || !firstOffset.HasValue || !firstLimit.HasValue)
             {
                 Logger.Error("The paginated response Spotify returned is in an unexpected format. Not all values were provided or were as expected");
                 return false;
@@ -79,9 +79,9 @@ namespace SpotifyProject.SpotifyAdditions
             IEnumerable<Uri> GetAllNextUrisWhenSafe()
             {
                 var parts = _offsetRegex.Split(nextUri);
-                for (int i = firstLimit.Value; i < totalItems.Value; i += firstLimit.Value)
+                for (int i = firstOffset.Value + firstLimit.Value; i < totalItems.Value; i += firstLimit.Value)
                 {
-                    var newNextUri = parts[0] + i + parts[1];
+                    var newNextUri = parts[0] + Math.Min(i, totalItems.Value) + parts[1];
                     yield return new Uri(newNextUri, UriKind.Absolute);
                 }
             }

@@ -11,12 +11,12 @@ using SpotifyProject.Configuration;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
-	public class QueuePlaybackSetter<TrackT> : SpotifyAccessorBase, IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>
+	public class QueuePlaybackSetter<TrackT> : PlaybackSetterBase<ISpotifyPlaybackContext<TrackT>>
 	{
 		public QueuePlaybackSetter(SpotifyConfiguration spotifyConfiguration) : base(spotifyConfiguration)
 		{ }
 
-		public async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, PlaybackStateArgs args)
+		protected override async Task SetPlayback(ISpotifyPlaybackContext<TrackT> context, IPlaybackStateArgs args)
 		{
 			if (args.CurrentPlaybackFound.HasValue && !args.CurrentPlaybackFound.Value)
 				throw new ArgumentException("Cannot modify playback when nothing is playing");
@@ -38,7 +38,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				.Where(IsAllowedTrack)
 				.Select(context.GetUriForTrack).ToList();
 			var trackLimit = Settings.Get<int>(SpotifySettings.TrackQueueSizeLimit);
-			var limitUris = !useContextUri && trackLimit < uris.Count();
+			var limitUris = !useContextUri && trackLimit < uris.Count;
 			var useUri = uriToPlay != null && uris.Contains(uriToPlay);
 			List<string> trackUris;
 

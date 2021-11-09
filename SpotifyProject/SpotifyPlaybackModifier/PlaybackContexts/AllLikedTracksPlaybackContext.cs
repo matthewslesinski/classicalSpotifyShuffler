@@ -15,7 +15,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		{
 		}
 
-		public ITrackLinkingInfo<FullTrack> GetMetadataForTrack(FullTrack track)
+		public IPlayableTrackLinkingInfo<FullTrack> GetMetadataForTrack(FullTrack track)
 		{
 			return new FullTrackWrapper(track);
 		}

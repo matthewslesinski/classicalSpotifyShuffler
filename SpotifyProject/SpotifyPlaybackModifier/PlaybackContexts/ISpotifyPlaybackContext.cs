@@ -12,7 +12,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 	public interface ISpotifyPlaybackContext<TrackT> : ISpotifyPlaybackContext, ISpotifyQueue<TrackT>
 	{
-		ITrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track);
+		IPlayableTrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track);
 	}
 
 	public static class ContextExtensions

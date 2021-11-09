@@ -5,6 +5,8 @@ using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
+using System.Net.Http;
+using System.IO;
 
 namespace SpotifyProject.SpotifyAdditions
 {
@@ -54,7 +56,15 @@ namespace SpotifyProject.SpotifyAdditions
 		private async Task<IResponse> SendRequest(IRequest request) {
 			await ApplyAuthenticator(request).WithoutContextCapture();
 			_httpLogger?.OnRequest(request);
-			IResponse response = await _httpClient.DoRequest(request).WithoutContextCapture();
+			IResponse response;
+			try
+			{
+				response = await _httpClient.DoRequest(request).WithoutContextCapture();
+			}
+			catch (HttpRequestException e) when (e.InnerException is IOException ioE && ioE.Message.Contains("Received an unexpected EOF or 0 bytes from the transport stream."))
+			{
+				throw new APIException("The Spotify server did not send a response", e);
+			}
 			_httpLogger?.OnResponse(response);
 			this.ResponseReceived?.Invoke(this, response);
 			return response;

@@ -14,6 +14,7 @@ using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyProject.Configuration;
 using CustomResources.Utils.GeneralUtils;
+using SpotifyAPI.Web;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -44,9 +45,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			var jumbledContentsPlaylistVersion = await ExistingPlaylistPlaybackContext.FromSimplePlaylist(SpotifyConfiguration, playlistId);
 			await jumbledContentsPlaylistVersion.FullyLoad().WithoutContextCapture();
 			var initialSnapshotId = jumbledContentsPlaylistVersion.SpotifyContext.SnapshotId;
-			var jumbledTracksUpdated = jumbledContentsPlaylistVersion.PlaybackOrder.Select(jumbledContentsPlaylistVersion.GetMetadataForTrack).ToArray();
+			var jumbledTracksUpdated = jumbledContentsPlaylistVersion.PlaybackOrder
+				.Select(jumbledContentsPlaylistVersion.GetMetadataForTrack)
+				.Select(track => track.GetOriginallyRequestedVersion()).ToArray();
 			// Reorder the tracks in the playlist
-			await ReorderPlaylist(playlistId, initialSnapshotId, jumbledTracksUpdated, newTracksCapped).WithoutContextCapture();
+			await ReorderPlaylist(playlistId, jumbledContentsPlaylistVersion, initialSnapshotId, jumbledTracksUpdated, newTracksCapped, newTrackCounts).WithoutContextCapture();
+			Logger.Verbose(GetLogStringOfIntendedTrackOrder(jumbledContentsPlaylistVersion.SpotifyContext.Name, newTracksCapped));
 		}
 
 		private async Task PutCorrectTracksInPlaylist(string playlistId, IEnumerable<ITrackLinkingInfo> currentTracks, IEnumerable<ITrackLinkingInfo> newTracksCapped,
@@ -82,24 +86,23 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 						: Array.Empty<IPlaylistModification>();
 		}
 
-		private async Task ReorderPlaylist(string playlistId, string snapshotId, ITrackLinkingInfo[] jumbledOrder, ITrackLinkingInfo[] intendedOrder)
+		private async Task ReorderPlaylist(string playlistId, IPlaylistPlaybackContext<FullTrack> context, string snapshotId,
+			ITrackLinkingInfo[] jumbledOrder, ITrackLinkingInfo[] intendedOrder, IReadOnlyDictionary<ITrackLinkingInfo, int> trackCounts)
 		{
-			// Creates the initial set of batches, which have not been combined yet, so they each just contain one track
-			Batch[] GetInitialBatches(ITrackLinkingInfo[] jumbledTracks)
-			{
-				var intendedMoves = GetIntendedMoves(jumbledTracks, intendedOrder);
-				var jumbledBatches = jumbledTracks.Select((track, index) => new Batch(track, index, intendedMoves[index])).ToArray();
-				return jumbledBatches;
-			}
-
 			Task<string> QueryCurrentSnapshotId() => (new GetCurrentSnapshotIdOperation() as IPlaylistModification).SendRequest(this, playlistId);
 
 			var playlistSize = jumbledOrder.Length;
 			if (playlistSize != intendedOrder.Length)
 				throw new ArgumentException($"The current version of the playlist has {playlistSize} tracks, but is supposed to have {intendedOrder.Length} tracks");
 
+			// Remove and re-add any tracks that would be more quickly grouped with other tracks it will end up near by replacing than reordering
+			var (wereOperationsPerformed, resultingOrder) = await DoReplacementsForEfficiencyAndGetBatches(playlistId, context, jumbledOrder, intendedOrder, trackCounts).WithoutContextCapture();
+			jumbledOrder = resultingOrder;
+			if (wereOperationsPerformed)
+				snapshotId = await QueryCurrentSnapshotId().WithoutContextCapture();
+
 			// Put each track into its own batch, which includes the intended index for it in the intended order
-			var jumbledBatches = GetInitialBatches(jumbledOrder);
+			var jumbledBatches = GetInitialBatches(jumbledOrder, intendedOrder);
 
 			// Gets the operations that can all be done without impacting each other. OperationsAndBatches contains pairs of operations with the batch the operation moves.
 			// PaddedBatches is just jumbledBatches with padding and condensed, but it's necessary for calling SimulateReordering below.
@@ -119,6 +122,53 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 				snapshotId = await QueryCurrentSnapshotId().WithoutContextCapture();
 			}			
+		}
+
+		private async Task<(bool wereOperationsPerformed, ITrackLinkingInfo[] resultingOrder)> DoReplacementsForEfficiencyAndGetBatches(string playlistId,
+			IPlaylistPlaybackContext<FullTrack> context, ITrackLinkingInfo[] jumbledOrder, ITrackLinkingInfo[] intendedOrder, IReadOnlyDictionary<ITrackLinkingInfo, int> trackCounts)
+		{
+			bool CanReplaceTrack(ITrackLinkingInfo track) => !track.IsLocal && trackCounts[track] == 1;
+
+			var playlistSize = jumbledOrder.Length;
+			// Get the current contents as condensed batches in the order they will end up in
+			var jumbledBatches = GetInitialBatches(jumbledOrder, intendedOrder);
+			var condensedBatches = CondenseBatches(jumbledBatches).ToArray();
+			var intendedBatchOrder = condensedBatches.OrderBy(Batch.TargetIndexComparer).ToArray();
+			// determine which batches will be removed and re-added. These should be small (which means the tracks in the batch are isolated from others it will end up with,
+			// since otherwise the batch would be condensed to a larger size)
+			var batchesToReplace = intendedBatchOrder
+				.Where(batch => batch.Length <= TaskParameters.Get<int>(SpotifyParameters.MaximumBatchSizeToReplaceInPlaylist) && batch.All(CanReplaceTrack));
+			var batchesToReplaceAsSet = batchesToReplace.ToHashSet();
+			var allTracksToReplace = batchesToReplace.SelectMany(batch => batch);
+			var wereOperationsPerformed = allTracksToReplace.Any();
+			// If there are no tracks to operate on, just return now
+			if (!wereOperationsPerformed)
+			{
+				return (wereOperationsPerformed, jumbledOrder);
+			}
+			await RunAllOperationsToCompletion(playlistId, RemoveOperation.CreateOperations(allTracksToReplace));
+			await RunAllOperationsToCompletion(playlistId, AddOperation.CreateOperations(allTracksToReplace));
+			// The following logic relies on the assumption that each replace track occurs only once in the jumbled/intended order
+			// Get the resulting order of the playlist after the remove/add operations. Any tracks that were not replaced will stay in the playlist, and their index will be bumped up
+			// Therefore, their order is already known. And all the tracks that were replaced will be at the end, so to get their order,
+			// we only need to query the order from where they start
+			var numberOfReplacedTracks = allTracksToReplace.Count();
+			var replacedTracksAsSet = allTracksToReplace.ToHashSet(ITrackLinkingInfo.EqualityByUris);
+			var remainingTracks = jumbledOrder.Where(replacedTracksAsSet.NotContains);
+			var replacedTracksOrder = (await this.GetAllRemainingPlaylistTracks(playlistId, startFrom: playlistSize - replacedTracksAsSet.Count).WithoutContextCapture())
+				.Select(context.GetMetadataForTrack).Select(track => track.GetOriginallyRequestedVersion());
+			var resultingOrder = remainingTracks.Concat(replacedTracksOrder).ToArray();
+			if (resultingOrder.Length != playlistSize)
+				throw new InvalidOperationException($"The playlist should end up still having {playlistSize} tracks, but ended up having {resultingOrder.Length} tracks");
+			return (wereOperationsPerformed, resultingOrder);
+		}
+
+		private static Batch[] GetInitialBatches(ITrackLinkingInfo[] jumbledUris, ITrackLinkingInfo[] intendedOrder)
+		{
+			// Get a map from current index to the index it will end up in
+			var intendedMoves = GetIntendedMoves(jumbledUris, intendedOrder);
+			var jumbledBatches = jumbledUris.Select((uri, index) => new Batch(uri, index, intendedMoves[index])).ToArray();
+			return jumbledBatches;
 		}
 
 		private static async Task<ILookup<bool, OperationT>> RunAllOperations<OperationT>(
@@ -202,6 +252,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			return reorderedBatches;
 		}
 
+
 		private static IEnumerable<(int indexToMove, int indexToInsertBefore)> GetIndicesToMove(int[] lcsIndices)
 		{
 			// enumerate through each index and next index in lcsIndices
@@ -234,6 +285,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				// The batch cannot be combined, so yield it
 				yield return batch;
 			}
+		}
+
+		private static string GetLogStringOfIntendedTrackOrder(string playlistName, ITrackLinkingInfo[] intendedOrder)
+		{
+			var numberOfTracks = intendedOrder.Length;
+			var numberOfDigitsInIndex = (int) Math.Log10(numberOfTracks + 1) + 1;
+			string IndexToStringWithPadding(int index) => (index + 1).ToString().PadLeft(numberOfDigitsInIndex);
+			return string.Join('\n', new[] { $"The operations on playlist \"{playlistName}\" have completed. The resulting playlist should look like:" }
+				.Concat(intendedOrder.Select((track, index) => $"\t\t{IndexToStringWithPadding(index)}: {track.Name} -- {track.AlbumName} -- {string.Join(", ", track.ArtistNames)} -- {track.Uri}")));
 		}
 
 		/*

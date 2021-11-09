@@ -35,16 +35,37 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		TrackT OriginalTrack { get; }
 	}
 
-	public interface ISimpleTrackLinkingInfo : ITrackLinkingInfo<SimpleTrack> {
+	public interface IPlayableTrackLinkingInfo : ITrackLinkingInfo
+	{
+		bool IsPlayable { get; }
+		bool TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack);
+		ITrackLinkingInfo GetOriginallyRequestedVersion() => TryGetLinkedTrack(out var linkedTrack) ? linkedTrack : this;
+	}
+
+	public interface IPlayableTrackLinkingInfo<TrackT> : ITrackLinkingInfo<TrackT>, IPlayableTrackLinkingInfo { }
+
+	public interface ISimpleTrackLinkingInfo : IPlayableTrackLinkingInfo<SimpleTrack>
+	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
 		bool ITrackLinkingInfo.IsLocal => false;
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.Artists.Select(artist => artist.Name);
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack)
+		{
+			if (OriginalTrack.LinkedFrom != null)
+			{
+				linkedTrack = new UnplayableTrackWrapper(OriginalTrack.LinkedFrom, this);
+				return true;
+			}
+			linkedTrack = null;
+			return false;
+		}
 	}
 
-	public interface IFullTrackLinkingInfo : ITrackLinkingInfo<FullTrack>
+	public interface IFullTrackLinkingInfo : IPlayableTrackLinkingInfo<FullTrack>
 	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
@@ -54,10 +75,35 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.Artists.Select(artist => artist.Name);
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack)
+		{
+			if (OriginalTrack.LinkedFrom != null)
+			{
+				linkedTrack = new UnplayableTrackWrapper(OriginalTrack.LinkedFrom, this);
+				return true;
+			}
+			linkedTrack = null;
+			return false;
+		}
 	}
 
-	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : ITrackLinkingInfo<InfoT>
-		where InfoT : ITrackLinkingInfo<OriginalTrackT>
+	public interface IUnplayableTrackLinkingInfo : ITrackLinkingInfo<LinkedTrack>
+	{
+		string ITrackLinkingInfo.Name => PlayableVersion.Name;
+		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
+		string ITrackLinkingInfo.AlbumName => PlayableVersion.AlbumName;
+		string ITrackLinkingInfo.AlbumUri => PlayableVersion.AlbumUri;
+		bool ITrackLinkingInfo.IsLocal => PlayableVersion.IsLocal;
+		int ITrackLinkingInfo.DurationMs => PlayableVersion.DurationMs;
+		IEnumerable<string> ITrackLinkingInfo.ArtistNames => PlayableVersion.ArtistNames;
+		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => PlayableVersion.AlbumIndex;
+
+		IPlayableTrackLinkingInfo PlayableVersion { get; }
+	}
+
+	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : IPlayableTrackLinkingInfo<InfoT>
+		where InfoT : ITrackLinkingInfo<OriginalTrackT>, IPlayableTrackLinkingInfo
 	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
@@ -67,6 +113,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.ArtistNames;
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => OriginalTrack.AlbumIndex;
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack) => OriginalTrack.TryGetLinkedTrack(out linkedTrack);
 	}
 
 	public static class ITrackLinkingInfoExtensions
