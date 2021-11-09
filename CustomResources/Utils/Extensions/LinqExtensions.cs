@@ -45,6 +45,7 @@ namespace CustomResources.Utils.Extensions
 		}
 
 		public static IEnumerable<T> Each<T>(this IEnumerable<T> sequence, Action<T> action) { foreach (var item in sequence) action(item); return sequence; }
+		public static IEnumerable<T> Each<T>(this IEnumerable<T> sequence, Action<T, int> action) { foreach (var (item, index) in sequence.Enumerate()) action(item, index); return sequence; }
 		public static IEnumerable<T> EachIndependently<T>(this IEnumerable<T> sequence, Action<T> action)
 		{
 			List<Exception> exceptions = null;
@@ -95,6 +96,28 @@ namespace CustomResources.Utils.Extensions
 
 		public static V Get<K, V>(this IReadOnlyDictionary<K, V> dictionary, K key) =>
 			dictionary.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"The given key was not found {key}");
+
+		public static bool IsSubsequenceOf<T>(this IEnumerable<T> sequence, IEnumerable<T> possibleSuperSequence, IEqualityComparer<T> equalityComparer = null)
+		{
+			equalityComparer ??= EqualityComparer<T>.Default;
+			using (var superSequenceEnumerator = possibleSuperSequence.GetEnumerator())
+			{
+				foreach (var element in sequence)
+				{
+					if (!superSequenceEnumerator.MoveNext())
+						return false;
+					while (!equalityComparer.Equals(superSequenceEnumerator.Current, element))
+					{
+						if (!superSequenceEnumerator.MoveNext())
+							return false;
+					}
+
+				}
+			}
+			return true;
+		}
+		public static bool IsSuperSequenceOf<T>(this IEnumerable<T> sequence, IEnumerable<T> possibleSubSequence, IEqualityComparer<T> equalityComparer = null) =>
+			possibleSubSequence.IsSubsequenceOf(sequence, equalityComparer);
 
 		public static IEnumerable<T> KDistinct<T>(this IEnumerable<T> sequence, int k, IEqualityComparer<T> equalityComparer = null) =>
 			sequence.KDistinct(_ => k, equalityComparer);
