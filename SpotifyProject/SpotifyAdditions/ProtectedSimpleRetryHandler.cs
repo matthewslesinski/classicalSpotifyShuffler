@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils.Parameters;
@@ -10,6 +9,7 @@ using CustomResources.Utils.GeneralUtils;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using SpotifyProject.Configuration;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyAdditions
 {
@@ -39,11 +39,11 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public TimeSpan RetryAfter { get; set; }
 
-		public int RetryTimes => TaskParameters.Get<int>(SpotifyParameters.NumberOfRetriesForServerError);
+		public static int RetryTimes => TaskParameters.Get<int>(SpotifyParameters.NumberOfRetriesForServerError);
 
 		public bool TooManyRequestsConsumesARetry { get; set; }
 
-		public ISet<HttpStatusCode> RetryErrorCodes { get; set; }
+		public IReadOnlySet<HttpStatusCode> RetryErrorCodes { get; set; }
 
 		public bool MakeRetryAfterGuessIfNecessary { get; set; }
 
@@ -61,12 +61,7 @@ namespace SpotifyProject.SpotifyAdditions
 			RetryAfter = TimeSpan.FromMilliseconds(50.0);
 			TooManyRequestsConsumesARetry = false;
 			MakeRetryAfterGuessIfNecessary = true;
-			RetryErrorCodes = new HashSet<HttpStatusCode>
-			{
-				HttpStatusCode.InternalServerError,
-				HttpStatusCode.BadGateway,
-				HttpStatusCode.ServiceUnavailable
-			};
+			RetryErrorCodes = SpotifyConstants.NonDeterministicStatusCodes;
 		}
 
 		private TimeSpan? ParseTooManyRetries(IResponse response)
