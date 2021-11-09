@@ -64,7 +64,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			BeethovenPianoSonatasAndConcerti,
 			BrahmsSymphonies,
 			BachKeyboardWorks,
-			HilaryHahnIn27Pieces
+			HilaryHahnIn27Pieces,
+			BachCantatas,
 		}
 
 		protected enum SampleArtists
@@ -86,7 +87,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			{ SampleAlbums.BeethovenPianoSonatasAndConcerti, "spotify:album:62VlldLNKK8OGw8vbyIFED" },
 			{ SampleAlbums.BrahmsSymphonies, "spotify:album:0kJBUtCkSBYRyc8Jiyyecz" },
 			{ SampleAlbums.BachKeyboardWorks, "spotify:album:1FfjKB0aGdGU52uQOuTA6I" },
-			{ SampleAlbums.HilaryHahnIn27Pieces, "spotify:album:7GiMQKT1Twq3MOVAGQekF7" }
+			{ SampleAlbums.HilaryHahnIn27Pieces, "spotify:album:7GiMQKT1Twq3MOVAGQekF7" },
+			{ SampleAlbums.BachCantatas, "spotify:album:46kDQc1UFEKI51yvavxdMm" }
 		};
 
 		protected static IReadOnlyDictionary<SampleAlbums, string> SampleAlbumIds => _sampleAlbumUris
