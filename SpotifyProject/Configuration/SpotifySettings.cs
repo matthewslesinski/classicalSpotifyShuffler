@@ -28,7 +28,7 @@ namespace SpotifyProject.Configuration
 			{ SpotifySettings.AskUser,                           new BoolSettingSpecification() },
 			{ SpotifySettings.TrackQueueSizeLimit,               new ConvertibleSettingSpecification<int> { Default = 750} },
 			{ SpotifySettings.NumHTTPConnections,                new ConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var numConnections) && numConnections > 0 ? numConnections : int.MaxValue, Default = int.MaxValue } },
-			{ SpotifySettings.HTTPLoggerCharacterLimit,          new NullableConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var characterLimit) && characterLimit > 0 ? characterLimit : null, Default = null } },
+			{ SpotifySettings.HTTPLoggerCharacterLimit,          new NullableConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var characterLimit) && characterLimit > 0 ? characterLimit : null, Default = 1000 } },
 		};
 	}
 
