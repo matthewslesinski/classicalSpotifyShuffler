@@ -31,23 +31,31 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 
 	public class ScopedConcurrentDictionary<K, V> : CustomDictionaryBase<K, V>, IScopedCollection, IInternalDictionary<K, V>, IScopedDictionary<K, V>,
-		IScopedCollectionWrapper<KeyValuePair<K, IScopedBucket<V>>, WrappedScopeConcurrentDictionary<K, V>>, ICollectionWrapper<KeyValuePair<K, IScopedBucket<V>>, WrappedScopeConcurrentDictionary<K, V>>
+		IConcurrentDictionary<K, V>, IScopedCollectionWrapper<KeyValuePair<K, IScopedBucket<V>>, WrappedScopeConcurrentDictionary<K, V>>,
+		ICollectionWrapper<KeyValuePair<K, IScopedBucket<V>>, WrappedScopeConcurrentDictionary<K, V>>
 	{
 		protected readonly WrappedScopeConcurrentDictionary<K, V> _wrappedDictionary;
 		private readonly Func<IScopedBucket<V>> _initializationFunc;
 		public ScopedConcurrentDictionary(MemoryScope scope, IEqualityComparer<K> equalityComparer = null) : base(equalityComparer)
 		{
 			_wrappedDictionary = new WrappedScopeConcurrentDictionary<K, V>(scope);
+			_sizeHolder = scope switch
+			{
+				MemoryScope.Global => new GlobalScopeIntBucket(),
+				MemoryScope.AsyncLocal => new AsyncLocalIntBucket(),
+				MemoryScope.ThreadLocal => new ThreadLocalIntBucket(),
+				_ => throw new NotImplementedException($"The given memory scope, {scope}, has yet to have an implementation added")
+			};
 			_initializationFunc = scope switch
 			{
-				MemoryScope.Global => () => new GlobalScopeBucket<V>(),
-				MemoryScope.AsyncLocal => () => new AsyncLocalBucket<V>(),
-				MemoryScope.ThreadLocal => () => new ThreadLocalBucket<V>(),
+				MemoryScope.Global => () => new GlobalScopeBucket<V>(_sizeHolder),
+				MemoryScope.AsyncLocal => () => new AsyncLocalBucket<V>(_sizeHolder),
+				MemoryScope.ThreadLocal => () => new ThreadLocalBucket<V>(_sizeHolder),
 				_ => throw new NotImplementedException($"The given memory scope, {scope}, has yet to have an implementation added")
 			};
 		}
 
-		private int _size = 0;
+		private readonly IScopedIntBucket _sizeHolder;
 
 		public WrappedScopeConcurrentDictionary<K, V> WrappedCollection => _wrappedDictionary;
 
@@ -55,7 +63,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public override object SyncRoot => _wrappedDictionary.As<ICollection>().SyncRoot;
 
-		public override int Count => _size;
+		public override int Count => _sizeHolder.Value;
 		public ISet<K> Keys => new KeyCollectionView<K, V, IReadOnlyDictionaryCollection<K, V>>(GetSnapshot(), EqualityComparer);
 		public ICollection<V> Values => new ValueCollectionView<K, V, IReadOnlyDictionaryCollection<K, V>>(GetSnapshot());
 
@@ -85,7 +93,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				lockToken.Dispose();
 				foreach (var bucket in buckets)
 					bucket.TryRemove(out _);
-				_size = 0;
 			}
 			finally
 			{
@@ -107,7 +114,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public override bool Remove(K key) => TryRemove(key, out _);
 
-		public override void Update(K key, V value) => AddOrUpdate(key,
+		public override void Update(K key, V value) => AddOrUpdate(
+			key,
 			k => Exceptions.Throw<V>(new KeyNotFoundException($"Cannot update a value in the dictionary when the key is not already in the dictionary: {key}")),
 			(_, _) => value);
 
@@ -137,10 +145,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				else
 				{
 					if (bucket.TryAdd(addValueFactory(key, factoryArgument), out var resultingValue))
-					{
-						Interlocked.Increment(ref _size);
 						return resultingValue;
-					}
 				}
 			}
 		}
@@ -158,8 +163,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			if (!bucket.TryGetValue(out var existingValue))
 			{
 				var newValue = valueFactory(key, factoryArgument);
-				if (bucket.TryAdd(newValue, out existingValue))
-					Interlocked.Increment(ref _size);
+				bucket.TryAdd(newValue, out existingValue);
 			}
 			return existingValue;
 		}
@@ -167,10 +171,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool TryAdd(K key, V value)
 		{
 			var bucket = _wrappedDictionary.GetOrAdd(key, k => InstantiateBucket());
-			var wasAdded = bucket.TryAdd(value, out _);
-			if (wasAdded)
-				Interlocked.Increment(ref _size);
-			return wasAdded;
+			return bucket.TryAdd(value, out _);
 		}
 
 		public override bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
@@ -186,21 +187,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool TryRemove(K key, out V value)
 		{
 			if (_wrappedDictionary.TryGetValue(key, out var bucket) && bucket.TryRemove(out value))
-			{
-				Interlocked.Decrement(ref _size);
 				return true;
-			}
 			value = default;
 			return false;
 		}
 
-		public bool TryRemove(KeyValuePair<K, V> item)
-		{
-			var wasRemoved = _wrappedDictionary.TryGetValue(item.Key, out var bucket) && bucket.TrySet(default, item.Value, valueMeansRemoval: true);
-			if (wasRemoved)
-				Interlocked.Decrement(ref _size);
-			return wasRemoved;
-		}
+		public bool TryRemove(KeyValuePair<K, V> item) => _wrappedDictionary.TryGetValue(item.Key, out var bucket) && bucket.TrySet(default, item.Value, valueMeansRemoval: true);
 
 		public bool TryUpdate(K key, V newValue, V comparisonValue) => _wrappedDictionary.TryGetValue(key, out var bucket) && bucket.TrySet(newValue, comparisonValue);
 
@@ -241,11 +233,25 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public V Value => TryGetValue(out var value) ? value : Exceptions.Throw<V>(new InvalidOperationException("There is no value to retrieve"));
 	}
 
+	public interface IScopedIntBucket
+	{
+		public int Increment();
+		public int Decrement();
+		public void Reset();
+		public int Value { get; }
+	}
+
 	internal class GlobalScopeBucket<V> : IScopedBucket<V>
 	{
 		private readonly object _swapLock = new object();
+		private readonly IScopedIntBucket _dictSizeCounter;
 
-		private (bool hasValue, V value) _value = (false, default);
+		internal GlobalScopeBucket(IScopedIntBucket sizeCounter)
+		{
+			_dictSizeCounter = sizeCounter;
+		}
+
+		protected (bool hasValue, V value) _value = (false, default);
 
 		private V Value
 		{
@@ -266,6 +272,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				if (TryGetValue(out resultingValue))
 					return false;
 				Value = resultingValue = value;
+				_dictSizeCounter.Increment();
 				return true;
 			}
 		}
@@ -286,6 +293,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				if (!TryGetValue(out oldValue))
 					return false;
 				Delete();
+				_dictSizeCounter.Decrement();
 				return true;
 			}
 		}
@@ -300,7 +308,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				if (ShouldNotSwap())
 					return false;
 				if (valueMeansRemoval)
+				{
 					Delete();
+					_dictSizeCounter.Decrement();
+				}
 				else
 					Value = newValue;
 				return true;
@@ -318,10 +329,24 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		}
 	}
 
-
+	internal class GlobalScopeIntBucket : IScopedIntBucket
+	{
+		private int _value = 0;
+		public int Value { get => _value; private set => _value = value; }
+		public int Decrement() => Interlocked.Decrement(ref _value);
+		public int Increment() => Interlocked.Increment(ref _value);
+		public void Reset() => _value = 0;
+	}
 
 	internal abstract class LocalBucket<V> : IScopedBucket<V>
 	{
+		private readonly IScopedIntBucket _dictSizeCounter;
+
+		internal LocalBucket(IScopedIntBucket sizeCounter)
+		{
+			_dictSizeCounter = sizeCounter;
+		}
+
 		protected abstract (bool hasValue, V value) Value { get; set; }
 
 		public bool TryAdd(V value, out V resultingValue)
@@ -330,6 +355,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				return false;
 			Value = (true, value);
 			resultingValue = value;
+			_dictSizeCounter.Increment();
 			return true;
 		}
 
@@ -345,6 +371,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			if (!TryGetValue(out oldValue))
 				return false;
 			Value = (false, default);
+			_dictSizeCounter.Decrement();
 			return true;
 		}
 
@@ -353,7 +380,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			if (!TryGetValue(out var oldValue) || !Equals(comparisonValue, oldValue))
 				return false;
 			if (valueMeansRemoval)
+			{
 				Value = (false, default);
+				_dictSizeCounter.Decrement();
+			}
 			else
 				Value = (true, newValue);
 			return true;
@@ -365,13 +395,37 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	internal class ThreadLocalBucket<V> : LocalBucket<V>
 	{
+		internal ThreadLocalBucket(IScopedIntBucket sizeCounter) : base(sizeCounter) { }
+
 		private readonly ThreadLocal<(bool hasValue, V value)> _store = new ThreadLocal<(bool hasValue, V value)>(() => (false, default));
 		protected override (bool hasValue, V value) Value { get => _store.Value; set => _store.Value = value; }
 	}
 
+	internal class ThreadLocalIntBucket : IScopedIntBucket
+	{
+		private readonly ThreadLocal<int> _valueStore = new ThreadLocal<int>(() => 0);
+
+		public int Value => _valueStore.Value;
+		public int Decrement() => _valueStore.Value--;
+		public int Increment() => _valueStore.Value++;
+		public void Reset() => _valueStore.Value = 0;
+	}
+
 	internal class AsyncLocalBucket<V> : LocalBucket<V>
 	{
+		internal AsyncLocalBucket(IScopedIntBucket sizeCounter) : base(sizeCounter) { }
+
 		private readonly AsyncLocal<(bool hasValue, V value)> _store= new AsyncLocal<(bool hasValue, V value)>{ Value = (false, default) };
 		protected override (bool hasValue, V value) Value { get => _store.Value; set => _store.Value = value; }
+	}
+
+	internal class AsyncLocalIntBucket : IScopedIntBucket
+	{
+		private readonly AsyncLocal<int> _valueStore = new AsyncLocal<int>();
+
+		public int Value => _valueStore.Value;
+		public int Decrement() => _valueStore.Value--;
+		public int Increment() => _valueStore.Value++;
+		public void Reset() => _valueStore.Value = 0;
 	}
 }
