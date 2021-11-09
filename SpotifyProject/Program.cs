@@ -9,6 +9,10 @@ using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyUtils;
 using System.IO;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("SpotifyProjectTests")]
+
 
 namespace SpotifyProject
 {

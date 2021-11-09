@@ -33,7 +33,7 @@ namespace SpotifyProject.Authentication
 		public async Task<SpotifyClient> Authenticate(AuthorizationSource authorizationSource)
 		{
             var authenticator = await GetAuthenticator(authorizationSource).WithoutContextCapture();
-            var authenticatedConfig = _config.WithAuthenticator(authenticator).Finalized();
+            _config.WithAuthenticator(authenticator).Finalized();
             return new SpotifyClient(_config.UnderlyingSpotifyClientConfig);
 		}
 
@@ -74,7 +74,7 @@ namespace SpotifyProject.Authentication
                 : SpotifyDefaults.RetryHandlers.SimpleRetryHandler;
             var paginator = SpotifyDefaults.Paginators.TryGetPropertyByName<IPaginator>(paginatorName, out var foundPaginator)
                 ? foundPaginator
-                : SpotifyDefaults.Paginators.ConcurrentObservablePaginator;
+                : SpotifyDefaults.Paginators.ConcurrentEnumerablePaginator;
             var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectors.APIConnectorConstructor>(apiConnectorName, out var foundConstructor)
                 ? foundConstructor
                 : SpotifyDefaults.APIConnectors.ModifiedAPIConnector;

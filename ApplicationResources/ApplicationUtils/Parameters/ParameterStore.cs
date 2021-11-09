@@ -37,7 +37,7 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 		public class ParameterBuilder
 		{
-			private readonly List<(Enum parameter, object value)> paramsToSet = new();
+			private readonly Dictionary<Enum, object> paramsToSet = new();
 			private readonly ParameterStore _paramStore;
 
 			internal ParameterBuilder(ParameterStore parameterStore)
@@ -54,11 +54,11 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 			public ParameterBuilder With(Enum parameter, object value)
 			{
 				_paramStore.EnsureSettingValueIsAllowed(parameter, value);
-				paramsToSet.Add((parameter, value));
+				paramsToSet[parameter] = value;
 				return this;
 			}
 
-			public IDisposable Apply() => _paramStore.AddOverrides(paramsToSet);
+			public IDisposable Apply() => _paramStore.AddOverrides(paramsToSet.Select(kvp => (kvp.Key, kvp.Value)));
 		}
 
 	}

@@ -16,7 +16,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			SpotifyContext = playlist;
 		}
 
-		public ITrackLinkingInfo<FullTrack> GetMetadataForTrack(FullTrack track)
+		public IPlayableTrackLinkingInfo<FullTrack> GetMetadataForTrack(FullTrack track)
 		{
 			return new FullTrackWrapper(track);
 		}
@@ -39,7 +39,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		public async Task FullyLoad()
 		{
 			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllPlaylistTracks(SpotifyContext.Id).WithoutContextCapture();
+			var allTracks = await this.GetAllRemainingPlaylistTracks(SpotifyContext.Id).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}
@@ -71,7 +71,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		}
 
 		public OriginalContextT BaseContext { get; }
-		public ITrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track)
+		public IPlayableTrackLinkingInfo<TrackT> GetMetadataForTrack(TrackT track)
 		{
 			return BaseContext.GetMetadataForTrack(track);
 		}

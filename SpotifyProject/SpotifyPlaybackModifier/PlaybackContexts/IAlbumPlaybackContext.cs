@@ -19,7 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			return true;
 		}
 
-		ITrackLinkingInfo<SimpleTrack> ISpotifyPlaybackContext<SimpleTrack>.GetMetadataForTrack(SimpleTrack track) => new SimpleTrackAndAlbumWrapper(track, SpotifyContext);
+		IPlayableTrackLinkingInfo<SimpleTrack> ISpotifyPlaybackContext<SimpleTrack>.GetMetadataForTrack(SimpleTrack track) => new SimpleTrackAndAlbumWrapper(track, SpotifyContext);
 		SpotifyElementType IStaticPlaybackContext<FullAlbum, SimpleTrack>.SpotifyElementType => SpotifyElementType.Album;
 	}
 

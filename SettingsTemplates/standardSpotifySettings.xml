@@ -2,8 +2,8 @@
 <Settings>
   <Setting name="HTTPLoggerName">InternalLoggingWrapper</Setting>
   <Setting name="HTTPLoggerCharacterLimit">250</Setting>
-  <Setting name="RetryHandlerName">SimpleRetryHandler</Setting>
-  <Setting name="PaginatorName">SimplePaginator</Setting>
+  <Setting name="RetryHandlerName">ProtectedSimpleRetryHandler</Setting>
+  <Setting name="PaginatorName">ConcurrentEnumerablePaginator</Setting>
   <Setting name="MaintainCurrentlyPlaying"></Setting>
   <Setting name="TrackQueueSizeLimit">750</Setting>
   <Setting name="NumHTTPConnections">-1</Setting>

@@ -2,8 +2,8 @@
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-	public interface IProcessedTrackPlaybackContext<TrackT, InfoT> : ISpotifyPlaybackContext<InfoT> where InfoT : ITrackLinkingInfo<TrackT>
+	public interface IProcessedTrackPlaybackContext<TrackT, InfoT> : ISpotifyPlaybackContext<InfoT> where InfoT : ITrackLinkingInfo<TrackT>, IPlayableTrackLinkingInfo
 	{
-		ITrackLinkingInfo<InfoT> ISpotifyPlaybackContext<InfoT>.GetMetadataForTrack(InfoT track) => new TrackLinkingInfoWrapper<TrackT, InfoT>(track);
+		IPlayableTrackLinkingInfo<InfoT> ISpotifyPlaybackContext<InfoT>.GetMetadataForTrack(InfoT track) => new TrackLinkingInfoWrapper<TrackT, InfoT>(track);
 	}
 }

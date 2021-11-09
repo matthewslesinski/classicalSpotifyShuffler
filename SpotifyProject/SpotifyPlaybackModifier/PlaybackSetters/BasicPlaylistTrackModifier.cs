@@ -26,8 +26,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		private static IEnumerable<IPlaylistModification> GetOperations(IEnumerable<ITrackLinkingInfo> newTracks)
 		{
 			var removeOperation = new ReplaceOperation();
-			var urisToAdd = newTracks.Where(track => !track.IsLocal).Select(track => track.Uri).Take(SpotifyConstants.PlaylistSizeLimit);
-			return new List<IPlaylistModification> { removeOperation }
+			var urisToAdd = newTracks.Where(track => !track.IsLocal).Take(SpotifyConstants.PlaylistSizeLimit);
+			return new IPlaylistModification[] { removeOperation }
 				.Concat(AddOperation.CreateOperations(urisToAdd))
 				.Select(operation => operation);
 		}

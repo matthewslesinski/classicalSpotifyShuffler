@@ -15,7 +15,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 		where OutputContextT : ISpotifyPlaybackContext
 	{
 		public SpotifyPlaybackModifier(SpotifyConfiguration spotifyConfiguration, IPlaybackTransformation<InputContextT, OutputContextT> transformation,
-			IPlaybackSetter<OutputContextT, PlaybackStateArgs> playbackSetter)
+			IContextSetter<OutputContextT, PlaybackStateArgs> playbackSetter)
 			: base(spotifyConfiguration)
 		{
 			_transformer = transformation;
@@ -26,6 +26,6 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 
 		protected readonly IPlaybackTransformation<InputContextT, OutputContextT> _transformer;
 
-		protected readonly IPlaybackSetter<OutputContextT, PlaybackStateArgs> _playbackSetter;
+		protected readonly IContextSetter<OutputContextT, PlaybackStateArgs> _playbackSetter;
 	}
 }

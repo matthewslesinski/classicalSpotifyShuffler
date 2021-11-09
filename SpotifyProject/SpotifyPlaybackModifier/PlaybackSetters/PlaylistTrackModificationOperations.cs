@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SpotifyProject.Utils;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
+using ApplicationResources.ApplicationUtils.Parameters;
+using SpotifyProject.Configuration;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -73,7 +75,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	{
 		internal AddOperation(IEnumerable<string> uris, int? addPosition = null)
 		{
-			if (uris.Count() > SpotifyConstants.PlaylistRequestBatchSize)
+			if (uris.Count() > TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize))
 				throw new ArgumentException($"{uris.Count()} is too many tracks to add to a playlist at once");
 			UrisToAdd = uris.ToList();
 			AddPosition = addPosition;
@@ -83,10 +85,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		public IList<string> UrisToAdd { get; }
 
-		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris)
-		{
-			return uris.Batch(SpotifyConstants.PlaylistRequestBatchSize).Select(batch => new AddOperation(batch));
-		}
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<ITrackLinkingInfo> tracks) => CreateOperations(tracks.Select(track => track.Uri));
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris) =>
+			uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new AddOperation(batch));
 	}
 
 	internal class RemoveOperation : IRemoveTracksOperation
@@ -94,16 +95,15 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		internal RemoveOperation(IEnumerable<string> uris)
 		{
 			UrisToRemove = uris.ToList();
-			if (UrisToRemove.Count() > SpotifyConstants.PlaylistRequestBatchSize)
-				throw new ArgumentException($"{UrisToRemove.Count()} is too many tracks to remove from a playlist at once");
+			if (UrisToRemove.Count > TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize))
+				throw new ArgumentException($"{UrisToRemove.Count} is too many tracks to remove from a playlist at once");
 		}
 
 		public IList<string> UrisToRemove { get; }
 
-		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris)
-		{
-			return uris.Batch(SpotifyConstants.PlaylistRequestBatchSize).Select(batch => new RemoveOperation(batch));
-		}
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<ITrackLinkingInfo> tracks) => CreateOperations(tracks.Select(track => track.Uri));
+		public static IEnumerable<IPlaylistModification> CreateOperations(IEnumerable<string> uris) =>
+			uris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize)).Select(batch => new RemoveOperation(batch));
 	}
 
 	internal class ReorderOperation : IReorderTracksOperation
@@ -126,7 +126,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	{
 		internal ReplaceOperation(IEnumerable<string> uris = null)
 		{
-			if (uris?.Count() > SpotifyConstants.PlaylistRequestBatchSize)
+			if (uris?.Count() > TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize))
 				throw new ArgumentException($"{uris.Count()} is too many tracks to put in a playlist at once");
 			UrisToReplaceWith = uris?.ToList() ?? new List<string>();
 		}

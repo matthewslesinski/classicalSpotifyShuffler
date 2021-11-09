@@ -29,14 +29,18 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		public static async Task<List<FullTrack>> GetAllSavedTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, int batchSize = 50)
 		{
 			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Library.GetTracks(new LibraryTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
-			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync().WithoutContextCapture();
+			var allTracks = await allItems.Select(track => track.Track).ToListAsync().WithoutContextCapture();
+			// This is a hack to account for the fact that local tracks are missing data
+			allTracks.Where(track => track.IsLocal).Each((track, index) => { if (track.TrackNumber == 0) track.TrackNumber = index; });
 			return allTracks;
 		}
 
-		public static async Task<List<FullTrack>> GetAllPlaylistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, int batchSize = 100)
+		public static async Task<List<FullTrack>> GetAllRemainingPlaylistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, int batchSize = 100, int startFrom = 0)
 		{
-			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
+			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Offset = startFrom, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
 			var allTracks = await allItems.Select(track => track.Track).OfType<FullTrack>().ToListAsync().WithoutContextCapture();
+			// This is a hack to account for the fact that local tracks are missing data
+			allTracks.Where(track => track.IsLocal).Each((track, index) => { if (track.TrackNumber == 0) track.TrackNumber = index; });
 			return allTracks;
 		}
 
@@ -44,7 +48,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 			await spotifyConfigurationContainer.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture();
 
 		public static async Task<List<SimpleTrack>> GetAllAlbumTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId, int batchSize = 50) =>
-			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market })).ToListAsync().WithoutContextCapture();
+			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture()).ToListAsync().WithoutContextCapture();
 
 		public static async Task<FullArtist> GetArtist(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId) =>
 			await spotifyConfigurationContainer.Spotify.Artists.Get(artistId).WithoutContextCapture();
@@ -56,6 +60,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 			var albumTracksRequest = new AlbumTracksRequest { Limit = trackBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
 			var albumEquality = new KeyBasedEqualityComparer<SimpleAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
 			var firstAlbumPage = await spotifyConfigurationContainer.Spotify.Artists.GetAlbums(artistId, artistsAlbumsRequest).WithoutContextCapture();
+			// TODO remove the use of observables because it might screw up the order
 			var allAlbums = spotifyConfigurationContainer.Spotify.Paginate(firstAlbumPage).Distinct(albumEquality).ToObservable().Finally(() => Logger.Information($"All albums loaded"));
 			var allTracks = await allAlbums
 				.SelectMany(album => Observable.FromAsync(() => spotifyConfigurationContainer.Spotify.Albums.GetTracks(album.Id, albumTracksRequest))
@@ -97,9 +102,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 
 		public static Task<PrivateUser> GetCurrentUserProfile(this ISpotifyConfigurationContainer spotifyConfigurationContainer) => spotifyConfigurationContainer.Spotify.UserProfile.Current();
 
-		public static async Task<FullPlaylist> AddOrGetPlaylistByName(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string name)
+		public static Task<FullPlaylist> AddOrGetPlaylistByName(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string name) => spotifyConfigurationContainer.AddOrGetPlaylistByName(Task.FromResult(name));
+		public static async Task<FullPlaylist> AddOrGetPlaylistByName(this ISpotifyConfigurationContainer spotifyConfigurationContainer, Task<string> nameProvider)
 		{
-			var playlists = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = 50 }));
+			var playlists = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = 50 }).WithoutContextCapture());
+			var name = await nameProvider.WithoutContextCapture();
 			var existingPlaylist = await playlists.FirstOrDefaultAsync(playlist => string.Equals(playlist.Name, name, StringComparison.OrdinalIgnoreCase)).WithoutContextCapture();
 			if (existingPlaylist != default)
 				return await spotifyConfigurationContainer.GetPlaylist(existingPlaylist.Id).WithoutContextCapture();

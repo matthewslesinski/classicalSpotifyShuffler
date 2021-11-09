@@ -11,6 +11,8 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.Utils;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Extensions;
+using SpotifyProject.Configuration;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -39,7 +41,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[Test]
 		public async Task TestAlbumGetTracks()
 		{
-			var albumId = SpotifyDependentUtils.TryParseSpotifyUri(SampleAlbumUris[SampleAlbums.BeethovenPianoSonatasAndConcerti], out _, out var parsedId, out _) ? parsedId : null;
+			var albumId = SampleAlbumIds[SampleAlbums.BeethovenPianoSonatasAndConcerti];
 			var beethovenPianoSonatasTracks = await SpotifyAccessor.GetAllAlbumTracks(albumId, batchSize: 1);
 			var beethovenPianoSonatasAlbum = await SpotifyAccessor.GetAlbum(albumId);
 			var beethovenPianoSonatasTrackInfos = beethovenPianoSonatasTracks.Select(track => new SimpleTrackAndAlbumWrapper(track, beethovenPianoSonatasAlbum));
@@ -57,12 +59,12 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			var yannickTracks = (await SpotifyAccessor.GetAllArtistTracks(yannickId, SpotifyAPI.Web.ArtistsAlbumsRequest.IncludeGroups.Album)).ToArray();
 			var yannickTrackUris = yannickTracks.Select(track => track.OriginalTrack.Uri);
 			var yannickUrisToTracks = yannickTracks.GroupBy(track => track.OriginalTrack.Uri).ToDictionary(group => group.Key, group => group.First());
-			var trackBatches = yannickTrackUris.Batch(SpotifyConstants.PlaylistRequestBatchSize);
+			var trackBatches = yannickTrackUris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize));
 			var addTracksTasks = trackBatches.Select(batch => SpotifyAccessor.AddPlaylistItems(playlist.Id, batch)).ToList();
 			foreach (var task in addTracksTasks)
 				await task;
 
-			var playlistTracks = (await SpotifyAccessor.GetAllPlaylistTracks(playlist.Id)).ToArray();
+			var playlistTracks = (await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlist.Id)).ToArray();
 			var playlistUrisToTracks = playlistTracks.GroupBy(track => track.Uri).ToDictionary(group => group.Key, group => group.First());
 
 			var playlistUris = playlistTracks.Select(track => track.Uri).ToList();
@@ -88,7 +90,35 @@ namespace SpotifyProjectTests.SpotifyApiTests
 						uri => (playlistUrisToTracks[uri].DiscNumber, playlistUrisToTracks[uri].TrackNumber),
 						uri => playlistUrisToTracks[uri].Album.Name))));
 			}
+		}
 
+		[Test]
+		public async Task TestRemovingTracksFromPlaylist()
+		{
+			var playlistName = GetPlaylistNameForTest(nameof(TestRemovingTracksFromPlaylist));
+			var playlist = await SpotifyAccessor.AddOrGetPlaylistByName(playlistName);
+			var playlistContext = new ExistingPlaylistPlaybackContext(SpotifyAccessor.SpotifyConfiguration, playlist);
+			var playlistId = playlist.Id;
+			var clearTask = SpotifyAccessor.ReplacePlaylistItems(playlistId);
+			var testAlbum = SampleAlbums.BachCantatas;
+			var albumId = SampleAlbumIds[testAlbum];
+			var album = new ExistingAlbumPlaybackContext(SpotifyAccessor.SpotifyConfiguration, await SpotifyAccessor.GetAlbum(albumId));
+			await album.FullyLoad();
+			var albumTracks = album.PlaybackOrder.Select(track => album.As<ISpotifyPlaybackContext<SimpleTrack>>().GetMetadataForTrack(track));
+			CollectionAssert.IsNotEmpty(albumTracks.Where(track => track.IsPlayable && track.TryGetLinkedTrack(out _)));
+			var originalAlbumTracks = albumTracks.Select(track => track.GetOriginallyRequestedVersion());
+			var albumUris = originalAlbumTracks.Select(track => track.Uri);
+			var albumUrisToAdd = new string[] { albumUris.First(), albumUris.First() };
+			await clearTask;
+			await SpotifyAccessor.AddPlaylistItems(playlistId, albumUrisToAdd);
+			await SpotifyAccessor.RemovePlaylistItems(playlistId, null, albumTracks.Select(track => track.Uri).Take(1));
+			await playlistContext.FullyLoad();
+			var playlistTracks = playlistContext.PlaybackOrder.Select(playlistContext.GetMetadataForTrack).Select(track => track.GetOriginallyRequestedVersion());
+			CollectionAssert.AreEquivalent(albumUrisToAdd, playlistTracks.Select(track => track.Uri));
+			await SpotifyAccessor.RemovePlaylistItems(playlistId, null, albumUris.Take(1));
+			await playlistContext.FullyLoad();
+			playlistTracks = playlistContext.PlaybackOrder.Select(playlistContext.GetMetadataForTrack).Select(track => track.GetOriginallyRequestedVersion());
+			CollectionAssert.IsEmpty(playlistTracks);
 		}
 
 		[TestCase("BrahmsSymphonies", 0, "reversed order by album index")]
@@ -107,7 +137,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			var albumId = SpotifyDependentUtils.TryParseSpotifyUri(SampleAlbumUris[albumEnum], out _, out var parsedId, out _) ? parsedId : null;
 			var tracks = await SpotifyAccessor.GetAllAlbumTracks(albumId);
 			var album = await SpotifyAccessor.GetAlbum(albumId);
-			var trackInfos = tracks.Select<SimpleTrack, ITrackLinkingInfo>(track => new SimpleTrackAndAlbumWrapper(track, album));
+			var trackInfos = tracks.Select<SimpleTrack, IPlayableTrackLinkingInfo>(track => new SimpleTrackAndAlbumWrapper(track, album));
 			var sortedTrackInfos = trackInfos.OrderBy(testCaseOrdering);
 			await SpotifyAccessor.AddPlaylistItems(playlist.Id, sortedTrackInfos.Select(track => track.Uri));
 			var existingPlaylistContext = new ExistingPlaylistPlaybackContext(SpotifyAccessor.SpotifyConfiguration, playlist);
@@ -115,7 +145,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			CollectionAssert.AreEqual(sortedTrackInfos.Select(track => track.Uri), existingPlaylistContext.PlaybackOrder.Select(track => track.Uri));
 			IPlaylistTrackModifier playlistModifier = new EfficientPlaylistTrackModifier(SpotifyAccessor.SpotifyConfiguration);
 			await playlistModifier.ModifyPlaylistTracks(existingPlaylistContext, trackInfos);
-			var newTracks = await SpotifyAccessor.GetAllPlaylistTracks(playlist.Id);
+			var newTracks = await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlist.Id);
 			CollectionAssert.AreEqual(trackInfos.Select(track => track.Uri), newTracks.Select(track => track.Uri), "The playlist resulted in the wrong order. " +
 				$"The expected order was: \n{TurnTracksIntoString(trackInfos)}\n but the retrieved order was \n {TurnTracksIntoString(newTracks.Select(existingPlaylistContext.GetMetadataForTrack))}");
 		}

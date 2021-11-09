@@ -22,9 +22,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			(t1, t2) => Equals(t1.Uri, t2.Uri) || (Equals(t1.Name, t2.Name) && Equals(t1.AlbumName, t2.AlbumName) && Equals(t1.AlbumIndex, t2.AlbumIndex) && t1.ArtistNames.ContainsSameElements(t2.ArtistNames)),
 			t => HashCode.Combine(t.Name, t.AlbumUri, t.AlbumIndex));
 
+		static readonly IEqualityComparer<ITrackLinkingInfo> EqualityByUris = new KeyBasedEqualityComparer<ITrackLinkingInfo, string>(track => track.Uri);
+
 		static readonly IComparer<ITrackLinkingInfo> TrackOrderWithinAlbums =
 			ComparerUtils.ComparingBy<ITrackLinkingInfo, (int discNumber, int trackNumber)>(t => t.AlbumIndex,
-				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber));
+				ComparerUtils.ComparingBy<(int discNumber, int trackNumber)>(i => i.discNumber).ThenBy(i => i.trackNumber))
+					.ThenBy(t => t.Name);
 	}
 
 	public interface ITrackLinkingInfo<TrackT> : ITrackLinkingInfo
@@ -32,16 +35,37 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		TrackT OriginalTrack { get; }
 	}
 
-	public interface ISimpleTrackLinkingInfo : ITrackLinkingInfo<SimpleTrack> {
+	public interface IPlayableTrackLinkingInfo : ITrackLinkingInfo
+	{
+		bool IsPlayable { get; }
+		bool TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack);
+		ITrackLinkingInfo GetOriginallyRequestedVersion() => TryGetLinkedTrack(out var linkedTrack) ? linkedTrack : this;
+	}
+
+	public interface IPlayableTrackLinkingInfo<TrackT> : ITrackLinkingInfo<TrackT>, IPlayableTrackLinkingInfo { }
+
+	public interface ISimpleTrackLinkingInfo : IPlayableTrackLinkingInfo<SimpleTrack>
+	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
 		bool ITrackLinkingInfo.IsLocal => false;
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.Artists.Select(artist => artist.Name);
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack)
+		{
+			if (OriginalTrack.LinkedFrom != null)
+			{
+				linkedTrack = new UnplayableTrackWrapper(OriginalTrack.LinkedFrom, this);
+				return true;
+			}
+			linkedTrack = null;
+			return false;
+		}
 	}
 
-	public interface IFullTrackLinkingInfo : ITrackLinkingInfo<FullTrack>
+	public interface IFullTrackLinkingInfo : IPlayableTrackLinkingInfo<FullTrack>
 	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
@@ -51,10 +75,35 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.Artists.Select(artist => artist.Name);
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => (OriginalTrack.DiscNumber, OriginalTrack.TrackNumber);
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack)
+		{
+			if (OriginalTrack.LinkedFrom != null)
+			{
+				linkedTrack = new UnplayableTrackWrapper(OriginalTrack.LinkedFrom, this);
+				return true;
+			}
+			linkedTrack = null;
+			return false;
+		}
 	}
 
-	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : ITrackLinkingInfo<InfoT>
-		where InfoT : ITrackLinkingInfo<OriginalTrackT>
+	public interface IUnplayableTrackLinkingInfo : ITrackLinkingInfo<LinkedTrack>
+	{
+		string ITrackLinkingInfo.Name => PlayableVersion.Name;
+		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
+		string ITrackLinkingInfo.AlbumName => PlayableVersion.AlbumName;
+		string ITrackLinkingInfo.AlbumUri => PlayableVersion.AlbumUri;
+		bool ITrackLinkingInfo.IsLocal => PlayableVersion.IsLocal;
+		int ITrackLinkingInfo.DurationMs => PlayableVersion.DurationMs;
+		IEnumerable<string> ITrackLinkingInfo.ArtistNames => PlayableVersion.ArtistNames;
+		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => PlayableVersion.AlbumIndex;
+
+		IPlayableTrackLinkingInfo PlayableVersion { get; }
+	}
+
+	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : IPlayableTrackLinkingInfo<InfoT>
+		where InfoT : ITrackLinkingInfo<OriginalTrackT>, IPlayableTrackLinkingInfo
 	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;
@@ -64,6 +113,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		int ITrackLinkingInfo.DurationMs => OriginalTrack.DurationMs;
 		IEnumerable<string> ITrackLinkingInfo.ArtistNames => OriginalTrack.ArtistNames;
 		(int discNumber, int trackNumber) ITrackLinkingInfo.AlbumIndex => OriginalTrack.AlbumIndex;
+		bool IPlayableTrackLinkingInfo.IsPlayable => OriginalTrack.IsPlayable;
+		bool IPlayableTrackLinkingInfo.TryGetLinkedTrack(out IUnplayableTrackLinkingInfo linkedTrack) => OriginalTrack.TryGetLinkedTrack(out linkedTrack);
 	}
 
 	public static class ITrackLinkingInfoExtensions

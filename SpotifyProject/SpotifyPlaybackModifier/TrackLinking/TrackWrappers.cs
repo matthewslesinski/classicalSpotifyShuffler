@@ -42,8 +42,22 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		public override string ToString() => this.ToDescriptiveString();
 	}
 
+	public class UnplayableTrackWrapper : IUnplayableTrackLinkingInfo
+	{
+		public UnplayableTrackWrapper(LinkedTrack linkedTrack, IPlayableTrackLinkingInfo playableVersion)
+		{
+			OriginalTrack = linkedTrack;
+			PlayableVersion = playableVersion;
+		}
+
+		public LinkedTrack OriginalTrack { get; }
+		public IPlayableTrackLinkingInfo PlayableVersion { get; }
+
+		public override string ToString() => this.ToDescriptiveString();
+	}
+
 	public class TrackLinkingInfoWrapper<TrackT, InfoT> : ITrackLinkingInfoWrapper<TrackT, InfoT>
-		where InfoT : ITrackLinkingInfo<TrackT>
+		where InfoT : ITrackLinkingInfo<TrackT>, IPlayableTrackLinkingInfo
 	{
 		public TrackLinkingInfoWrapper(InfoT trackInfo)
 		{

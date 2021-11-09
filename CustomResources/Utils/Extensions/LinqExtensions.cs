@@ -45,6 +45,7 @@ namespace CustomResources.Utils.Extensions
 		}
 
 		public static IEnumerable<T> Each<T>(this IEnumerable<T> sequence, Action<T> action) { foreach (var item in sequence) action(item); return sequence; }
+		public static IEnumerable<T> Each<T>(this IEnumerable<T> sequence, Action<T, int> action) { foreach (var (item, index) in sequence.Enumerate()) action(item, index); return sequence; }
 		public static IEnumerable<T> EachIndependently<T>(this IEnumerable<T> sequence, Action<T> action)
 		{
 			List<Exception> exceptions = null;
@@ -71,6 +72,17 @@ namespace CustomResources.Utils.Extensions
 
 		public static IEnumerable<(T item, int index)> Enumerate<T>(this IEnumerable<T> sequence) => sequence.Select((t, i) => (t, i));
 
+		public static IEnumerable<T> FilterByOccurrenceNumber<T>(this IEnumerable<T> sequence, Func<T, int, bool> filter, IEqualityComparer<T> equalityComparer = null)
+		{
+			var countsSoFar = new Dictionary<T, int>(equalityComparer ?? EqualityComparer<T>.Default);
+			foreach (var element in sequence)
+			{
+				var countSoFar = countsSoFar.Merge(element, 1, (i, j) => i + j);
+				if (filter(element, countSoFar))
+					yield return element;
+			}
+		}
+
 		public static IEnumerable<(T element, int sequence1Count, int sequence2Count)> FrequencyDifferences<T>(this IEnumerable<T> sequence1,
 			IEnumerable<T> sequence2, IEqualityComparer<T> equalityComparer = null)
 		{
@@ -84,6 +96,33 @@ namespace CustomResources.Utils.Extensions
 
 		public static V Get<K, V>(this IReadOnlyDictionary<K, V> dictionary, K key) =>
 			dictionary.TryGetValue(key, out var value) ? value : throw new KeyNotFoundException($"The given key was not found {key}");
+
+		public static bool IsSubsequenceOf<T>(this IEnumerable<T> sequence, IEnumerable<T> possibleSuperSequence, IEqualityComparer<T> equalityComparer = null)
+		{
+			equalityComparer ??= EqualityComparer<T>.Default;
+			using (var superSequenceEnumerator = possibleSuperSequence.GetEnumerator())
+			{
+				foreach (var element in sequence)
+				{
+					if (!superSequenceEnumerator.MoveNext())
+						return false;
+					while (!equalityComparer.Equals(superSequenceEnumerator.Current, element))
+					{
+						if (!superSequenceEnumerator.MoveNext())
+							return false;
+					}
+
+				}
+			}
+			return true;
+		}
+		public static bool IsSuperSequenceOf<T>(this IEnumerable<T> sequence, IEnumerable<T> possibleSubSequence, IEqualityComparer<T> equalityComparer = null) =>
+			possibleSubSequence.IsSubsequenceOf(sequence, equalityComparer);
+
+		public static IEnumerable<T> KDistinct<T>(this IEnumerable<T> sequence, int k, IEqualityComparer<T> equalityComparer = null) =>
+			sequence.KDistinct(_ => k, equalityComparer);
+		public static IEnumerable<T> KDistinct<T>(this IEnumerable<T> sequence, Func<T, int> kDeterminer, IEqualityComparer<T> equalityComparer = null) =>
+			sequence.FilterByOccurrenceNumber((element, occurrenceNumber) => occurrenceNumber <= kDeterminer(element), equalityComparer);
 
 		public static IEnumerable<T> Maxima<T>(this IEnumerable<T> sequence) where T : IComparable => Maxima(sequence, Comparer<T>.Default);
 		public static IEnumerable<T> Maxima<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => Minima(sequence, comparer.Reversed());
@@ -111,6 +150,9 @@ namespace CustomResources.Utils.Extensions
 			}
 			return minima;
 		}
+
+		public static V Merge<K, V>(this IDictionary<K, V> dict, K key, V value, Func<V, V, V> remappingFunction) =>
+			dict[key] = dict.TryGetValue(key, out var foundValue) ? remappingFunction(foundValue, value) : value;
 
 		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => x, comparer);
 
@@ -161,9 +203,6 @@ namespace CustomResources.Utils.Extensions
 
 		public static IReadOnlyDictionary<T, IEnumerable<int>> ToIndexMap<T>(this IEnumerable<T> sequence, IEqualityComparer<T> equalityComparer = null) =>
 			ToIndexMap(sequence, indices => indices, equalityComparer);
-
-		public static IReadOnlyDictionary<T, C> ToIndexMap<T, C>(this IEnumerable<T> sequence, IEqualityComparer<T> equalityComparer = null) where C : ICollection<int>, new() =>
-			ToIndexMap(sequence, group => { var c = new C(); group.Each(c.Add); return c; }, equalityComparer);
 
 		public static IReadOnlyDictionary<T, C> ToIndexMap<T, C>(this IEnumerable<T> sequence, Func<IEnumerable<int>, C> collectionCreator, IEqualityComparer<T> equalityComparer = null) =>
 			sequence.Enumerate()

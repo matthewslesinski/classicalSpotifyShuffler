@@ -1,13 +1,8 @@
 ﻿using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
-using SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers;
-using SpotifyProject.SpotifyPlaybackModifier.Transformations;
-using CustomResources.Utils.GeneralUtils;
 using SpotifyProject.Utils;
 using System;
-using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
-using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
@@ -18,8 +13,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 {
     public class SpotifyPlaybackReorderer : SpotifyAccessorBase
     {
+        private readonly SpotifyCommandExecutor _commandExecutor;
         public SpotifyPlaybackReorderer(SpotifyClient spotify) : base(spotify)
-        { }
+        {
+            _commandExecutor = new(spotify);
+        }
 
         public async Task ShuffleUserProvidedContext()
 		{
@@ -30,9 +28,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                 if (SpotifyDependentUtils.TryParseUriFromLink(input, out var uri))
                     input = uri;
                 if (input.StartsWith(SpotifyConstants.SpotifyUriPrefix))
-                    return ModifyContext(input);
+                    return _commandExecutor.ModifyContext(input);
                 if (Enum.TryParse<PlaybackContextType>(input, true, out var contextType) && contextType == PlaybackContextType.AllLikedTracks)
-                    return ModifyContext<IOriginalAllLikedTracksPlaybackContext, FullTrack>(contextType, null);
+                    return _commandExecutor.ModifyContext(contextType, null);
                 else
                     return Task.FromResult(false);
 			}
@@ -64,7 +62,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		{
             var currentlyPlaying = await this.GetCurrentlyPlaying().WithoutContextCapture();
             var contextUri = currentlyPlaying.Context?.Uri;
-            bool result = contextUri != null && await ModifyContext(contextUri).WithoutContextCapture();
+            bool result = contextUri != null && await _commandExecutor.ModifyContext(contextUri).WithoutContextCapture();
             if (result)
                 return result;
             if (TaskParameters.Get<bool>(SpotifyParameters.DefaultToAlbumShuffle))
@@ -83,78 +81,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                 return false;
             }
             else
-                return await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(PlaybackContextType.Album, album.Id).WithoutContextCapture();            
-        }
-
-        private static bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
-		{
-            contextType = default;
-            if (!SpotifyDependentUtils.TryParseSpotifyUri(contextUri, out var typeString, out contextId, out var allParts))
-                return false;
-            if (allParts.Length > 3)
-                Logger.Warning($"The contextUri received from spotify was of an unfamiliar form, but could still be parsed: {contextUri}");
-            return Enum.TryParse(typeString, true, out contextType);
-		}
-
-        private async Task<bool> ModifyContext(string contextUri)
-		{
-            if (!TryParseContextTypeFromUri(contextUri, out var contextType, out var contextId))
-                return false;
-            bool result;
-            switch (contextType)
-            {
-                case PlaybackContextType.Album:
-                    result = await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(contextType, contextId).WithoutContextCapture();
-                    break;
-				case PlaybackContextType.Artist:
-					result = await ModifyContext<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>(contextType, contextId).WithoutContextCapture();
-					break;
-                case PlaybackContextType.Playlist:
-                    result = await ModifyContext<IOriginalPlaylistPlaybackContext, FullTrack>(contextType, contextId).WithoutContextCapture();
-                    break;
-                default:
-                    throw new ArgumentException($"Code should not be able to reach here. Please make sure the {nameof(PlaybackContextType)} type's value of " +
-                        $"{contextType} is supported in {nameof(SpotifyPlaybackReorderer)}");
-            }
-            if (!result)
-                Logger.Warning($"Failed to modify playback for context type \"{contextType}\" and id \"{contextId}\"");
-            return result;
-        }
-
-        private async Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
-        {
-            try
-            {
-                Logger.Information($"Attempting to modify context of type {contextType}{(string.IsNullOrWhiteSpace(contextId) ? "" : $" and with id {contextId}")}");
-                if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
-                {
-                    Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
-                    return false;
-                }
-                if (!PlaybackTransformations.TryGetTransformation<OriginalContextT, TrackT>(contextType, out var transformations))
-                {
-                    Logger.Warning($"There was no transformation set found for the context type {contextType}");
-                    return false;
-                }
-
-                var transformationName = TaskParameters.Get<string>(SpotifyParameters.TransformationName) ?? nameof(transformations.SimpleShuffleByWork);
-                var transformation = transformations.GetPropertyByName<IPlaybackTransformation<OriginalContextT, ISpotifyPlaybackContext<TrackT>>>(transformationName);
-                var playbackSetters = new SpotifyUpdaters<TrackT>(SpotifyConfiguration);
-                var playbackSetterName = TaskParameters.Get<string>(SpotifyParameters.PlaybackSetterName) ?? nameof(playbackSetters.QueuePlaybackSetter);
-                var playbackSetter = playbackSetters.GetPropertyByName<IPlaybackSetter<ISpotifyPlaybackContext<TrackT>, PlaybackStateArgs>>(playbackSetterName);
-
-                var initialContext = await initialContextConstructor(SpotifyConfiguration, contextId);
-
-                var modifier = new OneTimeSpotifyPlaybackModifier<OriginalContextT, ISpotifyPlaybackContext<TrackT>>(SpotifyConfiguration, transformation, playbackSetter);
-
-                await modifier.Run(initialContext).WithoutContextCapture();
-                return true;
-            }
-            catch (Exception e)
-			{
-                Logger.Error($"Could not modify current playback as intended because of exception: {e}");
-                return false;
-			}
+                return await _commandExecutor.ModifyContext(PlaybackContextType.Album, album.Id).WithoutContextCapture();            
         }
     }
 }

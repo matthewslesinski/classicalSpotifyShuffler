@@ -113,9 +113,17 @@ namespace CustomResources.Utils.Extensions
 			Func<V2, V1> valueSelector, IEqualityComparer<K2> keyEqualityComparer = null) where DictT : IReadOnlyDictionary<K2, V2>, ICollection =>
 				new ReadOnlyDictionaryWrapper<K1, V1, K2, V2, DictT>(dictionary, keySelector.Invert(), valueSelector, keyEqualityComparer);
 
+		public static ReadOnlyDictionaryWrapper<K, V, DictT> SelectAsDictionary<K, V, DictT>(this DictT dictionary, Bijection<K, K> keySelector = null,
+			Func<V, V> valueSelector = null, IEqualityComparer<K> keyEqualityComparer = null) where DictT : IReadOnlyDictionary<K, V>, ICollection =>
+				new ReadOnlyDictionaryWrapper<K, V, DictT>(dictionary, keySelector?.Invert(), valueSelector, keyEqualityComparer);
+
 		public static DictionaryWrapper<K1, V1, K2, V2, DictT> SelectAsDictionary<K1, V1, K2, V2, DictT>(this DictT dictionary, Bijection<K2, K1> keySelector,
 			Bijection<V2, V1> valueSelector, IEqualityComparer<K2> keyEqualityComparer = null) where DictT : IDictionary<K2, V2>, IReadOnlyDictionary<K2, V2>, ICollection =>
 				new DictionaryWrapper<K1, V1, K2, V2, DictT>(dictionary, keySelector.Invert(), valueSelector.Invert(), keyEqualityComparer);
+
+		public static DictionaryWrapper<K, V, DictT> SelectAsDictionary<K, V, DictT>(this DictT dictionary, Bijection<K, K> keySelector = null,
+			Bijection<V, V> valueSelector = null, IEqualityComparer<K> keyEqualityComparer = null) where DictT : IDictionary<K, V>, IReadOnlyDictionary<K, V>, ICollection =>
+				new DictionaryWrapper<K, V, DictT>(dictionary, keySelector?.Invert(), valueSelector?.Invert(), keyEqualityComparer);
 
 		public static ReadOnlyCollectionFilter<T, IReadOnlyCollection<T>> WhereAsCollection<T>(this IReadOnlyCollection<T> collection, Func<T, bool> filter) =>
 			new ReadOnlyCollectionFilter<T, IReadOnlyCollection<T>>(collection, filter);

@@ -34,9 +34,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 
 	public interface IPlaybackTransformationsStore<ContextT, TrackT> where ContextT : ISpotifyPlaybackContext<TrackT>
 	{
-
+		
 		IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SameOrder { get; }
+
+		IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReverseOrder { get; }
 
 		IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }
@@ -62,6 +65,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			SameOrder = new SameOrdering<ContextT,
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor);
 
+			ReverseOrder = new ReverseOrdering<ContextT,
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor);
+
 			SimpleShuffle = new SimpleReordering<ContextT,
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor);
 
@@ -80,9 +86,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 				contextConstructor, new LukesTrackLinker<ContextT, TrackT>());
 		}
 
-
+		
 		public IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SameOrder { get; }
+
+		public IPlaybackTransformation<ContextT,
+			IReorderedPlaybackContext<TrackT, ContextT>> ReverseOrder { get; }
 
 		public IPlaybackTransformation<ContextT,
 			IReorderedPlaybackContext<TrackT, ContextT>> SimpleShuffle { get; }

@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace SpotifyProject.SpotifyAdditions
 {
+	[Obsolete("This doesn't work as intended. It doesn't guarantee the same order of results as tasks")]
 	public class ConcurrentPaginatorWithObservables : ConcurrentPaginator
 	{
 		public ConcurrentPaginatorWithObservables(IPaginator fallbackPaginator) : base(fallbackPaginator)

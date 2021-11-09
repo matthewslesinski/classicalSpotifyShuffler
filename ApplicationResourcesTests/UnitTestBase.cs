@@ -18,7 +18,7 @@ namespace ApplicationResourcesTests
 		private static bool _isLoaded = false;
 
 		[OneTimeSetUp]
-		public void OneTimeSetUp__UnitTestBase()
+		public static void OneTimeSetUp__UnitTestBase()
 		{
 			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
 			Utils.LoadOnce(ref _isLoaded, _lock, () =>
@@ -38,7 +38,7 @@ namespace ApplicationResourcesTests
 				Logger.Error("Test: {testName} failed with message {failureMessage}", TestContext.CurrentContext.Test.FullName, TestContext.CurrentContext.Result.Message);
 		}
 
-		protected void LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
+		protected static void LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
 		{
 			Action<IEnumerable<ISettingsProvider>> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
 			var checkedSettingsFiles = settingsFiles.ToLookup(File.Exists);

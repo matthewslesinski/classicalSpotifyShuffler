@@ -35,7 +35,19 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			{ PlaybackContextType.AllLikedTracks, SimpleAllLikedSongsContextConstructor }
 		};
 
-        public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out ContextConstructor<ContextT> constructor)
-            where ContextT : IOriginalPlaybackContext => SimplePlaybackContextConstructors.TryGetCastedValue(type, out constructor);
-    }
+		public static bool TryGetExistingContextConstructorForType<ContextT, TrackT>(PlaybackContextType type, out ContextConstructor<ContextT> constructor, bool loadContext = true)
+			where ContextT : IOriginalPlaybackContext
+		{
+			static async Task<ContextT> GetLoadedContext(SpotifyConfiguration config, string contextId, ContextConstructor<ContextT> foundConstructor)
+			{
+				var context = await foundConstructor(config, contextId).WithoutContextCapture();
+				await context.FullyLoad().WithoutContextCapture();
+				return context;
+			}
+
+			var didFindConstructor = SimplePlaybackContextConstructors.TryGetCastedValue<PlaybackContextType, ContextConstructor<ContextT>>(type, out var foundConstructor);
+			constructor = didFindConstructor && loadContext ? (config, contextId) => GetLoadedContext(config, contextId, foundConstructor) : foundConstructor;
+			return didFindConstructor;
+		}
+	}
 }

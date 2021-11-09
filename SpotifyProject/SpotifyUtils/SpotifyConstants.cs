@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using SpotifyAPI.Web;
 
 namespace SpotifyProject.Utils
@@ -29,5 +31,13 @@ namespace SpotifyProject.Utils
 			Track,
 			Artist
 		}
+
+		public static IReadOnlySet<HttpStatusCode> NonDeterministicStatusCodes { get; } = new HashSet<HttpStatusCode>
+		{
+				HttpStatusCode.InternalServerError,
+				HttpStatusCode.BadGateway,
+				HttpStatusCode.GatewayTimeout,
+				HttpStatusCode.ServiceUnavailable
+		};
 	}
 }

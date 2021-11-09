@@ -212,6 +212,13 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			originalPair => new KeyValuePair<K2, V2>(keyMappingFunction(originalPair.Key), valueMappingFunction(originalPair.Value));
 	}
 
+	public class ReadOnlyDictionaryWrapper<K, V, DictionaryT> : ReadOnlyDictionaryWrapper<K, V, K, V, DictionaryT> where DictionaryT : IReadOnlyDictionary<K, V>, ICollection
+	{
+		public ReadOnlyDictionaryWrapper(DictionaryT wrappedCollection, Bijection<K, K> keyMappingFunction = null, Func<V, V> valueMappingFunction = null, IEqualityComparer<K> equalityComparer = null)
+			: base(wrappedCollection, keyMappingFunction ?? Bijections<K>.Identity, valueMappingFunction ?? Bijections<V>.Identity.Inverse, equalityComparer)
+		{ }
+	}
+
 	public class DictionaryWrapper<K, V, WrappedK, WrappedV, DictionaryT> : ReadOnlyDictionaryWrapper<K, V, WrappedK, WrappedV, DictionaryT>,
 		IDictionaryCollection<K, V>, IReadOnlyDictionary<K, V>, IMappedElementContainer<K, WrappedK>, IGenericInternalCollection<KeyValuePair<K, V>>
 		where DictionaryT : IDictionary<WrappedK, WrappedV>, IReadOnlyDictionary<WrappedK, WrappedV>, ICollection
@@ -257,9 +264,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	public class DictionaryWrapper<K, V, DictionaryT> : DictionaryWrapper<K, V, K, V, DictionaryT> where DictionaryT : IDictionary<K, V>, IReadOnlyDictionary<K, V>, ICollection
 	{
-		public DictionaryWrapper(DictionaryT wrappedCollection, IEqualityComparer<K> equalityComparer = null) : this(wrappedCollection, Bijections<K>.Identity, Bijections<V>.Identity, equalityComparer) { }
-		public DictionaryWrapper(DictionaryT wrappedCollection, Bijection<K, K> keyMappingFunction, Bijection<V, V> valueMappingFunction, IEqualityComparer<K> equalityComparer = null)
-			: base(wrappedCollection, keyMappingFunction, valueMappingFunction, equalityComparer)
+		public DictionaryWrapper(DictionaryT wrappedCollection, Bijection<K, K> keyMappingFunction = null, Bijection<V, V> valueMappingFunction = null, IEqualityComparer<K> equalityComparer = null)
+			: base(wrappedCollection, keyMappingFunction ?? Bijections<K>.Identity, valueMappingFunction ?? Bijections<V>.Identity, equalityComparer)
 		{ }
 	}
 
