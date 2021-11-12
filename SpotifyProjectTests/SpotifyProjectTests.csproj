@@ -16,6 +16,8 @@
     <None Remove="SpotifyApiTests\" />
     <None Remove="BenchmarkDotNet" />
     <None Remove="System.Reflection.Emit" />
+    <None Remove="SpotifyAPI.Web.Auth" />
+    <None Remove="SpotifyAPI.Web" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="SpotifyApiTests\" />
@@ -29,5 +31,13 @@
   <ItemGroup>
     <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
     <ProjectReference Include="..\ApplicationResourcesTests\ApplicationResourcesTests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="SpotifyAPI.Web.Auth">
+      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+    </Reference>
+    <Reference Include="SpotifyAPI.Web">
+      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>
