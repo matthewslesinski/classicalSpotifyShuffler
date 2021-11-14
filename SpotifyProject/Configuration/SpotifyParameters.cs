@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ApplicationResources.Setup;
 using CustomResources.Utils.GeneralUtils;
+using SpotifyAPI.Web;
 using SpotifyProject.Utils;
 using static ApplicationResources.Setup.CommandLineSettingsProvider;
 
@@ -51,7 +52,9 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.NumberOfRetriesForServerError,			new ConvertibleSettingSpecification<int> { Default = 10, Validator = v => v > 0 } },
 			{ SpotifyParameters.MaximumBatchSizeToReplaceInPlaylist,    new ConvertibleSettingSpecification<int> { Default = (int) (SpotifyConstants.PlaylistRequestBatchSize / 2.5), Validator = v => v >= 0 } },
 			{ SpotifyParameters.PlaylistRequestBatchSize,				new ConvertibleSettingSpecification<int> { Default = SpotifyConstants.PlaylistRequestBatchSize, Validator = v => v > 0 } },
-			{ SpotifyParameters.ArtistAlbumIncludeGroups,				new MultipleStringsSettingSpecification { ValueGetter = values => values.Single().Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() } },
+			{ SpotifyParameters.ArtistAlbumIncludeGroups,				new EnumSettingSpecification<ArtistsAlbumsRequest.IncludeGroups> { ValueGetter = values => values.Single()
+																			.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(enumName => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(enumName, true))
+																			.Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2) } },
 		};
 	}
 
