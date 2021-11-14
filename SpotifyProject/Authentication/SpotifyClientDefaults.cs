@@ -48,10 +48,7 @@ namespace SpotifyProject.Authentication
 	}
 
 	public class APIConnectors
-	{
-        public delegate IAPIConnector APIConnectorConstructor(Uri baseAddress, IAuthenticator authenticator, 
-			IJSONSerializer jsonSerializer, IHTTPClient httpClient, IRetryHandler retryHandler, IHTTPLogger httpLogger);
-		
+	{		
 		public APIConnectors()
 		{
 			SimpleAPIConnector = (baseAddress, authenticator, jsonSerializer, httpClient, retryHandler, httpLogger) => 

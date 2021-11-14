@@ -11,7 +11,7 @@ namespace SpotifyProject.Authentication
 	 */
 	public class ClientCredentialsAuthenticator : Authenticator
 	{
-		public ClientCredentialsAuthenticator(SpotifyClientConfigHolder config) : base(config)
+		public ClientCredentialsAuthenticator(SpotifyClientConfig config) : base(config)
 		{
 		}
 
