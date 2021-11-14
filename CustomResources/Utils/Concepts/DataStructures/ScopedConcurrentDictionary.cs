@@ -21,10 +21,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		MemoryScope Scope { get; }
 	}
 
-	public interface IScopedCollectionWrapper<T, CollectionT> : IReadOnlyCollectionWrapper<T, CollectionT>, IScopedCollection
+	public interface IScopedCollectionWrapper<T, CollectionT> : IWrapper<CollectionT>, IScopedCollection
 		where CollectionT : IReadOnlyCollection<T>, IScopedCollection
 	{
-		MemoryScope IScopedCollection.Scope => WrappedCollection.Scope;
+		MemoryScope IScopedCollection.Scope => WrappedObject.Scope;
 	}
 
 	public interface IScopedDictionary<K, V> : IScopedCollection, IConcurrentDictionary<K, V>, IElementContainer<K> { }
@@ -57,7 +57,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		private readonly IScopedIntBucket _sizeHolder;
 
-		public WrappedScopeConcurrentDictionary<K, V> WrappedCollection => _wrappedDictionary;
+		public WrappedScopeConcurrentDictionary<K, V> WrappedObject => _wrappedDictionary;
 
 		public override bool IsSynchronized => _wrappedDictionary.As<ICollection>().IsSynchronized;
 
@@ -103,7 +103,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public override IEnumerator<KeyValuePair<K, V>> GetEnumerator() => GetPairs(_wrappedDictionary).GetEnumerator();
 
-		IReadOnlyDictionary<K, V> IConcurrentDictionary<K, V>.GetSnapshot() => GetSnapshot();
+		IReadOnlyDictionary<K, V> IConcurrentCollection<KeyValuePair<K, V>, IReadOnlyDictionary<K, V>>.GetSnapshot() => GetSnapshot();
 		public ReadOnlyDictionaryWrapper<K, V, K, IScopedBucket<V>, IReadOnlyDictionaryCollection<K, IScopedBucket<V>>> GetSnapshot() =>
 			_wrappedDictionary.GetSnapshot()
 				.WhereAsDictionary<K, IScopedBucket<V>, ReadOnlyDictionary<K, IScopedBucket<V>>>(valueFilter: bucket => bucket.HasValue, keyEqualityComparer: EqualityComparer)

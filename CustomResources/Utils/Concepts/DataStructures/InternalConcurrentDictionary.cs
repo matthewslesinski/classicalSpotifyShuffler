@@ -7,7 +7,7 @@ using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public interface IConcurrentDictionary<K, V> : IDictionaryCollection<K, V>
+	public interface IConcurrentDictionary<K, V> : IDictionaryCollection<K, V>, IConcurrentCollection<KeyValuePair<K, V>, IReadOnlyDictionary<K, V>>
 	{
 		V AddOrUpdate(K key, V addValue, Func<K, V, V> updateValueFactory);
 		V AddOrUpdate(K key, Func<K, V> addValueFactory, Func<K, V, V> updateValueFactory);
@@ -19,10 +19,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		bool TryRemove(K key, out V value);
 		bool TryRemove(KeyValuePair<K, V> item);
 		bool TryUpdate(K key, V newValue, V comparisonValue);
-		IReadOnlyDictionary<K, V> GetSnapshot();
-
-		void ICollection<KeyValuePair<K, V>>.CopyTo(KeyValuePair<K, V>[] array, int index) => CopyToImpl(array, index, GetSnapshot());
-		void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, GetSnapshot());
 	}
 
 	public class InternalConcurrentDictionary<K, V> : ConcurrentDictionary<K, V>, IReadOnlyDictionaryCollection<K, V>, IConcurrentDictionary<K, V>
@@ -39,7 +35,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public IEqualityComparer<K> EqualityComparer { get; }
 
-		IReadOnlyDictionary<K, V> IConcurrentDictionary<K, V>.GetSnapshot() => GetSnapshot();
+		IReadOnlyDictionary<K, V> IConcurrentCollection<KeyValuePair<K, V>, IReadOnlyDictionary<K, V>>.GetSnapshot() => GetSnapshot();
 		public ReadOnlyDictionary<K, V> GetSnapshot() => new ReadOnlyDictionary<K, V>(new Dictionary<K, V>(ToArray()));
 	}
 }
