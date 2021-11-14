@@ -5,8 +5,6 @@ using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using CustomResources.Utils.Extensions;
-using CustomResources.Utils.Concepts;
-using System.Reactive.Linq;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Concepts.DataStructures;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
