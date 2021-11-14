@@ -72,7 +72,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		{
 			YannickNezetSeguin,
 			PhiladelphiaOrchestra,
-			HilaryHahn
+			HilaryHahn,
+			BelceaQuartet
 		}
 
 		protected enum SamplePlaylists
@@ -100,7 +101,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		{
 			{ SampleArtists.YannickNezetSeguin, "spotify:artist:5ZGyCOrODWwaVtLSDjayl5" },
 			{ SampleArtists.PhiladelphiaOrchestra, "spotify:artist:6tdexW8bZTG8NgOFUCYQn1" },
-			{ SampleArtists.HilaryHahn, "spotify:artist:5JdT0LYJdlPbTC58p60WTX" }
+			{ SampleArtists.HilaryHahn, "spotify:artist:5JdT0LYJdlPbTC58p60WTX" },
+			{ SampleArtists.BelceaQuartet, "spotify:artist:3w7DwDLRBfI6SfZnLVj7AB" }
 		};
 
 		protected static IReadOnlyDictionary<SampleArtists, string> SampleArtistIds => _sampleArtistUris

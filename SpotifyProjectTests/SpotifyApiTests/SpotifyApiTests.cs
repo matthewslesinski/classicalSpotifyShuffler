@@ -51,12 +51,37 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		}
 
 		[Test]
+		public async Task TestArtistGetTracks()
+		{
+			using (TaskParameters.GetBuilder().With(SpotifyParameters.ArtistAlbumIncludeGroups, ArtistsAlbumsRequest.IncludeGroups.Album).Apply())
+			{
+				var artistId = SampleArtistIds[SampleArtists.BelceaQuartet];
+				var artistAlbumIncludeGroup = TaskParameters.Get<ArtistsAlbumsRequest.IncludeGroups>(SpotifyParameters.ArtistAlbumIncludeGroups);
+				var allArtistTracks = await SpotifyAccessor.GetAllArtistTracks(artistId, artistAlbumIncludeGroup, albumBatchSize: 2).WithoutContextCapture();
+				var albumRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = artistAlbumIncludeGroup, Limit = 50, Market = SpotifyAccessor.SpotifyConfiguration.Market };
+				var firstAlbumPage = await SpotifyAccessor.Spotify.Artists.GetAlbums(artistId, albumRequest).WithoutContextCapture();
+				var allAlbums = await SpotifyAccessor.Spotify.PaginateAll(firstAlbumPage).WithoutContextCapture();
+				var totalAlbums = firstAlbumPage.Total ?? -1;
+				Assert.AreEqual(totalAlbums, allAlbums.Count);
+				var allDistinctAlbums = allAlbums.DistinctOrdered(IAlbumPlaybackContext.SimpleAlbumEqualityComparer);
+				var totalExpectedTracksTasks = allDistinctAlbums
+					.Select(async album => (await SpotifyAccessor.GetAllAlbumTracks(album.Id).WithoutContextCapture())
+					.Where(track => track.Artists.Select(artist => artist.Id).Contains(artistId)).Count()).ToList();
+				var totalExpectedTracks = await totalExpectedTracksTasks.MakeAsync().SumAsync().WithoutContextCapture();
+				var allFoundAlbumUris = allArtistTracks.Select(track => (track.AlbumUri, track.AlbumName)).DistinctOrdered().ToList();
+				var allExpectedAlbumUris = allDistinctAlbums.Select(album => (album.Uri, album.Name)).ToList();
+				CollectionAssert.AreEqual(allExpectedAlbumUris, allFoundAlbumUris);
+				Assert.AreEqual(totalExpectedTracks, allArtistTracks.Count);
+			}
+		}
+
+		[Test]
 		public async Task TestPlaylistAddingTracks()
 		{
 			var playlist = await SpotifyAccessor.AddOrGetPlaylistByName(GetPlaylistNameForTest(nameof(TestPlaylistAddingTracks)));
 			await SpotifyAccessor.ReplacePlaylistItems(playlist.Id);
-			SpotifyDependentUtils.TryParseSpotifyUri(SampleArtistUris[SampleArtists.YannickNezetSeguin], out _, out var yannickId, out _);
-			var yannickTracks = (await SpotifyAccessor.GetAllArtistTracks(yannickId, SpotifyAPI.Web.ArtistsAlbumsRequest.IncludeGroups.Album)).ToArray();
+			var artistId = SampleArtistIds[SampleArtists.YannickNezetSeguin];
+			var yannickTracks = (await SpotifyAccessor.GetAllArtistTracks(artistId, ArtistsAlbumsRequest.IncludeGroups.Album)).ToArray();
 			var yannickTrackUris = yannickTracks.Select(track => track.OriginalTrack.Uri);
 			var yannickUrisToTracks = yannickTracks.GroupBy(track => track.OriginalTrack.Uri).ToDictionary(group => group.Key, group => group.First());
 			var trackBatches = yannickTrackUris.Batch(TaskParameters.Get<int>(SpotifyParameters.PlaylistRequestBatchSize));
