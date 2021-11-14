@@ -74,7 +74,7 @@ namespace SpotifyProject.Authentication
                 : SpotifyDefaults.RetryHandlers.SimpleRetryHandler;
             var paginator = SpotifyDefaults.Paginators.TryGetPropertyByName<IPaginator>(paginatorName, out var foundPaginator)
                 ? foundPaginator
-                : SpotifyDefaults.Paginators.ConcurrentEnumerablePaginator;
+                : SpotifyDefaults.Paginators.ConcurrentPaginator;
             var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectors.APIConnectorConstructor>(apiConnectorName, out var foundConstructor)
                 ? foundConstructor
                 : SpotifyDefaults.APIConnectors.ModifiedAPIConnector;

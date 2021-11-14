@@ -30,13 +30,11 @@ namespace SpotifyProject.Authentication
 		public Paginators()
 		{
 			SimplePaginator = new SimplePaginator();
-			ConcurrentObservablePaginator = new ConcurrentPaginatorWithObservables(SimplePaginator);
-			ConcurrentEnumerablePaginator = new ConcurrentPaginatorWithEnumerables(SimplePaginator);
+			ConcurrentPaginator = new ConcurrentPaginator(SimplePaginator);
 		}
 
 		public IPaginator SimplePaginator { get; }
-		public IPaginator ConcurrentObservablePaginator { get; }
-		public IPaginator ConcurrentEnumerablePaginator { get; }
+		public IPaginator ConcurrentPaginator { get; }
 	}
 
 	public class HTTPLoggers
