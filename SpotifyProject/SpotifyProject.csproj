@@ -13,13 +13,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Linq.Async" Version="5.0.0" />
-    <PackageReference Include="System.Reactive" Version="5.0.0" />
-    <PackageReference Include="System.Reactive.Linq" Version="5.0.0" />
-    <PackageReference Include="System.Reactive.Core" Version="5.0.0" />
-    <PackageReference Include="System.Reactive.Interfaces" Version="5.0.0" />
-    <PackageReference Include="System.Reactive.PlatformServices" Version="5.0.0" />
-    <PackageReference Include="Reactive.Streams" Version="1.0.2" />
-    <PackageReference Include="System.Reactive.Providers" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Authentication\" />
