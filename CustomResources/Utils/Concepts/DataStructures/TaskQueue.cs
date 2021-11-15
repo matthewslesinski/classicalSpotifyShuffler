@@ -56,7 +56,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			cancellationToken.ThrowIfCancellationRequested();
 			var taskCompleter = new TaskCompletionSource<OutputT>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var ec = ExecutionContext.Capture();
-			var node = new Node(input, taskCompleter, cancellationToken, ec);
+			var node = new Node(input, taskCompleter, ec, cancellationToken);
 			if (!_queue.TryAdd(node))
 			{
 				await Task.Yield();
@@ -67,7 +67,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		private async Task Process()
 		{
-			foreach(var (input, taskCompleter, taskCancellationToken, executionContext) in _queue.GetConsumingEnumerable(_workerCancellationToken))
+			foreach(var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(_workerCancellationToken))
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
@@ -107,7 +107,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		protected abstract Task<OutputT> HandleTask(InputT input, CancellationToken taskCancellationToken);
 
-		private record Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, CancellationToken TaskCancellationToken, ExecutionContext ExecutionContext);
+		private record Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
 	}
 
 	public class CallbackTaskQueue<InputT, OutputT> : TaskQueue<InputT, OutputT>
