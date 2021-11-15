@@ -11,13 +11,13 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-		protected void CopyToImpl(Array array, int index, IEnumerable<T> elements)
+		protected void CopyToImpl(Array array, int index, IReadOnlyCollection<T> elements)
 		{
 			Ensure.ArgumentNotNull(array, nameof(array));
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index));
 			var space = array.Length - index;
-			if (this.As<IReadOnlyCollection<T>>().Count > space)
+			if (elements.Count > space)
 				throw new ArgumentException("Not enough space in destination array to fit the elements");
 			foreach (var element in elements)
 				array.SetValue(element, index++);
@@ -50,6 +50,14 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		IEqualityComparer<T> WrappedEqualityComparer { get; }
 		Func<S, T> ElementMapper { get; }
 		IEqualityComparer<S> IElementContainer<S>.EqualityComparer => new KeyBasedEqualityComparer<S, T>(ElementMapper, WrappedEqualityComparer);
+	}
+
+	public interface IConcurrentCollection<T, out ReadOnlyViewT> : IInternalCollection<T> where ReadOnlyViewT : IReadOnlyCollection<T> 
+	{
+		ReadOnlyViewT GetSnapshot();
+
+		void ICollection<T>.CopyTo(T[] array, int index) => CopyToImpl(array, index, GetSnapshot());
+		void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, GetSnapshot());
 	}
 
 	#region Set Interfaces

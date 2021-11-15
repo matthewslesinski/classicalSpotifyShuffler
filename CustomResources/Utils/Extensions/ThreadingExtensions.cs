@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Extensions
@@ -26,10 +27,9 @@ namespace CustomResources.Utils.Extensions
 
             public void Dispose()
             {
-                if (_underlyingLock != null)
+                if (Interlocked.Exchange(ref _underlyingLock, null) != null)
                 {
                     ExitLock(_underlyingLock);
-                    _underlyingLock = null;
                     GC.SuppressFinalize(this);
                 }
             }

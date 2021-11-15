@@ -21,7 +21,7 @@ namespace SpotifyProject.Authentication
 	{
 		private readonly string _credentialsFilePath;
 
-		public AuthorizationCodeAuthenticator(SpotifyClientConfigHolder config, string credentialsFilePath) : base(config)
+		public AuthorizationCodeAuthenticator(SpotifyClientConfig config, string credentialsFilePath) : base(config)
 		{
 			_credentialsFilePath = string.IsNullOrWhiteSpace(credentialsFilePath) ? null : credentialsFilePath;
 		}

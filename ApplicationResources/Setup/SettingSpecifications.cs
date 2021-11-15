@@ -102,6 +102,14 @@ namespace ApplicationResources.Setup
 	{
 	}
 
+	public class MultipleValuesSettingSpecification<T> : ParameterSpecification<IEnumerable<T>>
+	{
+		public MultipleValuesSettingSpecification()
+		{
+			StringFormatter = ApplicationExtensions.ToJsonString;
+		}
+	}
+
 	public class StringSettingSpecification : ParameterSpecification<string>
 	{
 		public StringSettingSpecification()
@@ -110,12 +118,11 @@ namespace ApplicationResources.Setup
 		}
 	}
 
-	public class MultipleStringsSettingSpecification : ParameterSpecification<IEnumerable<string>>
+	public class MultipleStringsSettingSpecification : MultipleValuesSettingSpecification<string>
 	{
 		public MultipleStringsSettingSpecification()
 		{
 			ValueGetter = values => values;
-			StringFormatter = ApplicationExtensions.ToJsonString;
 		}
 	}
 

@@ -21,9 +21,9 @@ namespace SpotifyProject.Authentication
      */
     public abstract class Authenticator
     {
-        protected readonly SpotifyClientConfigHolder _config;
+        protected SpotifyClientConfig _config;
 
-        public Authenticator(SpotifyClientConfigHolder config)
+        public Authenticator(SpotifyClientConfig config)
         {
             _config = config;
         }
@@ -33,8 +33,8 @@ namespace SpotifyProject.Authentication
 		public async Task<SpotifyClient> Authenticate(AuthorizationSource authorizationSource)
 		{
             var authenticator = await GetAuthenticator(authorizationSource).WithoutContextCapture();
-            _config.WithAuthenticator(authenticator).Finalized();
-            return new SpotifyClient(_config.UnderlyingSpotifyClientConfig);
+            _config = _config.WithAuthenticator(authenticator);
+            return new SpotifyClient(_config);
 		}
 
         public static async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
@@ -46,13 +46,15 @@ namespace SpotifyProject.Authentication
 
     public static class Authenticators
 	{
-        public static readonly Func<SpotifyClientConfigHolder, string, Authenticator> AuthorizationCodeAuthenticator
+        public delegate Authenticator AuthenticatorConstructor(SpotifyClientConfig config, string tokenFilePath);
+
+        public static readonly AuthenticatorConstructor AuthorizationCodeAuthenticator
             = (config, tokenFilePath) => new AuthorizationCodeAuthenticator(config, tokenFilePath);
 
-        public static readonly Func<SpotifyClientConfigHolder, string, Authenticator> ClientCredentialsAuthenticator
+        public static readonly AuthenticatorConstructor ClientCredentialsAuthenticator
             = (config, _) => new ClientCredentialsAuthenticator(config);
 
-        public static async Task<SpotifyClient> Authenticate(Func<SpotifyClientConfigHolder, string, Authenticator> authenticatorConstructor)
+        public static async Task<SpotifyClient> Authenticate(AuthenticatorConstructor authenticatorConstructor)
 		{
             var projectRoot = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
             var tokenFilePath = Path.Combine(projectRoot, TaskParameters.Get<string>(SpotifyParameters.TokenPath));
@@ -74,11 +76,11 @@ namespace SpotifyProject.Authentication
                 : SpotifyDefaults.RetryHandlers.SimpleRetryHandler;
             var paginator = SpotifyDefaults.Paginators.TryGetPropertyByName<IPaginator>(paginatorName, out var foundPaginator)
                 ? foundPaginator
-                : SpotifyDefaults.Paginators.ConcurrentEnumerablePaginator;
-            var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectors.APIConnectorConstructor>(apiConnectorName, out var foundConstructor)
+                : SpotifyDefaults.Paginators.ConcurrentPaginator;
+            var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectorConstructor>(apiConnectorName, out var foundConstructor)
                 ? foundConstructor
                 : SpotifyDefaults.APIConnectors.ModifiedAPIConnector;
-            var config = SpotifyClientConfigHolder.CreateWithDefaultConfig()
+            var config = SpotifyClientConfig.CreateDefault()
                 .WithHTTPLogger(httpLogger)
                 .WithRetryHandler(retryHandler)
                 .WithDefaultPaginator(paginator)

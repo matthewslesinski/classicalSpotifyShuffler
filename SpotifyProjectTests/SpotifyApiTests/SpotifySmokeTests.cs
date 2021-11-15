@@ -6,7 +6,6 @@ using CustomResources.Utils.Extensions;
 using NUnit.Framework;
 using SpotifyAPI.Web;
 using SpotifyProject.Configuration;
-using SpotifyProject.SpotifyAdditions;
 using SpotifyProject.SpotifyPlaybackModifier;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;

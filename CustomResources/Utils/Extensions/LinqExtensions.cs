@@ -124,6 +124,15 @@ namespace CustomResources.Utils.Extensions
 		public static IEnumerable<T> KDistinct<T>(this IEnumerable<T> sequence, Func<T, int> kDeterminer, IEqualityComparer<T> equalityComparer = null) =>
 			sequence.FilterByOccurrenceNumber((element, occurrenceNumber) => occurrenceNumber <= kDeterminer(element), equalityComparer);
 
+		public static async IAsyncEnumerable<T> MakeAsync<T>(this IEnumerable<Task<T>> tasks, [EnumeratorCancellation] CancellationToken cancel = default)
+		{
+			foreach (var task in tasks)
+			{
+				cancel.ThrowIfCancellationRequested();
+				yield return await task.WithoutContextCapture();
+			}
+		}
+
 		public static IEnumerable<T> Maxima<T>(this IEnumerable<T> sequence) where T : IComparable => Maxima(sequence, Comparer<T>.Default);
 		public static IEnumerable<T> Maxima<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => Minima(sequence, comparer.Reversed());
 		public static IEnumerable<T> Minima<T>(this IEnumerable<T> sequence) where T : IComparable => Minima(sequence, Comparer<T>.Default);
@@ -197,6 +206,9 @@ namespace CustomResources.Utils.Extensions
 				yield return await request;
 			}
 		}
+
+		public static IEnumerable<Task<R>> SelectOnCompletion<T, R>(this IEnumerable<Task<T>> tasks, Func<T, R> selector) =>
+			tasks.Select(async task => selector(await task));
 
 		public static IReadOnlyDictionary<T, int> ToFrequencyMap<T>(this IEnumerable<T> sequence, IEqualityComparer<T> equalityComparer = null) =>
 			sequence.ToIndexMap(group => group.Count(), equalityComparer);

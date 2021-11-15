@@ -19,9 +19,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 			async (config, playlistId) => await ExistingPlaylistPlaybackContext.FromSimplePlaylist(config, playlistId).WithoutContextCapture();
 		private static readonly ContextConstructor<IOriginalArtistPlaybackContext> SimpleArtistContextConstructor =
 			async (config, artistId) => await ExistingArtistPlaybackContext.FromSimpleArtist(config, artistId,
-				TaskParameters.Get<IEnumerable<string>>(SpotifyParameters.ArtistAlbumIncludeGroups)
-					.Select(value => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(value, true))
-					.Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2)).WithoutContextCapture();
+				TaskParameters.Get<ArtistsAlbumsRequest.IncludeGroups>(SpotifyParameters.ArtistAlbumIncludeGroups)).WithoutContextCapture();
 		private static readonly ContextConstructor<IOriginalAllLikedTracksPlaybackContext> SimpleAllLikedSongsContextConstructor =
 			(config, playlistId) => Task.FromResult<IOriginalAllLikedTracksPlaybackContext>(new ExistingAllLikedTracksPlaybackContext(config));
 

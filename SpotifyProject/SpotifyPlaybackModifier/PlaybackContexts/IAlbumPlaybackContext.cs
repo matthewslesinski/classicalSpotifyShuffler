@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using CustomResources.Utils.Concepts;
 using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using static SpotifyProject.Utils.SpotifyConstants;
@@ -21,6 +23,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 
 		IPlayableTrackLinkingInfo<SimpleTrack> ISpotifyPlaybackContext<SimpleTrack>.GetMetadataForTrack(SimpleTrack track) => new SimpleTrackAndAlbumWrapper(track, SpotifyContext);
 		SpotifyElementType IStaticPlaybackContext<FullAlbum, SimpleTrack>.SpotifyElementType => SpotifyElementType.Album;
+
+		public static readonly IEqualityComparer<SimpleAlbum> SimpleAlbumEqualityComparer =
+			new KeyBasedEqualityComparer<SimpleAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
+
+		public static readonly IEqualityComparer<FullAlbum> FullAlbumEqualityComparer =
+			new KeyBasedEqualityComparer<FullAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
 	}
 
 	public interface IOriginalAlbumPlaybackContext : IAlbumPlaybackContext, IOriginalPlaybackContext

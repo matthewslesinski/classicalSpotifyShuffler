@@ -5,9 +5,9 @@ using SpotifyAPI.Web;
 using System.Linq;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using CustomResources.Utils.Extensions;
-using CustomResources.Utils.Concepts;
-using System.Reactive.Linq;
 using ApplicationResources.Logging;
+using CustomResources.Utils.Concepts.DataStructures;
+using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 
 namespace SpotifyProject.SpotifyPlaybackModifier
 {
@@ -47,8 +47,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		public static async Task<FullAlbum> GetAlbum(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId) =>
 			await spotifyConfigurationContainer.Spotify.Albums.Get(albumId, new AlbumRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture();
 
-		public static async Task<List<SimpleTrack>> GetAllAlbumTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId, int batchSize = 50) =>
-			await spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture()).ToListAsync().WithoutContextCapture();
+		public static async Task<IList<SimpleTrack>> GetAllAlbumTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string albumId, int batchSize = 50) =>
+			await spotifyConfigurationContainer.Spotify.PaginateAll(await spotifyConfigurationContainer.Spotify.Albums.GetTracks(albumId, new AlbumTracksRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());
 
 		public static async Task<FullArtist> GetArtist(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string artistId) =>
 			await spotifyConfigurationContainer.Spotify.Artists.Get(artistId).WithoutContextCapture();
@@ -57,18 +57,24 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 			int albumBatchSize = 50, int trackBatchSize = 50)
 		{
 			var artistsAlbumsRequest = new ArtistsAlbumsRequest { IncludeGroupsParam = albumGroupsToInclude, Limit = albumBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
-			var albumTracksRequest = new AlbumTracksRequest { Limit = trackBatchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market };
-			var albumEquality = new KeyBasedEqualityComparer<SimpleAlbum, (string, string, string, int?)>(album => (album?.Name, album?.ReleaseDate, album?.AlbumType, album?.TotalTracks));
+			var albumEquality = IAlbumPlaybackContext.SimpleAlbumEqualityComparer;
+			var seenAlbums = new InternalConcurrentSet<SimpleAlbum>(albumEquality);
 			var firstAlbumPage = await spotifyConfigurationContainer.Spotify.Artists.GetAlbums(artistId, artistsAlbumsRequest).WithoutContextCapture();
-			// TODO remove the use of observables because it might screw up the order
-			var allAlbums = spotifyConfigurationContainer.Spotify.Paginate(firstAlbumPage).Distinct(albumEquality).ToObservable().Finally(() => Logger.Information($"All albums loaded"));
-			var allTracks = await allAlbums
-				.SelectMany(album => Observable.FromAsync(() => spotifyConfigurationContainer.Spotify.Albums.GetTracks(album.Id, albumTracksRequest))
-					.SelectMany(page => spotifyConfigurationContainer.Spotify.Paginate(page).ToObservable())
-					.Where(track => track.Artists.Select(artist => artist.Id).Contains(artistId))
-					.Select(track => new SimpleTrackAndAlbumWrapper(track, album)))
-				.ToAsyncEnumerable().ToListAsync().WithoutContextCapture();
-			return allTracks;
+			var allAlbumTasks = spotifyConfigurationContainer.Spotify.PaginateConcurrently<SimpleAlbum, Paging<SimpleAlbum>>(firstAlbumPage);
+			var allAlbumsLoadedTask = Task.WhenAll(allAlbumTasks).ContinueWith(task => { if (task.IsCompletedSuccessfully) Logger.Information($"All albums loaded"); });
+			var allTrackTasks = allAlbumTasks.Select(async albumTask =>
+			{
+				var album = await albumTask.WithoutContextCapture();
+				return !seenAlbums.Add(album)
+					? Array.Empty<SimpleTrackAndAlbumWrapper>()
+					: (await spotifyConfigurationContainer.GetAllAlbumTracks(album.Id, trackBatchSize).WithoutContextCapture())
+                        .Where(track => track.Artists.Select(artist => artist.Id).Contains(artistId)).Select(track => new SimpleTrackAndAlbumWrapper(track, album));
+			}).ToList();
+			await allAlbumsLoadedTask.WithoutContextCapture();
+			var allTracksLoadedTask = Task.WhenAll(allTrackTasks).ContinueWith(task => { if (task.IsCompletedSuccessfully) Logger.Information($"All tracks loaded"); });
+			await allTracksLoadedTask.WithoutContextCapture();
+			var allTracks = await allTrackTasks.MakeAsync().ToListAsync().WithoutContextCapture();
+			return allTracks.SelectMany(tracks => tracks).ToList();
 		}
 
 		public static Task SetCurrentPlayback(this ISpotifyConfigurationContainer spotifyConfigurationContainer, PlayerResumePlaybackRequest request) => spotifyConfigurationContainer.Spotify.Player.ResumePlayback(request);

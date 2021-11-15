@@ -11,21 +11,27 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	#region CollectionWrappers
 
-	public interface IReadOnlyCollectionWrapper<T, CollectionT> where CollectionT : IReadOnlyCollection<T>
+	public interface IWrapper<out ObjectT>
 	{
-		CollectionT WrappedCollection { get; }
+		ObjectT WrappedObject { get; }
 	}
 
-	public interface ICollectionWrapper<T, CollectionT> : IReadOnlyCollectionWrapper<T, CollectionT>, ICollection where CollectionT : IReadOnlyCollection<T>, ICollection<T>, ICollection
+	public interface IWrappedElementContainer<T, out WrappedT> : IElementContainer<T>, IWrapper<WrappedT>
+		where WrappedT : IElementContainer<T>
 	{
-		bool IsReadOnly => WrappedCollection.IsReadOnly;
-
-		bool ICollection.IsSynchronized => WrappedCollection.IsSynchronized;
-
-		object ICollection.SyncRoot => WrappedCollection.SyncRoot;
+		IEqualityComparer<T> IElementContainer<T>.EqualityComparer => WrappedObject.EqualityComparer;
 	}
 
-	public class ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT> : IReadOnlyCollection<T>, IReadOnlyCollectionWrapper<WrappedElementT, CollectionT>
+	public interface ICollectionWrapper<T, CollectionT> : IWrapper<CollectionT>, ICollection where CollectionT : IReadOnlyCollection<T>, ICollection<T>, ICollection
+	{
+		bool IsReadOnly => WrappedObject.IsReadOnly;
+
+		bool ICollection.IsSynchronized => WrappedObject.IsSynchronized;
+
+		object ICollection.SyncRoot => WrappedObject.SyncRoot;
+	}
+
+	public class ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT> : IReadOnlyCollection<T>, IWrapper<CollectionT>
 		where CollectionT : IReadOnlyCollection<WrappedElementT>
 	{
 		protected readonly CollectionT _wrappedCollection;
@@ -40,7 +46,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_translationFunction = translationFunction;
 		}
 
-		public CollectionT WrappedCollection => _wrappedCollection;
+		public CollectionT WrappedObject => _wrappedCollection;
 
 		public int Count => _wrappedCollection.Count;
 
@@ -154,7 +160,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	#region DictionaryWrappers
 
 	public class ReadOnlyDictionaryWrapper<K, V, WrappedK, WrappedV, DictionaryT> : ReadOnlyCollectionWrapper<KeyValuePair<K, V>, KeyValuePair<WrappedK, WrappedV>, DictionaryT>,
-		IReadOnlyDictionaryCollection<K, V>, IMappedElementContainer<K, WrappedK>, IReadOnlyCollectionWrapper<KeyValuePair<WrappedK, WrappedV>, DictionaryT>
+		IReadOnlyDictionaryCollection<K, V>, IMappedElementContainer<K, WrappedK>, IWrapper<DictionaryT>
 		where DictionaryT : IReadOnlyDictionary<WrappedK, WrappedV>, ICollection
 	{
 		protected readonly Bijection<K, WrappedK> _keyMapper;
@@ -383,7 +389,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	#region Collection Filters
 
-	public class ReadOnlyCollectionFilter<T, CollectionT> : IReadOnlyCollection<T>, IReadOnlyCollectionWrapper<T, CollectionT>
+	public class ReadOnlyCollectionFilter<T, CollectionT> : IReadOnlyCollection<T>, IWrapper<CollectionT>
 		where CollectionT : IReadOnlyCollection<T>
 	{
 		protected readonly CollectionT _wrappedCollection;
@@ -400,7 +406,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_filter = filter;
 		}
 
-		public CollectionT WrappedCollection => _wrappedCollection;
+		public CollectionT WrappedObject => _wrappedCollection;
 
 		public int Count
 		{

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 
@@ -8,7 +9,7 @@ namespace CustomResources.Utils.Concepts
 
 	public class DisposableAction : IDisposable
 	{
-		private bool _alreadyDisposed = false;
+		private int _alreadyDisposed = 0;
 		private readonly Action _disposeAction;
 		public DisposableAction(Action disposeAction)
 		{
@@ -18,18 +19,16 @@ namespace CustomResources.Utils.Concepts
 
 		public void Dispose()
 		{
-			if (!_alreadyDisposed)
+			if (Interlocked.Exchange(ref _alreadyDisposed, 1) == 0)
 			{
 				_disposeAction();
-				_alreadyDisposed = true;
 				GC.SuppressFinalize(this);
-
 			}
 		}
 
 		~DisposableAction()
 		{
-			if (!_alreadyDisposed)
+			if (_alreadyDisposed == 0)
 				Dispose();
 		}
 	}
