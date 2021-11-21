@@ -12,6 +12,26 @@ namespace ApplicationResourcesTests.GeneralTests
 	public class Experiments : GeneralTestBase
 	{
 		[Test]
+		public void TestWhenExceptionsGetThrown()
+		{
+			Task DoSomething()
+			{
+				throw new Exception("hi");
+			}
+			async Task DoSomethingElse()
+			{
+				await Task.Yield();
+				throw new Exception("hi");
+			}
+
+			Assert.ThrowsAsync<Exception>(() => DoSomething());
+			Assert.ThrowsAsync<Exception>(async () => await DoSomething());
+			var task = DoSomethingElse();
+			Assert.ThrowsAsync<Exception>(async () => await task);
+			Assert.ThrowsAsync<Exception>(async () => await task);
+		}
+
+		[Test]
 		public void TestInternalConcurrentDictionaryOverrides()
 		{
 			var dict = new InternalConcurrentDictionary<int, int>();
