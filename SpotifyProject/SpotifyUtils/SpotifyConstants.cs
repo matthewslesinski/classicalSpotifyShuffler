@@ -21,8 +21,9 @@ namespace SpotifyProject.Utils
 		public const int PlaylistRequestBatchSize = 100;
 		public const int PlaylistSizeLimit = 10000;
 
-		public const string USMarket = "US";
+		public const int APIRateLimitWindowMS = 30000;
 
+		public const string USMarket = "US";
 
 		public enum SpotifyElementType
 		{
