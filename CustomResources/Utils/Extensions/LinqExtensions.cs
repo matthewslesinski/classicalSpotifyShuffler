@@ -164,6 +164,7 @@ namespace CustomResources.Utils.Extensions
 			dict[key] = dict.TryGetValue(key, out var foundValue) ? remappingFunction(foundValue, value) : value;
 
 		public static IEnumerable<T> OrderBy<T>(this IEnumerable<T> sequence, IComparer<T> comparer) => sequence.OrderBy(x => x, comparer);
+		public static IEnumerable<T> Ordered<T>(this IEnumerable<T> sequence) where T : IComparable<T> => sequence.OrderBy(Comparer<T>.Default);
 
 		public static T[] RandomShuffle<T>(this IEnumerable<T> sequence, Random generator)
 		{

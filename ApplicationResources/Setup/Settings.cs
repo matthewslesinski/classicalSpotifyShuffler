@@ -37,7 +37,7 @@ namespace ApplicationResources.Setup
 		public static IEnumerable<(Enum setting, bool isValueSet, string stringValue)> GetAllSettingsAsStrings() => _settingsStore.GetAllSettingsAsStrings();
 	}
 
-	public class EnumNamesDictionary : BijectiveDictionary<Enum, string>, ICollection<Enum>, IEnumerable<string>, IReadOnlyDictionary<Enum, string>, IReadOnlyDictionary<string, Enum>
+	public class EnumNamesDictionary : BijectiveDictionary<Enum, string>, ICollection<Enum>, IReadOnlyCollection<Enum>, IEnumerable<string>, IReadOnlyDictionary<Enum, string>, IReadOnlyDictionary<string, Enum>
 	{
 		public EnumNamesDictionary(bool ignoreCase = true)
 			: base(destinationEquality: ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)

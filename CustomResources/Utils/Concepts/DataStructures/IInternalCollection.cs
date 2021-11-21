@@ -83,7 +83,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected sealed void IntersectWithNaive(IEnumerable<T> other)
 		{
 			Ensure.ArgumentNotNull(other, nameof(other));
-			if (other is not ISet<T> otherSet)
+			if (other is not IReadOnlySet<T> otherSet)
 				otherSet = other.ToHashSet();
 			var toRemoves = this.Where(otherSet.NotContains).ToList();
 			foreach (var toRemove in toRemoves)
@@ -93,14 +93,14 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		bool IReadOnlySet<T>.IsProperSubsetOf(IEnumerable<T> other) => this.As<ISet<T>>().IsProperSubsetOf(other);
 
 		bool ISet<T>.IsProperSubsetOf(IEnumerable<T> other) =>
-			(other is ISet<T> otherSet ? otherSet.Count : other.EnsureNotNull(nameof(other)).Distinct(EqualityComparer).Count()) > this.As<ISet<T>>().Count
+			(other is IReadOnlySet<T> otherSet ? otherSet.Count : other.EnsureNotNull(nameof(other)).Distinct(EqualityComparer).Count()) > this.As<IReadOnlySet<T>>().Count
 				&& this.As<ISet<T>>().IsSubsetOf(other);
 
 		bool IReadOnlySet<T>.IsProperSupersetOf(IEnumerable<T> other) => this.As<ISet<T>>().IsProperSupersetOf(other);
 
 		bool ISet<T>.IsProperSupersetOf(IEnumerable<T> other) =>
-			(other is ISet<T> otherSet ? otherSet.Count : other.EnsureNotNull(nameof(other)).Distinct(EqualityComparer).Count()) < this.As<ISet<T>>().Count
-				&& this.As<ISet<T>>().IsSupersetOf(other);
+			(other is IReadOnlySet<T> otherSet ? otherSet.Count : other.EnsureNotNull(nameof(other)).Distinct(EqualityComparer).Count()) < this.As<IReadOnlySet<T>>().Count
+				&& this.As<IReadOnlySet<T>>().IsSupersetOf(other);
 
 		bool IReadOnlySet<T>.IsSubsetOf(IEnumerable<T> other) => this.As<ISet<T>>().IsSubsetOf(other);
 
@@ -108,8 +108,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected sealed bool IsSubsetOfNaive(IEnumerable<T> other)
 		{
 			Ensure.ArgumentNotNull(other, nameof(other));
-			var count = this.As<ISet<T>>().Count;
-			return !(other is ISet<T> otherSet && otherSet.Count < count) && other.Where(this.As<ISet<T>>().Contains).Distinct(EqualityComparer).Count() == count;
+			var count = this.As<IReadOnlySet<T>>().Count;
+			return !(other is IReadOnlySet<T> otherSet && otherSet.Count < count) && other.Where(this.As<IReadOnlySet<T>>().Contains).Distinct(EqualityComparer).Count() == count;
 		}
 
 		bool IReadOnlySet<T>.IsSupersetOf(IEnumerable<T> other) => this.As<ISet<T>>().IsSupersetOf(other);
@@ -119,7 +119,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			Ensure.ArgumentNotNull(other, nameof(other));
 			var count = this.As<ICollection<T>>().Count;
-			return !(other is ISet<T> otherSet && otherSet.Count > count) && other.All(this.As<ISet<T>>().Contains);
+			return !(other is IReadOnlySet<T> otherSet && otherSet.Count > count) && other.All(this.As<IReadOnlySet<T>>().Contains);
 		}
 
 		bool IReadOnlySet<T>.Overlaps(IEnumerable<T> other) => this.As<ISet<T>>().Overlaps(other);
@@ -128,7 +128,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected sealed bool OverlapsNaive(IEnumerable<T> other)
 		{
 			Ensure.ArgumentNotNull(other, nameof(other));
-			return other.Any(this.As<ISet<T>>().Contains);
+			return other.Any(this.As<IReadOnlySet<T>>().Contains);
 		}
 
 		bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => this.As<ISet<T>>().SetEquals(other);
@@ -137,9 +137,9 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected sealed bool SetEqualsNaive(IEnumerable<T> other)
 		{
 			Ensure.ArgumentNotNull(other, nameof(other));
-			if (other is not ISet<T> otherSet)
+			if (other is not IReadOnlySet<T> otherSet)
 				otherSet = other.ToHashSet(EqualityComparer);
-			var count = this.As<ISet<T>>().Count;
+			var count = this.As<IReadOnlySet<T>>().Count;
 			return otherSet.Count == count && this.Intersect(otherSet).Count() == count;
 		}
 
@@ -149,7 +149,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			Ensure.ArgumentNotNull(other, nameof(other));
 			foreach (var o in other.Distinct(EqualityComparer))
 			{
-				if (this.As<ISet<T>>().Contains(o))
+				if (this.As<IReadOnlySet<T>>().Contains(o))
 					Remove(o);
 				else
 					Add(o);

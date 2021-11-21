@@ -17,7 +17,8 @@ namespace CustomResources.Utils.Extensions
 		public static int BinarySearch<K, V>(this SortedList<K, V> list, K queryItem) => list.Keys.BinarySearch(queryItem, list.Comparer);
 		public static int BinarySearch<T>(this IList<T> list, T queryItem, IComparer<T> comparer = null) => GeneralUtils.Utils.BinarySearch(i => list[i], 0, list.Count, queryItem, comparer);
 
-		public static bool NotContains<T>(this ICollection<T> collection, T item) => !collection.Contains(item);
+		public static bool NotContains<T>(this IReadOnlyCollection<T> collection, T item) => !collection.Contains(item);
+		public static bool NotContains<T>(this IReadOnlySet<T> collection, T item) => !collection.Contains(item);
 		public static bool NotContainsKey<K, V>(this IReadOnlyDictionary<K, V> dict, K key) => !dict.ContainsKey(key);
 
 		public static bool TryGetCeiling<K, V>(this SortedList<K, V> list, K queryItem, out K ceiling) => TryGetNeighbor(list, queryItem, true, true, out ceiling);
