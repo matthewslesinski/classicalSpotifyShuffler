@@ -11,7 +11,7 @@ namespace SpotifyProject.SpotifyAdditions
 {
 	public class ModifiedAPIConnector : APIConnector
 	{
-		private static int _requestsSent = 0;
+		private static long _requestsSent = 0;
 
 		public ModifiedAPIConnector(Uri baseAddress, IAuthenticator authenticator)
 			: base(baseAddress, authenticator)

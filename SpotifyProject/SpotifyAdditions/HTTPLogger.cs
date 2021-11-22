@@ -19,7 +19,7 @@ namespace SpotifyProject.SpotifyAdditions
     public class HTTPLogger : ITruncatedHTTPLogger
     {
         private const string _multipleSpacesRegexString = "\\s+";
-        private const string _onRequestFormat = "Sending Spotify Request: {0} {1} [{2}] {3}";
+        private const string _onRequestFormat = "Attempting to send Spotify Request: {0} {1} [{2}] {3}";
         private const string _onResponseFormat = "Received Spotify Response: {0} {1} {2}";
 
         private readonly static Regex _multipleSpacesRegex = new Regex(_multipleSpacesRegexString);
