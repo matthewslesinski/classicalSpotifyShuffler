@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Logging;
+using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
@@ -17,6 +18,8 @@ namespace SpotifyProject.SpotifyAdditions
 	// anything that can be overridden, so in order to emulate most of the functionality, a whole new class with very similar functionality had to be created.
 	public class ProtectedSimpleRetryHandler : IRetryHandler
 	{
+		public event Action<IResponse, TimeSpan?> OnResponseParsedForRetries;
+
 		private static readonly IReadOnlyDictionary<TimeSpan, (TimeSpan escalateAfter, TimeSpan deEscalateAfter)> _escalationConfig =
 			new Dictionary<TimeSpan, (TimeSpan escalateAfter, TimeSpan deEscalateAfter)>
 		{
@@ -115,21 +118,29 @@ namespace SpotifyProject.SpotifyAdditions
 
 		private async Task<IResponse> HandleRetryInternally(IRequest request, IResponse response, IRetryHandler.RetryFunc retry, int triesLeft)
 		{
-			TimeSpan? timeSpan = ParseTooManyRetries(response);
+			TimeSpan? timeSpan = null;
+			try
+			{
+				timeSpan = ParseTooManyRetries(response);
+			}
+			finally
+			{
+				OnResponseParsedForRetries?.Invoke(response, timeSpan);
+			}
 			if (timeSpan.HasValue && (!TooManyRequestsConsumesARetry || triesLeft > 0))
 			{
-				Logger.Information("Received a 429 (Too Many Retries) from the Spotify API. Waiting {}ms before trying again", timeSpan.Value.TotalMilliseconds);
-				await _sleep(timeSpan.Value).ConfigureAwait(continueOnCapturedContext: false);
-				response = await retry(request).ConfigureAwait(continueOnCapturedContext: false);
+				Logger.Information("Received a 429 (Too Many Retries) from the Spotify API. Waiting {retryAfter}ms before trying again", timeSpan.Value.TotalMilliseconds);
+				await _sleep(timeSpan.Value).WithoutContextCapture();
+				response = await retry(request).WithoutContextCapture();
 				int triesLeft2 = TooManyRequestsConsumesARetry ? (triesLeft - 1) : triesLeft;
-				return await HandleRetryInternally(request, response, retry, triesLeft2).ConfigureAwait(continueOnCapturedContext: false);
+				return await HandleRetryInternally(request, response, retry, triesLeft2).WithoutContextCapture();
 			}
 			if (RetryErrorCodes.Contains(response.StatusCode) && triesLeft > 0)
 			{
 				Logger.Information("Received a server error from the Spotify API. Retrying again, with {numberOfRetries} retries left", triesLeft);
-				await _sleep(RetryAfter).ConfigureAwait(continueOnCapturedContext: false);
-				response = await retry(request).ConfigureAwait(continueOnCapturedContext: false);
-				return await HandleRetryInternally(request, response, retry, triesLeft - 1).ConfigureAwait(continueOnCapturedContext: false);
+				await _sleep(RetryAfter).WithoutContextCapture();
+				response = await retry(request).WithoutContextCapture();
+				return await HandleRetryInternally(request, response, retry, triesLeft - 1).WithoutContextCapture();
 			}
 			return response;
 		}
