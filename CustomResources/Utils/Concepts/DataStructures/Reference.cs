@@ -6,7 +6,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	/// in data structures.
 	/// </summary>
 	/// <typeparam name="T">The underlying type</typeparam>
-	public class Reference<T> : IWrapper<T>
+	public class Reference<T> : IWrapper<T> where T : notnull
 	{
 		private readonly T _value;
 		public Reference(T value)
@@ -16,6 +16,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public T WrappedObject => _value;
 		public T Value => _value;
+
+		public override bool Equals(object obj) => obj is Reference<T> otherRef && Equals(_value, otherRef._value);
+
+		public override int GetHashCode() => _value.GetHashCode();
+
+		public override string ToString() => $"<{_value}>";
 
 		public static implicit operator Reference<T>(T value) => new Reference<T>(value);
 		public static implicit operator T(Reference<T> reference) => reference.Value;
