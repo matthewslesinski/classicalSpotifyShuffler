@@ -2,7 +2,6 @@
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using ApplicationResources.Setup;
@@ -13,6 +12,7 @@ using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
+using ApplicationResources.Utils;
 
 namespace SpotifyProject.Authentication
 {
@@ -40,7 +40,7 @@ namespace SpotifyProject.Authentication
         public static async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
         {
             Logger.Verbose($"Reading Client Id and Secret from {clientInfoPath}");
-            return JsonConvert.DeserializeObject<ClientInfo>(await File.ReadAllTextAsync(clientInfoPath).WithoutContextCapture());
+            return (await File.ReadAllTextAsync(clientInfoPath).WithoutContextCapture()).FromJsonString<ClientInfo>();
         }
     }
 
@@ -63,6 +63,7 @@ namespace SpotifyProject.Authentication
             var httpLoggerName = Settings.Get<string>(SpotifySettings.HTTPLoggerName);
             var httpLoggerCharLimit = Settings.Get<int?>(SpotifySettings.HTTPLoggerCharacterLimit);
             var retryHandlerName = TaskParameters.Get<string>(SpotifyParameters.RetryHandlerName);
+            var httpClientName = TaskParameters.Get<string>(SpotifyParameters.HTTPClientName);
             var paginatorName = TaskParameters.Get<string>(SpotifyParameters.PaginatorName);
             var apiConnectorName = TaskParameters.Get<string>(SpotifyParameters.APIConnectorName);
             Logger.Information("Starting Spotify authentication process");
@@ -74,15 +75,19 @@ namespace SpotifyProject.Authentication
             var retryHandler = SpotifyDefaults.RetryHandlers.TryGetPropertyByName<IRetryHandler>(retryHandlerName, out var foundRetryHandler)
                 ? foundRetryHandler
                 : SpotifyDefaults.RetryHandlers.SimpleRetryHandler;
+            var httpClientConstructor = SpotifyDefaults.HTTPClients.TryGetPropertyByName<HttpClients.HttpClientConstructor>(httpClientName, out var foundHttpClientConstructor)
+                ? foundHttpClientConstructor
+                : SpotifyDefaults.HTTPClients.NetHttpClient;
             var paginator = SpotifyDefaults.Paginators.TryGetPropertyByName<IPaginator>(paginatorName, out var foundPaginator)
                 ? foundPaginator
                 : SpotifyDefaults.Paginators.ConcurrentPaginator;
-            var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectorConstructor>(apiConnectorName, out var foundConstructor)
-                ? foundConstructor
+            var apiConnectorConstructor = SpotifyDefaults.APIConnectors.TryGetPropertyByName<APIConnectorConstructor>(apiConnectorName, out var foundApiConnectorConstructor)
+                ? foundApiConnectorConstructor
                 : SpotifyDefaults.APIConnectors.ModifiedAPIConnector;
             var config = SpotifyClientConfig.CreateDefault()
                 .WithHTTPLogger(httpLogger)
                 .WithRetryHandler(retryHandler)
+                .WithHTTPClient(httpClientConstructor(retryHandler))
                 .WithDefaultPaginator(paginator)
                 .WithAPIConnectorConstructor(apiConnectorConstructor);
             var authenticator = authenticatorConstructor(config, tokenFilePath);

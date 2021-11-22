@@ -22,6 +22,7 @@ namespace SpotifyProject.Configuration
 		MaintainCurrentlyPlaying,
 		TransformationName,
 		RetryHandlerName,
+		HTTPClientName,
 		PaginatorName,
 		APIConnectorName,
 		PlaybackSetterName,
@@ -38,7 +39,8 @@ namespace SpotifyProject.Configuration
 		public IReadOnlyDictionary<SpotifyParameters, IParameterSpecification> Specifications { get; } = new Dictionary<SpotifyParameters, IParameterSpecification>
 		{
 			{ SpotifyParameters.TransformationName,						new StringSettingSpecification() },
-			{ SpotifyParameters.RetryHandlerName,						new StringSettingSpecification() },
+			{ SpotifyParameters.RetryHandlerName,                       new StringSettingSpecification() },
+			{ SpotifyParameters.HTTPClientName,                         new StringSettingSpecification() },
 			{ SpotifyParameters.PaginatorName,							new StringSettingSpecification() },
 			{ SpotifyParameters.APIConnectorName,						new StringSettingSpecification() },
 			{ SpotifyParameters.PlaybackSetterName,						new StringSettingSpecification() },
@@ -71,7 +73,8 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.SerializeOperations,					new NoValueOption     { Flag = "--serializeOperations", Desc = "Makes operations sent to spotify happen in a sequential manner as opposed to in parallel" } },
 			{ SpotifyParameters.TransformationName,						new SingleValueOption { Flag = "--transformation", Desc = "The name of the transformation to be used." } },
 			{ SpotifyParameters.PaginatorName,							new SingleValueOption { Flag = "--paginator", Desc = "The name of the paginator to be used." } },
-			{ SpotifyParameters.RetryHandlerName,						new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
+			{ SpotifyParameters.RetryHandlerName,                       new SingleValueOption { Flag = "--retryHandler", Desc = "The name of the retry handler to be used." } },
+			{ SpotifyParameters.HTTPClientName,                         new SingleValueOption { Flag = "--httpClient", Desc = "The name of the http client to be used." } },
 			{ SpotifyParameters.APIConnectorName,						new SingleValueOption { Flag = "--apiConnector", Desc = "The name of the APIConnector to be used." } },
 			{ SpotifyParameters.PlaybackSetterName,						new SingleValueOption { Flag = "--playbackSetter", Desc = "The name of the playback setter to be used." } },
 			{ SpotifyParameters.SaveAsPlaylistName,						new SingleValueOption { Flag = "--playlistName", Desc = "The name of the playlist to save the playback in." } },
