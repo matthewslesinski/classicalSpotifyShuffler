@@ -6,10 +6,47 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts
 {
-
-	public class DisposableAction : IDisposable
+	public abstract class StandardDisposable : IDisposable
 	{
-		private int _alreadyDisposed = 0;
+		protected int _alreadyDisposed = 0;
+		public StandardDisposable() { }
+
+		public void Dispose()
+		{
+			if (Interlocked.Exchange(ref _alreadyDisposed, 1) == 0)
+			{
+				DoDispose();
+				GC.SuppressFinalize(this);
+			}
+		}
+
+		~StandardDisposable()
+		{
+			if (_alreadyDisposed == 0)
+				Dispose();
+		}
+
+		protected abstract void DoDispose();
+	}
+
+	public abstract class TaskContainingDisposable : StandardDisposable
+	{
+		private readonly CancellationTokenSource _tokenSource;
+		public TaskContainingDisposable()
+		{
+			_tokenSource = new CancellationTokenSource();
+		}
+
+		protected CancellationToken DisposeToken => _tokenSource.Token;
+
+		protected override void DoDispose()
+		{
+			_tokenSource.Cancel();
+		}
+	}
+
+	public class DisposableAction : StandardDisposable
+	{
 		private readonly Action _disposeAction;
 		public DisposableAction(Action disposeAction)
 		{
@@ -17,19 +54,9 @@ namespace CustomResources.Utils.Concepts
 			_disposeAction = disposeAction;
 		}
 
-		public void Dispose()
+		protected override void DoDispose()
 		{
-			if (Interlocked.Exchange(ref _alreadyDisposed, 1) == 0)
-			{
-				_disposeAction();
-				GC.SuppressFinalize(this);
-			}
-		}
-
-		~DisposableAction()
-		{
-			if (_alreadyDisposed == 0)
-				Dispose();
+			_disposeAction();
 		}
 	}
 

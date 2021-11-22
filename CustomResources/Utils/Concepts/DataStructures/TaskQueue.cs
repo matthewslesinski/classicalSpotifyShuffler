@@ -6,7 +6,7 @@ using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public abstract class TaskQueue<InputT, OutputT> : IDisposable
+	public abstract class TaskQueue<InputT, OutputT> : StandardDisposable, IDisposable
 	{
 		private readonly BlockingCollection<Node> _queue = new BlockingCollection<Node>();
 		private readonly CancellationToken _workerCancellationToken;
@@ -16,19 +16,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		#pragma warning restore IDE0052 // Remove unread private members
 
 		private int _isRunning = 1;
-		private int _isDisposed = 0;
 
 		public TaskQueue(CancellationToken cancellationToken = default)
 		{
 			_workerCancellationToken = cancellationToken;
 			_workerCancellationToken.Register(StopRunning);
-			_workerTask = Task.Run(Process);
-		}
-
-		~TaskQueue()
-		{
-			if (_isDisposed == 0)
-				Dispose();
+			_workerTask = Task.Run(Process, _workerCancellationToken);
 		}
 
 		public void StopRunning()
@@ -41,14 +34,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			}
 		}
 
-		public virtual void Dispose()
+		protected override void DoDispose()
 		{
-			if (Interlocked.Exchange(ref _isDisposed, 1) == 0)
-			{
-				StopRunning();
-				_queue.Dispose();
-				GC.SuppressFinalize(this);
-			}
+			StopRunning();
+			_queue.Dispose();
 		}
 
 		public async Task<OutputT> Schedule(InputT input, CancellationToken cancellationToken = default)
@@ -73,7 +62,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 					taskCompleter.SetCanceled(taskCancellationToken);
 				else if (_workerCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(_workerCancellationToken);
-				else if (_isDisposed == 1 || _isRunning == 0)
+				else if (_alreadyDisposed == 1 || _isRunning == 0)
 					taskCompleter.SetCanceled();
 				else
 				{
