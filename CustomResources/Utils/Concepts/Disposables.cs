@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 
@@ -32,12 +33,40 @@ namespace CustomResources.Utils.Concepts
 	public abstract class TaskContainingDisposable : StandardDisposable
 	{
 		private readonly CancellationTokenSource _tokenSource;
-		public TaskContainingDisposable()
+		private readonly CancellationTokenSource _combinedTokenSource;
+
+		protected Task _workerTask;
+		private int _isRunning = 0;
+
+		public TaskContainingDisposable(CancellationToken externalCancellationToken = default)
 		{
 			_tokenSource = new CancellationTokenSource();
+			_combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_tokenSource.Token, externalCancellationToken);
 		}
 
-		protected CancellationToken DisposeToken => _tokenSource.Token;
+		public void Run(Action worker) => Run(() => { worker(); return Task.CompletedTask; });
+		public void Run(Func<Task> worker)
+		{
+			if (_alreadyDisposed == 1)
+				throw new InvalidOperationException("Already disposed");
+
+			async Task Runner()
+			{
+				try
+				{
+					await worker();
+				}
+				finally
+				{
+					Interlocked.Exchange(ref _isRunning, 0);
+				}
+			}
+
+			if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
+				_workerTask = Task.Run(Runner, StopToken);
+		}
+
+		protected CancellationToken StopToken => _combinedTokenSource.Token;
 
 		protected override void DoDispose()
 		{
