@@ -54,7 +54,9 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			if (_flushOnDestroy)
 			{
 				var container = Interlocked.Exchange(ref _currentFlushableContainer, null);
-				Flush(container);
+				// Only flush if one has already been scheduled, so requesting to flush should actually be false
+				if (!container.RequestFlush())
+					Flush(container);
 			}
 			base.DoDispose();
 		}

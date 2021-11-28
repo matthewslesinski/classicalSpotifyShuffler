@@ -28,12 +28,13 @@ namespace ApplicationResources.ApplicationUtils
 		private bool _isLoaded = false;
 		private readonly object _loadLock = new object();
 
-		public CachedFile(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Basic)
+		public CachedFile(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing)
 		{
 			_parser = parser;
 			_fileAccessor = fileAccessType switch
 			{
 				FileAccessType.Basic => new BasicFileAccessor(fileName),
+				FileAccessType.Flushing => new FlushingFileAccessor(fileName),
 				_ => throw new NotImplementedException(),
 			};
 			Name = fileName;
@@ -107,7 +108,7 @@ namespace ApplicationResources.ApplicationUtils
 			void Save(string content);
 		}
 
-		private class BasicFileAccessor : StandardDisposable, IFileAccessor
+		private class BasicFileAccessor : IFileAccessor
 		{
 			private readonly string _fileName;
 			internal BasicFileAccessor(string fileName)
@@ -131,15 +132,46 @@ namespace ApplicationResources.ApplicationUtils
 				File.WriteAllTextAsync(_fileName, content);
 			}
 
-			protected override void DoDispose()
+			public void Dispose()
 			{
 				// Do Nothing
 			}
 		}
 
+		private class FlushingFileAccessor : Flusher<string, FileDataWrapper>, IFileAccessor
+		{
+			private readonly IFileAccessor _underlyingAccessor;
+			internal FlushingFileAccessor(string fileName, TimeSpan? flushWaitTime = null) : this(new BasicFileAccessor(fileName), flushWaitTime) { }
+			internal FlushingFileAccessor(IFileAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
+			{
+				_underlyingAccessor = underlyingAccessor;
+			}
+
+			public void Save(string content) => Add(content);
+
+			public bool TryRead(out string foundContent) => _underlyingAccessor.TryRead(out foundContent);
+
+			protected override FileDataWrapper CreateNewContainer() => new FileDataWrapper();
+
+			protected override bool Flush(FileDataWrapper containerToFlush) { _underlyingAccessor.Save(containerToFlush.FileContents); return false; }
+		}
+
+		private class FileDataWrapper : IFlushableContainer<string>
+		{
+			private string _fileContents;
+			private int _isFlushScheduled = 0;
+
+			internal string FileContents => _fileContents;
+
+			public bool RequestFlush() => Interlocked.Exchange(ref _isFlushScheduled, 1) != 1;
+
+			public bool Update(string itemToFlush) { Interlocked.Exchange(ref _fileContents, itemToFlush); return true; }
+		}
+
 		public enum FileAccessType
 		{
-			Basic
+			Basic,
+			Flushing
 		}
 	}
 }
