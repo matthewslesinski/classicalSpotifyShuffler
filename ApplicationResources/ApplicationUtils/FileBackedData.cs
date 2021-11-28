@@ -35,6 +35,7 @@ namespace ApplicationResources.ApplicationUtils
 			{
 				FileAccessType.Basic => new BasicFileAccessor(fileName),
 				FileAccessType.Flushing => new FlushingFileAccessor(fileName),
+				FileAccessType.SlightlyLongFlushing => new FlushingFileAccessor(fileName, TimeSpan.FromSeconds(5)),
 				_ => throw new NotImplementedException(),
 			};
 			Name = fileName;
@@ -111,9 +112,11 @@ namespace ApplicationResources.ApplicationUtils
 		private class BasicFileAccessor : IFileAccessor
 		{
 			private readonly string _fileName;
-			internal BasicFileAccessor(string fileName)
+			private readonly bool _shouldWriteAsync;
+			internal BasicFileAccessor(string fileName, bool shouldWriteAsync = true)
 			{
 				_fileName = fileName;
+				_shouldWriteAsync = shouldWriteAsync;
 			}
 
 			public bool TryRead(out string foundContent)
@@ -129,7 +132,10 @@ namespace ApplicationResources.ApplicationUtils
 
 			public void Save(string content)
 			{
-				File.WriteAllTextAsync(_fileName, content);
+				if (_shouldWriteAsync)
+					File.WriteAllTextAsync(_fileName, content);
+				else
+					File.WriteAllText(_fileName, content);
 			}
 
 			public void Dispose()
@@ -141,7 +147,7 @@ namespace ApplicationResources.ApplicationUtils
 		private class FlushingFileAccessor : Flusher<string, FileDataWrapper>, IFileAccessor
 		{
 			private readonly IFileAccessor _underlyingAccessor;
-			internal FlushingFileAccessor(string fileName, TimeSpan? flushWaitTime = null) : this(new BasicFileAccessor(fileName), flushWaitTime) { }
+			internal FlushingFileAccessor(string fileName, TimeSpan? flushWaitTime = null) : this(new BasicFileAccessor(fileName, false), flushWaitTime) { }
 			internal FlushingFileAccessor(IFileAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
 			{
 				_underlyingAccessor = underlyingAccessor;
@@ -171,7 +177,8 @@ namespace ApplicationResources.ApplicationUtils
 		public enum FileAccessType
 		{
 			Basic,
-			Flushing
+			Flushing,
+			SlightlyLongFlushing
 		}
 	}
 }

@@ -390,7 +390,7 @@ namespace SpotifyProject.SpotifyAdditions
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
-			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName);
+			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName, CachedFile<CalculatedStats>.FileAccessType.SlightlyLongFlushing);
 			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);

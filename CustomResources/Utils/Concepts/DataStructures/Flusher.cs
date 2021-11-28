@@ -17,6 +17,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_flushOnDestroy = flushOnDestroy;
 			_flushWaitTime = flushWaitTime;
 			_currentFlushableContainer = CreateNewContainer();
+			if (_flushOnDestroy)
+				AppDomain.CurrentDomain.ProcessExit += DoFlushOnClose;
 		}
 
 
@@ -53,12 +55,18 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			if (_flushOnDestroy)
 			{
-				var container = Interlocked.Exchange(ref _currentFlushableContainer, null);
-				// Only flush if one has already been scheduled, so requesting to flush should actually be false
-				if (!container.RequestFlush())
-					Flush(container);
+				AppDomain.CurrentDomain.ProcessExit -= DoFlushOnClose;
+				DoFlushOnClose(null, null);
 			}
 			base.DoDispose();
+		}
+
+		private void DoFlushOnClose(object sender, EventArgs args)
+		{
+			var container = Interlocked.Exchange(ref _currentFlushableContainer, null);
+			// Only flush if one has already been scheduled, so requesting to flush should actually be false
+			if (!container.RequestFlush())
+				Flush(container);
 		}
 	}
 
