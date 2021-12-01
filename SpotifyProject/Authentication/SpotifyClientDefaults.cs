@@ -19,10 +19,12 @@ namespace SpotifyProject.Authentication
 	{
 		public RetryHandlers()
 		{
+			NullRetryHandler = null;
 			SimpleRetryHandler = new SimpleRetryHandler();
 			ProtectedSimpleRetryHandler = new ProtectedSimpleRetryHandler();
 		}
 
+		public IRetryHandler NullRetryHandler { get; }
 		public IRetryHandler SimpleRetryHandler { get; }
 		public IRetryHandler ProtectedSimpleRetryHandler { get; }
 	}

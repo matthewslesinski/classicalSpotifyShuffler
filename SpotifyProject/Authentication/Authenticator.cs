@@ -61,7 +61,7 @@ namespace SpotifyProject.Authentication
             var clientInfoFilePath = Path.Combine(projectRoot, TaskParameters.Get<string>(SpotifyParameters.ClientInfoPath));
             var redirectUri = TaskParameters.Get<string>(SpotifyParameters.RedirectUri);
             var httpLoggerName = Settings.Get<string>(SpotifySettings.HTTPLoggerName);
-            var httpLoggerCharLimit = Settings.Get<int?>(SpotifySettings.HTTPLoggerCharacterLimit);
+            var httpLoggerCharLimit = TaskParameters.Get<int?>(SpotifyParameters.HTTPLoggerCharacterLimit);
             var retryHandlerName = TaskParameters.Get<string>(SpotifyParameters.RetryHandlerName);
             var httpClientName = TaskParameters.Get<string>(SpotifyParameters.HTTPClientName);
             var paginatorName = TaskParameters.Get<string>(SpotifyParameters.PaginatorName);

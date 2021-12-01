@@ -18,7 +18,6 @@ namespace SpotifyProject.Configuration
 		HTTPLoggerName,
 		MetadataRecordFile,
 		NumHTTPConnections,
-		HTTPLoggerCharacterLimit,
 		APIRateLimitWindow,
 		APIRateLimitStatsFile,
 	}
@@ -34,7 +33,6 @@ namespace SpotifyProject.Configuration
 			{ SpotifySettings.APIRateLimitWindow,                new ParameterSpecification<TimeSpan> { Default = TimeSpan.FromMilliseconds(SpotifyConstants.APIRateLimitWindowMS), ValueGetter = values => TimeSpan.FromMilliseconds(int.Parse(values.Single())), Validator = timeSpan => timeSpan > TimeSpan.FromSeconds(5) } },
 			{ SpotifySettings.TrackQueueSizeLimit,               new ConvertibleSettingSpecification<int> { Default = 750} },
 			{ SpotifySettings.NumHTTPConnections,                new ConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var numConnections) && numConnections > 0 ? numConnections : int.MaxValue, Default = int.MaxValue } },
-			{ SpotifySettings.HTTPLoggerCharacterLimit,          new NullableConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var characterLimit) && characterLimit > 0 ? characterLimit : null, Default = 1000 } },
 		};
 	}
 
@@ -47,7 +45,6 @@ namespace SpotifyProject.Configuration
 			{ SpotifySettings.APIRateLimitStatsFile,           new SingleValueOption { Flag = "-q|--apiRateLimitStatsFile", Desc = "The filename for where to store calculated stats about the Spotify API's rate limit" } },
 			{ SpotifySettings.AskUser,                         new NoValueOption     { Flag = "--askUser", Desc = "Provide if the user should be asked what context to reorder" } },
 			{ SpotifySettings.HTTPLoggerName,                  new SingleValueOption { Flag = "--httpLogger", Desc = "The name of the http logger to be used." } },
-			{ SpotifySettings.HTTPLoggerCharacterLimit,        new SingleValueOption { Flag = "--httpLoggerCharacterLimit", Desc = "The max number of characters to print per line from the http logger." } },
 			{ SpotifySettings.MetadataRecordFile,              new SingleValueOption { Flag = "--metadataRecordFile", Desc = "The location to write input to LukesTrackLinker for unit tests" } },
 			{ SpotifySettings.NumHTTPConnections,              new SingleValueOption { Flag = "--numHttpConnections", Desc = "The number of http connections to spotify's api to allow" } }
 		};

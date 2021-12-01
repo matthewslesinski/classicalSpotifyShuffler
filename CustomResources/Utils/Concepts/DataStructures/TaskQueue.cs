@@ -6,22 +6,16 @@ using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public abstract class TaskQueue<InputT, OutputT> : StandardDisposable, IDisposable
+	public abstract class TaskQueue<InputT, OutputT> : TaskContainingDisposable
 	{
 		private readonly BlockingCollection<Node> _queue = new BlockingCollection<Node>();
-		private readonly CancellationToken _workerCancellationToken;
-
-		#pragma warning disable IDE0052 // Remove unread private members
-		private readonly Task _workerTask;
-		#pragma warning restore IDE0052 // Remove unread private members
 
 		private int _isRunning = 1;
 
-		public TaskQueue(CancellationToken cancellationToken = default)
+		public TaskQueue(CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
-			_workerCancellationToken = cancellationToken;
-			_workerCancellationToken.Register(StopRunning);
-			_workerTask = Task.Run(Process, _workerCancellationToken);
+			StopToken.Register(StopRunning);
+			Run(Process);
 		}
 
 		public void StopRunning()
@@ -56,12 +50,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		private async Task Process()
 		{
-			foreach(var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(_workerCancellationToken))
+			foreach(var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(StopToken))
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
-				else if (_workerCancellationToken.IsCancellationRequested)
-					taskCompleter.SetCanceled(_workerCancellationToken);
+				else if (StopToken.IsCancellationRequested)
+					taskCompleter.SetCanceled(StopToken);
 				else if (_alreadyDisposed == 1 || _isRunning == 0)
 					taskCompleter.SetCanceled();
 				else

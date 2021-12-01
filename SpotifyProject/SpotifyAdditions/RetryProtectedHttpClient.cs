@@ -282,70 +282,22 @@ namespace SpotifyProject.SpotifyAdditions
 		}
 	}
 
-	internal class BagBasedRequestTrackerQueue : TaskContainingDisposable, RequestTracker.IRequestTrackerQueue
+	internal class BagBasedRequestTrackerQueue : Flusher<QueueContent, Bag>, RequestTracker.IRequestTrackerQueue
 	{
-		private class Bag : IEnumerable<QueueContent>
-		{
-			internal Bag()
-			{
-				_elements = new InternalConcurrentSet<QueueContent>();
-			}
-			internal Bag(IEnumerable<QueueContent> initialElements)
-			{
-				_elements = new List<QueueContent>();
-				initialElements.Each(Add);
-			}
-
-			private readonly static long _startingTicks = DateTime.MaxValue.Ticks;
-			private readonly ICollection<QueueContent> _elements;
-			private long _minTicks = _startingTicks;
-
-			internal int ScheduledToBeCollected = 0;
-
-			internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
-
-			internal void Add(QueueContent element)
-			{
-				_elements.Add(element);
-				var elementTicks = element.ResponseReceivedTime.Ticks;
-				if (Interlocked.Read(ref _minTicks) == _startingTicks && Interlocked.CompareExchange(ref _minTicks, elementTicks, _startingTicks) == _startingTicks)
-					return;
-
-				while (true)
-				{
-					var currTicks = Interlocked.Read(ref _minTicks);
-					if (elementTicks > currTicks || Interlocked.CompareExchange(ref _minTicks, Math.Min(currTicks, elementTicks), currTicks) == currTicks)
-						break;
-				}
-				
-				return;
-			}
-
-			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-			public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
-		}
-
-		private readonly TimeSpan _bagCollectionWaitTime;
 		private readonly InternalConcurrentSinglyLinkedQueue<QueueContent> _orderedOldTimes = new InternalConcurrentSinglyLinkedQueue<QueueContent>();
-		private Bag _currentBag = new();
 		private Bag _prevBag = new();
-
-		#pragma warning disable IDE0052 // Remove unread private members
-		private Task _bagCollector;
-		#pragma warning restore IDE0052 // Remove unread private members
 
 
 		internal BagBasedRequestTrackerQueue(TimeSpan? bagCollectionWaitTime = null)
-		{
-			_bagCollectionWaitTime = bagCollectionWaitTime ?? (Settings.Get<TimeSpan>(SpotifySettings.APIRateLimitWindow) / 6);
-		}
+			: base(bagCollectionWaitTime ?? (Settings.Get<TimeSpan>(SpotifySettings.APIRateLimitWindow) / 6), false)
+		{ }
 
 		public DateTime MinTimeStamp
 		{
 			get
 			{
 				var queueMin = _orderedOldTimes.TryPeek(out var foundMin) ? foundMin.ResponseReceivedTime : DateTime.MaxValue;
-				var bagMin = _currentBag.MinSeen;
+				var bagMin = _currentFlushableContainer.MinSeen;
 				var oldBagMin = _prevBag.MinSeen;
 				if (queueMin == DateTime.MaxValue && bagMin == DateTime.MaxValue && oldBagMin == DateTime.MaxValue)
 					throw new InvalidOperationException("Cannot request the minimum timestamp in an empty queue");
@@ -354,25 +306,13 @@ namespace SpotifyProject.SpotifyAdditions
 			}
 		}
 
-		public void Enqueue(RequestTracker.Node requestNode, DateTime responseReceivedTime)
-		{
-			var bag = _currentBag;
-			bag.Add(new QueueContent(requestNode, responseReceivedTime));
-			ScheduleToCollect(bag);
-		}
+		public void Enqueue(RequestTracker.Node requestNode, DateTime responseReceivedTime) => Add(new QueueContent(requestNode, responseReceivedTime));
 
-		private void ScheduleToCollect(Bag bagToSchedule)
-		{
-			if (Interlocked.Exchange(ref bagToSchedule.ScheduledToBeCollected, 1) != 1)
-				_bagCollector = CollectBag();
-		}
+		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
 
-		private async Task CollectBag()
+		protected override bool Flush(Bag containerToFlush)
 		{
-			await Task.Delay(_bagCollectionWaitTime, DisposeToken);
-
-			var emptyBag = new Bag();
-			var newBufferBag = Interlocked.Exchange(ref _currentBag, emptyBag);
+			var newBufferBag = containerToFlush;
 
 			var maxToAdd = _prevBag?.Max().ResponseReceivedTime ?? DateTime.MinValue;
 			var splitElements = newBufferBag.ToLookup(element => element.ResponseReceivedTime <= maxToAdd);
@@ -384,16 +324,61 @@ namespace SpotifyProject.SpotifyAdditions
 			foreach (var oldElement in elementsToAddToQueue)
 				_orderedOldTimes.Enqueue(oldElement);
 
-			if (recentElements.Any())
-				ScheduleToCollect(emptyBag);
+			return recentElements.Any();
 		}
 
-		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
+		protected override Bag CreateNewContainer() => new Bag();
+	}
 
-		private record QueueContent(RequestTracker.Node RequestNode, DateTime ResponseReceivedTime) : IComparable<QueueContent>
+
+	internal record QueueContent(RequestTracker.Node RequestNode, DateTime ResponseReceivedTime) : IComparable<QueueContent>
+	{
+		public int CompareTo(QueueContent other) => ResponseReceivedTime.CompareTo(other.ResponseReceivedTime);
+	}
+
+	internal class Bag : IEnumerable<QueueContent>, IFlushableContainer<QueueContent>
+	{
+		internal Bag()
 		{
-			public int CompareTo(QueueContent other) => ResponseReceivedTime.CompareTo(other.ResponseReceivedTime);
+			_elements = new InternalConcurrentSet<QueueContent>();
 		}
+		internal Bag(IEnumerable<QueueContent> initialElements)
+		{
+			_elements = new List<QueueContent>();
+			initialElements.Each(Add);
+		}
+
+		private readonly static long _startingTicks = DateTime.MaxValue.Ticks;
+		private readonly ICollection<QueueContent> _elements;
+		private long _minTicks = _startingTicks;
+
+		internal int ScheduledToBeCollected = 0;
+
+		internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
+
+		internal void Add(QueueContent element)
+		{
+			_elements.Add(element);
+			var elementTicks = element.ResponseReceivedTime.Ticks;
+			if (Interlocked.Read(ref _minTicks) == _startingTicks && Interlocked.CompareExchange(ref _minTicks, elementTicks, _startingTicks) == _startingTicks)
+				return;
+
+			while (true)
+			{
+				var currTicks = Interlocked.Read(ref _minTicks);
+				if (elementTicks > currTicks || Interlocked.CompareExchange(ref _minTicks, Math.Min(currTicks, elementTicks), currTicks) == currTicks)
+					break;
+			}
+
+			return;
+		}
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
+
+		public bool Update(QueueContent itemToFlush) { Add(itemToFlush); return true; }
+
+		public bool RequestFlush() => Interlocked.Exchange(ref ScheduledToBeCollected, 1) != 1;
 	}
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker
@@ -402,18 +387,14 @@ namespace SpotifyProject.SpotifyAdditions
 		private readonly CachedFile<CalculatedStats> _statsDataStore;
 		private readonly BlockingCollection<IRequestStatsTracker.StatsData> _statsUpdates;
 
-		#pragma warning disable IDE0052 // Remove unread private members
-		private readonly Task _calculatorTask;
-		#pragma warning restore IDE0052 // Remove unread private members
-
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
-			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName);
+			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName, CachedFile<CalculatedStats>.FileAccessType.SlightlyLongFlushing);
 			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
-			_calculatorTask = Task.Run(DoCalculations, DisposeToken);
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);
+			Run(DoCalculations);
 		}
 
 		public abstract int NumOutForCaution { get; }
@@ -428,15 +409,15 @@ namespace SpotifyProject.SpotifyAdditions
 
 		protected override void DoDispose()
 		{
-			base.DoDispose();
 			_statsUpdates.CompleteAdding();
+			base.DoDispose();
 			_statsUpdates.Dispose();
 			_statsDataStore.Dispose();
 		}
 
 		private void DoCalculations()
 		{
-			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(DisposeToken))
+			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
 			{
 				if (_alreadyDisposed != 1)
 				{

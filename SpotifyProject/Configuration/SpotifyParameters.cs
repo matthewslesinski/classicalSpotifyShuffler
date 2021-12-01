@@ -31,6 +31,7 @@ namespace SpotifyProject.Configuration
 		SerializeOperations,
 		NumberOfRetriesForServerError,
 		MaximumBatchSizeToReplaceInPlaylist,
+		HTTPLoggerCharacterLimit,
 	}
 
 
@@ -51,6 +52,7 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.DefaultToAlbumShuffle,					new BoolSettingSpecification() },
 			{ SpotifyParameters.MaintainCurrentlyPlaying,				new BoolSettingSpecification() },
 			{ SpotifyParameters.SerializeOperations,					new BoolSettingSpecification() },
+			{ SpotifyParameters.HTTPLoggerCharacterLimit,				new NullableConvertibleSettingSpecification<int> { ValueGetter = values => int.TryParse(values.Single(), out var characterLimit) && characterLimit > 0 ? characterLimit : null, Default = 1000 } },
 			{ SpotifyParameters.NumberOfRetriesForServerError,			new ConvertibleSettingSpecification<int> { Default = 10, Validator = v => v > 0 } },
 			{ SpotifyParameters.MaximumBatchSizeToReplaceInPlaylist,    new ConvertibleSettingSpecification<int> { Default = (int) (SpotifyConstants.PlaylistRequestBatchSize / 2.5), Validator = v => v >= 0 } },
 			{ SpotifyParameters.PlaylistRequestBatchSize,				new ConvertibleSettingSpecification<int> { Default = SpotifyConstants.PlaylistRequestBatchSize, Validator = v => v > 0 } },
@@ -81,6 +83,7 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.PlaylistRequestBatchSize,				new SingleValueOption { Flag = "--playlistRequestBatchSize", Desc = "The max number of tracks to include in each playlist modification request" } },
 			{ SpotifyParameters.NumberOfRetriesForServerError,          new SingleValueOption { Flag = "--numberOfRetriesForServerError", Desc = "The number of times to retry a request when the server returns an error" } },
 			{ SpotifyParameters.MaximumBatchSizeToReplaceInPlaylist,    new SingleValueOption { Flag = "--maximumBatchSizeToReplaceInPlaylist", Desc = "The maximum size of sub arrays of a playlist to remove and add instead of reordering in playlist operations" } },
+			{ SpotifyParameters.HTTPLoggerCharacterLimit,				new SingleValueOption { Flag = "--httpLoggerCharacterLimit", Desc = "The max number of characters to print per line from the http logger." } },
 		};
 	}
 }
