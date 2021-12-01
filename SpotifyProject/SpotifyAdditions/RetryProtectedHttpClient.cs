@@ -314,7 +314,7 @@ namespace SpotifyProject.SpotifyAdditions
 		{
 			var newBufferBag = containerToFlush;
 
-			var maxToAdd = _prevBag?.Max().ResponseReceivedTime ?? DateTime.MinValue;
+			var maxToAdd = _prevBag?.Max()?.ResponseReceivedTime ?? DateTime.MinValue;
 			var splitElements = newBufferBag.ToLookup(element => element.ResponseReceivedTime <= maxToAdd);
 			var olderElements = splitElements.TryGetValues(true, out var foundOldElements) ? foundOldElements : Array.Empty<QueueContent>();
 			var recentElements = splitElements.TryGetValues(false, out var foundRecentElements) ? foundRecentElements : Array.Empty<QueueContent>();
