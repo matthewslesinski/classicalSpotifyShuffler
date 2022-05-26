@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
+    <RuntimeIdentifier>osx-x64</RuntimeIdentifier> <!--may not be necessary-->
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <SelfContained>false</SelfContained> <!--should be used when having a runtime identifier (above). When I originally added this, this was true.
+    If true, then the runtime and everything else needed to run are included in the build, otherwise not. When this is true, I get the vtable setup error.
+    I assume that means that it's packaging itself with an old version of mono-->
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
