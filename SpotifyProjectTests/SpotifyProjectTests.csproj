@@ -23,6 +23,7 @@
     <Folder Include="SpotifyApiTests\" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.editorconfig" />
     <None Include="..\SettingsTemplates\standardSpotifyUnitTestSettings.xml">
       <Link>standardSpotifyUnitTestSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
