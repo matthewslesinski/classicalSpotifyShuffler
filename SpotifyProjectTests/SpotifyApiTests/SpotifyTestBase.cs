@@ -16,41 +16,42 @@ using SpotifyProject.SpotifyUtils;
 using System.IO;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyProject.Utils;
+using System.Threading;
+using CustomResources.Utils.Concepts.DataStructures;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
 	public class SpotifyProjectTestBase : UnitTestBase
 	{
-		private readonly static object _lock = new object();
-		private static bool _isLoaded = false;
+		private static readonly AsyncLockProvider _lock = new();
+		private static readonly MutableReference<bool> _isLoaded = new(false);
 
 		[OneTimeSetUp]
-		public static void OneTimeSetUp__SpotifyProjectTestBase()
+		public static async Task OneTimeSetUp__SpotifyProjectTestBase()
 		{
 			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			Utils.LoadOnce(ref _isLoaded, _lock, () =>
+			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
 				TaskParameters.RegisterParameters<SpotifyParameters>();
-				LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile);
-				Settings.Load();
-				LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile));
-			});
+				await LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile).WithoutContextCapture();
+				await Settings.Load().WithoutContextCapture();
+				await LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)).WithoutContextCapture();
+			}).WithoutContextCapture();
 		}
 	}
 
 	public class SpotifyTestBase : SpotifyProjectTestBase
 	{
-		private readonly static object _lock = new object();
-		private static bool _isLoaded = false;
+		private static readonly AsyncLockProvider _lock = new();
+		private static readonly MutableReference<bool> _isLoaded = new(false);
 		private static ISpotifyAccessor _globalSpotifyAccessor;
 		protected static ISpotifyAccessor SpotifyAccessor => _globalSpotifyAccessor;
 
 		[OneTimeSetUp]
-		public static async Task OneTimeSetUp__SpotifyTestBase()
+		public static Task OneTimeSetUp__SpotifyTestBase()
 		{
-			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
+			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");
 				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);

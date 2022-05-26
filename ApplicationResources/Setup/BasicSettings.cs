@@ -20,9 +20,9 @@ namespace ApplicationResources.Setup
 		SupplyUserInput,
 		ProjectRootDirectory,
 	}
-	public class SettingsSpecifications : IEnumExtensionProvider<BasicSettings, ISettingSpecification>
+	public class SettingsSpecifications : EnumExtensionProviderBase<BasicSettings, ISettingSpecification>
 	{
-		public IReadOnlyDictionary<BasicSettings, ISettingSpecification> Specifications { get; } = new Dictionary<BasicSettings, ISettingSpecification>
+		public override IReadOnlyDictionary<BasicSettings, ISettingSpecification> Specifications { get; } = new Dictionary<BasicSettings, ISettingSpecification>
 		{
 			{ BasicSettings.LogFileName,                       new StringSettingSpecification() },
 			{ BasicSettings.LoggerConfigurationFile,           new StringSettingSpecification() },
@@ -34,9 +34,9 @@ namespace ApplicationResources.Setup
 		};
 	}
 
-	public class SettingsCommandLineSpecifications : IEnumExtensionProvider<BasicSettings, ICommandLineSpecification>
+	public class SettingsCommandLineSpecifications : EnumExtensionProviderBase<BasicSettings, ICommandLineSpecification>
 	{
-		public IReadOnlyDictionary<BasicSettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<BasicSettings, ICommandLineSpecification>
+		public override IReadOnlyDictionary<BasicSettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<BasicSettings, ICommandLineSpecification>
 		{
 			{ BasicSettings.ConsoleLogLevel,                 new SingleValueOption { Flag = "-cl|--consoleLogLevel", Desc = "The lowest logging level to output to the console. A good default value to provide is \"Info\"" } },
 			{ BasicSettings.OutputFileLogLevel,              new SingleValueOption { Flag = "-fl|--fileLogLevel", Desc = "The lowest logging level to output to a file. A good default value to provide is \"Verbose\"" } },

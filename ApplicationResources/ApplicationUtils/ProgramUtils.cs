@@ -9,57 +9,98 @@ using CustomResources.Utils.Extensions;
 using System.Threading.Tasks;
 using System.Threading;
 using ApplicationResources.ApplicationUtils.Parameters;
+using CustomResources.Utils.GeneralUtils;
+using ApplicationResources.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ApplicationResources.ApplicationUtils
 {
 	public static class ProgramUtils
 	{
-		public static void ExecuteProgramAsync(Func<Task> program, StartupArgs startupArgs)
+		public static Task<int> ExecuteCommandLineProgram(Func<Task> program, StartupArgs startupArgs, Func<IDisposable> dependencyInitializer = null)
 		{
-			ExecuteProgram(() =>
-			{
-				var task = program();
-				while (!task.IsCompleted)
-				{
-					Thread.Sleep(Timeout.Infinite);
-				}
-				// Unreachable on purpose in case the compiler would want to get rid of the preceding while loop
-				Terminate();
-			}, startupArgs);
+			Ensure.ArgumentNotNull(program, nameof(program));
+			return ExecuteCommandLineProgram(_ => program(), startupArgs, dependencyInitializer);
 		}
 
-		public static void ExecuteProgram(Action program, StartupArgs startupArgs)
+		public static async Task<int> ExecuteCommandLineProgram(Func<CancellationToken, Task> program, StartupArgs startupArgs, Func<IDisposable> dependencyInitializer = null)
 		{
+			Ensure.ArgumentNotNull(program, nameof(program));
+			Ensure.ArgumentNotNull(startupArgs, nameof(startupArgs));
+
 			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
-			var app = new CommandLineApplication();
-			Settings.RegisterProvider(new CommandLineSettingsProvider(app));
-			Settings.RegisterSettings<BasicSettings>();
-			startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
-			startupArgs.ParameterTypes.Each(TaskParameters.RegisterParameters);
-			Action runner = Settings.Load + program + Terminate;
-			if (!string.IsNullOrWhiteSpace(startupArgs.XmlSettingsFileFlag))
+			var dependencyDisposable = dependencyInitializer?.Invoke();
+			try
 			{
-				var xmlSettingsFileOption = app.Option(startupArgs.XmlSettingsFileFlag, "The file name for settings stored in xml format", CommandOptionType.MultipleValue);
-				Action settingsProviderRegister = () =>
+				var app = new CommandLineApplication();
+				Settings.RegisterProvider(new CommandLineSettingsProvider(app));
+				Settings.RegisterSettings<BasicSettings>();
+				startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
+				startupArgs.ParameterTypes.Each(TaskParameters.RegisterParameters);
+				Func<CancellationToken, Task> runner = ((Func<CancellationToken, Task>)Settings.Load).FollowedByAsync(program).AndThenAsync(OnTerminate);
+				if (!string.IsNullOrWhiteSpace(startupArgs.XmlSettingsFileFlag))
 				{
-					if (xmlSettingsFileOption.HasValue())
-						Settings.RegisterProviders(xmlSettingsFileOption.Values.Where(File.Exists).Select(fileName => new XmlSettingsProvider(fileName)));
-					if (startupArgs.AdditionalXmlSettingsFiles.Any())
-						Settings.RegisterProviders(startupArgs.AdditionalXmlSettingsFiles.Where(File.Exists).Select(fileName => new XmlSettingsProvider(fileName)));
-					if (File.Exists(ApplicationConstants.StandardSettingsFile))
-						Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
-				};
-				runner = settingsProviderRegister + runner;
+					var xmlSettingsFileOption = app.Option(startupArgs.XmlSettingsFileFlag, "The file name for settings stored in xml format", CommandOptionType.MultipleValue);
+					Func<CancellationToken, Task> settingsProviderRegister = async cancellationToken =>
+					{
+						var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+						if (xmlSettingsFileOption.HasValue())
+						{
+							var existingFiles = await xmlSettingsFileOption.Values.WhereAsync(localData.ExistsAsync, cancellationToken).ToList().WithoutContextCapture();
+							Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName)));
+						}
+						if (startupArgs.AdditionalXmlSettingsFiles.Any())
+						{
+							var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync, cancellationToken).ToList().WithoutContextCapture();
+							Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName)));
+						}
+						if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile).WithoutContextCapture())
+							Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
+					};
+					runner = settingsProviderRegister.FollowedByAsync(runner);
+				}
+				app.OnExecuteAsync(async cancellationToken => { await runner(cancellationToken).WithoutContextCapture(); return 0; });
+				return await app.ExecuteAsync(startupArgs.CommandLineArgs).WithoutContextCapture();
 			}
-			app.OnExecute(runner);
-			app.Execute(startupArgs.CommandLineArgs);
+			finally
+			{
+				dependencyDisposable?.Dispose();
+			}
 		}
 
-		private static void Terminate()
+		public static async Task ExecuteProgram(Func<Task> program, StartupArgs startupArgs, Func<IDisposable> dependencyInitializer = null)
+		{
+			Ensure.ArgumentNotNull(program, nameof(program));
+			Ensure.ArgumentNotNull(startupArgs, nameof(startupArgs));
+			AppDomain.CurrentDomain.UnhandledException += (sender, args) => Logger.Error($"An Exception occurred: {args.ExceptionObject}");
+			var dependencyDisposable = dependencyInitializer?.Invoke();
+			try
+			{
+				var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+				Settings.RegisterSettings<BasicSettings>();
+				startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
+				startupArgs.ParameterTypes.Each(TaskParameters.RegisterParameters);
+				if (startupArgs.AdditionalXmlSettingsFiles.Any())
+				{
+					var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync).ToList().WithoutContextCapture();
+					Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName)));
+				}
+				if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile).WithoutContextCapture())
+					Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));
+				await Settings.Load().WithoutContextCapture();
+				await program().WithoutContextCapture();
+				OnTerminate();
+			}
+			finally
+			{
+				dependencyDisposable?.Dispose();
+			}
+		}
+
+		private static void OnTerminate()
 		{
 			Logger.Information("Terminating successfully");
 			Console.WriteLine("Terminating successfully");
-			Environment.Exit(0);
 		}
 
 		public class StartupArgs

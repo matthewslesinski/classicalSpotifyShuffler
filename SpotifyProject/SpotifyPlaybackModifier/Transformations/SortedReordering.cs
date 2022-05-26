@@ -8,7 +8,9 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public class SortedReordering<InputContextT, OutputContextT, TrackT> : ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>
+	// TODO When the Mono default interface method bug is fixed, replace TrackReorderingPlaybackTransformationBase with ITrackReorderingPlaybackTransformation, and replace abstract override
+	// methods with interface implementations in child classes
+	public class SortedReordering<InputContextT, OutputContextT, TrackT> : TrackReorderingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT>
 		where InputContextT : ISpotifyPlaybackContext<TrackT> where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
 	{
 		private readonly Func<InputContextT, IEnumerable<TrackT>, OutputContextT> _contextConstructor;
@@ -20,12 +22,12 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			_intendedOrder = intendedOrder;
 		}
 
-		OutputContextT ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
+		protected override OutputContextT ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
 		{
 			return _contextConstructor(inputContext, newTrackOrder);
 		}
 
-		IEnumerable<TrackT> ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks)
+		protected override IEnumerable<TrackT> Reorder(InputContextT originalContext, IEnumerable<TrackT> tracks)
 		{
 			return tracks.OrderBy(ComparerUtils.ComparingBy<TrackT, ITrackLinkingInfo>(originalContext.GetMetadataForTrack, _intendedOrder));
 		}

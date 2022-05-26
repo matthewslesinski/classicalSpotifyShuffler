@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Settings>
   <Setting name="LogFileName">applicationLogs</Setting>
-  <Setting name="ProjectRootDirectory">../../../../</Setting>
+  <Setting name="ProjectRootDirectory">../../../../../</Setting>
 </Settings>

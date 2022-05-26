@@ -22,9 +22,9 @@ namespace SpotifyProject.Configuration
 		APIRateLimitStatsFile,
 	}
 
-	public class SpotifySettingsSpecifications : IEnumExtensionProvider<SpotifySettings, ISettingSpecification>
+	public class SpotifySettingsSpecifications : EnumExtensionProviderBase<SpotifySettings, ISettingSpecification>
 	{
-		public IReadOnlyDictionary<SpotifySettings, ISettingSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ISettingSpecification>
+		public override IReadOnlyDictionary<SpotifySettings, ISettingSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ISettingSpecification>
 		{
 			{ SpotifySettings.MetadataRecordFile,                new StringSettingSpecification() },
 			{ SpotifySettings.HTTPLoggerName,                    new StringSettingSpecification() },
@@ -36,9 +36,9 @@ namespace SpotifyProject.Configuration
 		};
 	}
 
-	public class SpotifySettingsCommandLineSpecifications : IEnumExtensionProvider<SpotifySettings, ICommandLineSpecification>
+	public class SpotifySettingsCommandLineSpecifications : EnumExtensionProviderBase<SpotifySettings, ICommandLineSpecification>
 	{
-		public IReadOnlyDictionary<SpotifySettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ICommandLineSpecification>
+		public override IReadOnlyDictionary<SpotifySettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ICommandLineSpecification>
 		{
 			{ SpotifySettings.TrackQueueSizeLimit,             new SingleValueOption { Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue" } },
 			{ SpotifySettings.APIRateLimitWindow,              new SingleValueOption { Flag = "-q|--apiRateLimitWindow", Desc = "The number of milliseconds that the Spotify API keeps requests contributing towards the rate limit" } },

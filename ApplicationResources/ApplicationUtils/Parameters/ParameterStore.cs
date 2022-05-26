@@ -12,6 +12,7 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 	{
 		public ParameterStore(SettingsStore defaultValueProvider) : base(MemoryScope.AsyncLocal)
 		{
+			TODO
 			RegisterProvider(defaultValueProvider);
 			defaultValueProvider.OnLoad += OnProviderLoaded;
 			if (defaultValueProvider.IsLoaded)

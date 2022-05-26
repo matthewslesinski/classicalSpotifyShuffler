@@ -35,9 +35,9 @@ namespace SpotifyProject.Configuration
 	}
 
 
-	public class SpotifyParametersSpecifications : IEnumExtensionProvider<SpotifyParameters, IParameterSpecification>
+	public class SpotifyParametersSpecifications : EnumExtensionProviderBase<SpotifyParameters, IParameterSpecification>
 	{
-		public IReadOnlyDictionary<SpotifyParameters, IParameterSpecification> Specifications { get; } = new Dictionary<SpotifyParameters, IParameterSpecification>
+		public override IReadOnlyDictionary<SpotifyParameters, IParameterSpecification> Specifications { get; } = new Dictionary<SpotifyParameters, IParameterSpecification>
 		{
 			{ SpotifyParameters.TransformationName,						new StringSettingSpecification() },
 			{ SpotifyParameters.RetryHandlerName,                       new StringSettingSpecification() },
@@ -62,9 +62,9 @@ namespace SpotifyProject.Configuration
 		};
 	}
 
-	public class SpotifyParametersCommandLineSpecifications : IEnumExtensionProvider<SpotifyParameters, ICommandLineSpecification>
+	public class SpotifyParametersCommandLineSpecifications : EnumExtensionProviderBase<SpotifyParameters, ICommandLineSpecification>
 	{
-		public IReadOnlyDictionary<SpotifyParameters, ICommandLineSpecification> Specifications { get; } = new Dictionary<SpotifyParameters, ICommandLineSpecification>
+		public override IReadOnlyDictionary<SpotifyParameters, ICommandLineSpecification> Specifications { get; } = new Dictionary<SpotifyParameters, ICommandLineSpecification>
 		{
 			{ SpotifyParameters.ClientInfoPath,							new SingleValueOption { Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path (from the project root) for the file with the client id and secret for Spotify access" } },
 			{ SpotifyParameters.TokenPath,								new SingleValueOption { Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path (from the project root) for the file with access and refresh tokens for Spotify access" } },

@@ -92,9 +92,9 @@ namespace ApplicationResourcesTests.GeneralTests
 		}
 
 
-		public class TestParametersSpecifications : IEnumExtensionProvider<TestParameters, IParameterSpecification>
+		public class TestParametersSpecifications : EnumExtensionProviderBase<TestParameters, IParameterSpecification>
 		{
-			public IReadOnlyDictionary<TestParameters, IParameterSpecification> Specifications { get; } = new Dictionary<TestParameters, IParameterSpecification>
+			public override IReadOnlyDictionary<TestParameters, IParameterSpecification> Specifications { get; } = new Dictionary<TestParameters, IParameterSpecification>
 			{
 				{ TestParameters.TestParameter1,                new StringSettingSpecification() },
 				{ TestParameters.TestParameter2,                new StringSettingSpecification() },

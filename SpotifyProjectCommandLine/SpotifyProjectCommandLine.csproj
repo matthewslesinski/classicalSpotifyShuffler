@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="SpotifyAPI.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />
+    <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
+    <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="SpotifyAPI.Web.Auth">
+      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+    </Reference>
+    <Reference Include="SpotifyAPI.Web">
+      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

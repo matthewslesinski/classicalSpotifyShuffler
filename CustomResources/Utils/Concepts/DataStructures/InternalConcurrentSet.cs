@@ -25,5 +25,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public new bool Add(T item) => _wrappedCollection.TryAdd(item, item);
 		public IReadOnlySet<T> GetSnapshot() => _wrappedCollection.Keys;
+
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IConcurrentCollection<,>
+		void ICollection<T>.CopyTo(T[] array, int index) => IGenericInternalReadOnlyCollection<T>.CopyToImpl(array, index, GetSnapshot());
+		void ICollection.CopyTo(Array array, int index) => IGenericInternalReadOnlyCollection<T>.CopyToImpl(array, index, GetSnapshot());
+
+		// TODO When the Mono default interface method bug is fixed, remove this from child classes of IWrappedElementContainer<,>
+		IEqualityComparer<T> IElementContainer<T>.EqualityComparer => WrappedObject.EqualityComparer;
 	}
 }

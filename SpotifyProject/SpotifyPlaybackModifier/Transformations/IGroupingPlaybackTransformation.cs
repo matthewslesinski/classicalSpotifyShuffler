@@ -5,20 +5,43 @@ using System.Linq;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public interface IGroupingPlaybackTransformation<in InputContextT, out OutputContextT, TrackT, WorkT> : ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>
+	// TODO When the Mono default interface method bug is fixed, replace TrackReorderingPlaybackTransformationBase with ITrackReorderingPlaybackTransformation, and replace abstract override
+	// methods with interface implementations in child classes
+
+	//public interface IGroupingPlaybackTransformation<in InputContextT, out OutputContextT, TrackT, WorkT> : TrackReorderingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT>
+	//	where InputContextT : ISpotifyPlaybackContext<TrackT>
+	//	where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
+	//{
+	//	IEnumerable<TrackT> TrackReorderingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT>.Reorder(InputContextT playbackContext, IEnumerable<TrackT> tracks)
+	//	{
+	//		var works = GroupTracksIntoWorks(playbackContext, tracks);
+	//		var newOrder = ReorderWorks(works);
+	//		return newOrder.SelectMany(grouping => grouping);
+	//	}
+
+	//	protected IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks);
+
+	//	protected IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works);
+
+	//}
+
+
+	// TODO When the Mono default interface method bug is fixed, replace GroupingPlaybackTransformationBase with IGroupingPlaybackTransformation, and replace abstract override
+	// methods with interface implementations in child classes
+	public abstract class GroupingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT, WorkT> : TrackReorderingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT>
 		where InputContextT : ISpotifyPlaybackContext<TrackT>
 		where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
 	{
-		IEnumerable<TrackT> ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.Reorder(InputContextT playbackContext, IEnumerable<TrackT> tracks)
+		protected override IEnumerable<TrackT> Reorder(InputContextT playbackContext, IEnumerable<TrackT> tracks)
 		{
 			var works = GroupTracksIntoWorks(playbackContext, tracks);
 			var newOrder = ReorderWorks(works);
 			return newOrder.SelectMany(grouping => grouping);
 		}
 
-		protected IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks);
+		protected abstract IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks);
 
-		protected IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works);
+		protected abstract IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works);
 
 	}
 }

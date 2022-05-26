@@ -8,7 +8,10 @@ using CustomResources.Utils.Extensions;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public class SimpleWorkShuffle<InputContextT, OutputContextT, TrackT, WorkT> : IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>
+
+	// TODO When the Mono default interface method bug is fixed, replace GroupingPlaybackTransformationBase with IGroupingPlaybackTransformation, and replace abstract override
+	// methods with interface implementations in child classes
+	public class SimpleWorkShuffle<InputContextT, OutputContextT, TrackT, WorkT> : GroupingPlaybackTransformationBase<InputContextT, OutputContextT, TrackT, WorkT>
 		where InputContextT : ISpotifyPlaybackContext<TrackT>
 		where OutputContextT : IReorderedPlaybackContext<TrackT, InputContextT>
 	{
@@ -21,17 +24,17 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 			_trackLinker = trackLinker;
 		}
 
-		OutputContextT ITrackReorderingPlaybackTransformation<InputContextT, OutputContextT, TrackT>.ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
+		protected override OutputContextT ConstructNewContext(InputContextT inputContext, IEnumerable<TrackT> newTrackOrder)
 		{
 			return _contextConstructor(inputContext, newTrackOrder);
 		}
 
-		IEnumerable<ITrackGrouping<WorkT, TrackT>> IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>.GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks)
+		protected override IEnumerable<ITrackGrouping<WorkT, TrackT>> GroupTracksIntoWorks(InputContextT playbackContext, IEnumerable<TrackT> tracks)
 		{
 			return _trackLinker.GroupTracksIntoWorks(playbackContext, tracks.DistinctOrdered(new KeyBasedEqualityComparer<TrackT, ITrackLinkingInfo>(playbackContext.GetMetadataForTrack, ITrackLinkingInfo.EqualityDefinition)));
 		}
 
-		IEnumerable<ITrackGrouping<WorkT, TrackT>> IGroupingPlaybackTransformation<InputContextT, OutputContextT, TrackT, WorkT>.ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works)
+		protected override IEnumerable<ITrackGrouping<WorkT, TrackT>> ReorderWorks(IEnumerable<ITrackGrouping<WorkT, TrackT>> works)
 		{
 			return works.RandomShuffle();
 		}

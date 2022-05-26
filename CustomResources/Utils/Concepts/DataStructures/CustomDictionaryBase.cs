@@ -48,5 +48,18 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		protected void ThrowKeyAlreadyAddedException(K key) => throw new ArgumentException($"Key {key} already has an entry in the dictionary");
 		protected void ThrowNullKeyException() => throw new ArgumentNullException($"Key cannot be null");
+
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IInternalDictionary<,>
+		ICollection<K> IDictionary<K, V>.Keys => this.As<IInternalDictionary<K, V>>().Keys;
+		ICollection<V> IDictionary<K, V>.Values => this.As<IInternalDictionary<K, V>>().Values;
+		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => this.As<IInternalDictionary<K, V>>().Keys;
+		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => this.As<IInternalDictionary<K, V>>().Values;
+
+		void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
+		bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
+			&& Equals(item.Value, existingValue) && Remove(item.Key);
+
+		bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
+		bool IDictionary<K, V>.ContainsKey(K key) => this.As<IDictionary<K, V>>().TryGetValue(key, out _);
 	}
 }

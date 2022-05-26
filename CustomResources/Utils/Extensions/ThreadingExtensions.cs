@@ -7,6 +7,9 @@ namespace CustomResources.Utils.Extensions
 {
 	public static class ThreadingExtensions
 	{
+        public static Func<Task> AndThen(this Func<Task> asyncAction, Action action) => TaskUtils.Compose(action, asyncAction);
+        public static Func<Task<R>> AndThen<T, R>(this Func<Task<T>> asyncFunc, Func<T, R> func) => TaskUtils.Compose(func, asyncFunc);
+        public static R Wait<R>(this Task<R> task) { task.Wait(); return task.Result; }
 
         public static ReadLockToken ReadToken(this ReaderWriterLockSlim rwLock) => new ReadLockToken(rwLock);
         public static UpgradeableReadLockToken UpgradeableToken(this ReaderWriterLockSlim rwLock) => new UpgradeableReadLockToken(rwLock);

@@ -11,7 +11,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-		protected void CopyToImpl(Array array, int index, IReadOnlyCollection<T> elements)
+		protected static void CopyToImpl(Array array, int index, IReadOnlyCollection<T> elements)
 		{
 			Ensure.ArgumentNotNull(array, nameof(array));
 			if (index < 0)
@@ -56,8 +56,9 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		ReadOnlyViewT GetSnapshot();
 
-		void ICollection<T>.CopyTo(T[] array, int index) => CopyToImpl(array, index, GetSnapshot());
-		void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, GetSnapshot());
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IConcurrentCollection<,> and uncomment
+		//void ICollection<T>.CopyTo(T[] array, int index) => CopyToImpl(array, index, GetSnapshot());
+		//void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, GetSnapshot());
 	}
 
 	#region Set Interfaces
@@ -236,17 +237,19 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		public new KeyCollectionView<K, V, IInternalDictionary<K, V>> Keys => new KeyCollectionView<K, V, IInternalDictionary<K, V>>(this, EqualityComparer);
 		public new ValueCollectionView<K, V, IInternalDictionary<K, V>> Values => new ValueCollectionView<K, V, IInternalDictionary<K, V>>(this);
-		ICollection<K> IDictionary<K, V>.Keys => Keys;
-		ICollection<V> IDictionary<K, V>.Values => Values;
-		IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
-		IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
 
-		void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
-		bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
-			&& Equals(item.Value, existingValue) && Remove(item.Key);
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IInternalDictionary<,> and uncomment
+		//ICollection<K> IDictionary<K, V>.Keys => Keys;
+		//ICollection<V> IDictionary<K, V>.Values => Values;
+		//IEnumerable<K> IReadOnlyDictionary<K, V>.Keys => Keys;
+		//IEnumerable<V> IReadOnlyDictionary<K, V>.Values => Values;
 
-		bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
-		bool IDictionary<K, V>.ContainsKey(K key) => this.As<IDictionary<K, V>>().TryGetValue(key, out _);
+		//void ICollection<KeyValuePair<K, V>>.Add(KeyValuePair<K, V> item) => Add(item.Key, item.Value);
+		//bool ICollection<KeyValuePair<K, V>>.Remove(KeyValuePair<K, V> item) => this.As<IDictionary<K, V>>().TryGetValue(item.Key, out var existingValue)
+		//	&& Equals(item.Value, existingValue) && Remove(item.Key);
+
+		//bool ICollection<KeyValuePair<K, V>>.Contains(KeyValuePair<K, V> item) => this.As<IReadOnlyDictionary<K, V>>().TryGetValue(item.Key, out var foundValue) && Equals(foundValue, item.Value);
+		//bool IDictionary<K, V>.ContainsKey(K key) => this.As<IDictionary<K, V>>().TryGetValue(key, out _);
 		public bool ContainsValue(V value, IEqualityComparer<V> equalityComparer = null)
 		{
 			var values = Values;

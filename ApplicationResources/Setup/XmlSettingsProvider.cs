@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
+using ApplicationResources.Services;
 using CustomResources.Utils.Extensions;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public class XmlSettingsProvider : SettingsParserBase
+	public class XmlSettingsProvider : SettingsParserBase, IGlobalServiceUser
 	{
 		private readonly string _fileName;
 		private readonly IEnumerable<Enum> _requiredSettings;
@@ -20,11 +24,12 @@ namespace ApplicationResources.Setup
 
 		public override IEnumerable<Enum> LoadedSettings => _loadedValues.Keys;
 
-		public override void Load()
+		public override Task Load(CancellationToken cancellationToken = default)
 		{
-			Util.LoadOnce(ref _isLoaded, _fileName, () =>
+			return Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
-				var doc = XElement.Load(_fileName);
+				var fileContents = await this.AccessLocalDataStore().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
+				var doc = XElement.Load(new StringReader(fileContents));
 				_loadedValues = doc.Descendants(_settingNodeName)
 					.Select(node => (node.Attribute(_settingNodeIdentifier).Value, node.Value))
 					.GroupBy(GeneralExtensions.GetFirst, GeneralExtensions.GetSecond)

@@ -6,16 +6,21 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-    <PackageReference Include="NLog" Version="4.7.12" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />  </ItemGroup>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    <PackageReference Include="NLog" Version="4.7.13" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+</ItemGroup>
   <ItemGroup>
     <None Remove="Utils\" />
     <None Remove="Setup\" />
     <None Remove="Logging\" />
     <None Remove="ApplicationUtils\" />
     <None Remove="ApplicationUtils\Parameters\" />
+    <None Remove="Services\" />
+    <None Remove="Microsoft.Extensions.DependencyInjection" />
+    <None Remove="Microsoft.Extensions.Hosting" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utils\" />
@@ -23,6 +28,7 @@
     <Folder Include="Logging\" />
     <Folder Include="ApplicationUtils\" />
     <Folder Include="ApplicationUtils\Parameters\" />
+    <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="NLog.config">
@@ -34,6 +40,7 @@
     <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.editorconfig" />
     <None Include="..\SettingsTemplates\standardSettings.xml">
       <Link>standardSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -8,6 +8,10 @@ using ApplicationResources.Logging;
 using ApplicationResources.ApplicationUtils;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("SpotifyProjectTests")]
+
 
 namespace SpotifyProject.SpotifyPlaybackModifier
 {

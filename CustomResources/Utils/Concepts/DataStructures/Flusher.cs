@@ -21,9 +21,14 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				AppDomain.CurrentDomain.ProcessExit += DoFlushOnClose;
 		}
 
+		protected enum AdditionalFlushOptions
+		{
+			NeedsAdditionalFlush = 1,
+			NoAdditionalFlushNeeded = 0
+		}
 
 		// Returned bool should indicate if additional flushing is necessary
-		protected abstract bool Flush(ContainerT containerToFlush);
+		protected abstract Task<AdditionalFlushOptions> Flush(ContainerT containerToFlush);
 		protected abstract ContainerT CreateNewContainer();
 
 		public void Add(FlushableT item)
@@ -46,8 +51,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			var newContainer = CreateNewContainer();
 			var oldContainer = Interlocked.Exchange(ref _currentFlushableContainer, newContainer);
 
-			var additionalFlushNeeded = Flush(oldContainer);
-			if (additionalFlushNeeded)
+			var additionalFlushNeeded = await Flush(oldContainer).WithoutContextCapture();
+			if (((int)additionalFlushNeeded).AsBool())
 				ScheduleFlush();
 		}
 

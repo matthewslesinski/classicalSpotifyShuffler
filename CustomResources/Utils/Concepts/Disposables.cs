@@ -9,12 +9,12 @@ namespace CustomResources.Utils.Concepts
 {
 	public abstract class StandardDisposable : IDisposable
 	{
-		protected int _alreadyDisposed = 0;
+		protected int _alreadyDisposed = false.AsInt();
 		public StandardDisposable() { }
 
 		public void Dispose()
 		{
-			if (Interlocked.Exchange(ref _alreadyDisposed, 1) == 0)
+			if (GeneralUtils.Utils.IsFirstRequest(ref _alreadyDisposed))
 			{
 				DoDispose();
 				GC.SuppressFinalize(this);
@@ -23,7 +23,7 @@ namespace CustomResources.Utils.Concepts
 
 		~StandardDisposable()
 		{
-			if (_alreadyDisposed == 0)
+			if (!_alreadyDisposed.AsBool())
 				Dispose();
 		}
 
@@ -36,7 +36,7 @@ namespace CustomResources.Utils.Concepts
 		private readonly CancellationTokenSource _combinedTokenSource;
 
 		protected Task _workerTask;
-		private int _isRunning = 0;
+		private int _isRunning = false.AsInt();
 
 		public TaskContainingDisposable(CancellationToken externalCancellationToken = default)
 		{
@@ -47,7 +47,7 @@ namespace CustomResources.Utils.Concepts
 		public void Run(Action worker) => Run(() => { worker(); return Task.CompletedTask; });
 		public void Run(Func<Task> worker)
 		{
-			if (_alreadyDisposed == 1)
+			if (_alreadyDisposed.AsBool())
 				throw new InvalidOperationException("Already disposed");
 
 			async Task Runner()
@@ -58,11 +58,11 @@ namespace CustomResources.Utils.Concepts
 				}
 				finally
 				{
-					Interlocked.Exchange(ref _isRunning, 0);
+					Interlocked.Exchange(ref _isRunning, false.AsInt());
 				}
 			}
 
-			if (Interlocked.CompareExchange(ref _isRunning, 1, 0) == 0)
+			if (!Interlocked.CompareExchange(ref _isRunning, true.AsInt(), false.AsInt()).AsBool())
 				_workerTask = Task.Run(Runner, StopToken);
 		}
 

@@ -299,6 +299,11 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
         void IProducerConsumerCollection<T>.CopyTo(T[] array, int index) => this.As<ICollection<T>>().CopyTo(array, index);
 
+
+        // TODO When the Mono default interface method bug is fixed, remove these from child classes of IConcurrentCollection<,>
+        void ICollection<T>.CopyTo(T[] array, int index) => IGenericInternalReadOnlyCollection<T>.CopyToImpl(array, index, GetSnapshot());
+        void ICollection.CopyTo(Array array, int index) => IGenericInternalReadOnlyCollection<T>.CopyToImpl(array, index, GetSnapshot());
+
         public T[] GetSnapshot() => ToArray();
         public T[] ToArray()
         {

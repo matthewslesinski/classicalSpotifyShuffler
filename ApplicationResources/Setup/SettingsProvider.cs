@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
@@ -11,7 +13,7 @@ namespace ApplicationResources.Setup
 {
 	public interface ISettingsProvider
 	{
-		void Load();
+		Task Load(CancellationToken cancellationToken = default);
 		bool IsLoaded { get; }
 		IEnumerable<Enum> LoadedSettings { get; }
 		bool TryGetValue<R>(Enum setting, out R value);
@@ -28,7 +30,7 @@ namespace ApplicationResources.Setup
 		public abstract IEnumerable<Enum> LoadedSettings { get; }
 		public bool IsLoaded => _isLoaded;
 
-		public abstract void Load();
+		public abstract Task Load(CancellationToken cancellationToken = default);
 
 		public abstract bool TryGetValue(Enum setting, out object value);
 		public bool TryGetValue<R>(Enum setting, out R value)
@@ -71,7 +73,9 @@ namespace ApplicationResources.Setup
 		}
 
 		protected readonly object _loadLock = new object();
-		protected bool _isLoaded = false;
+		protected readonly AsyncLockProvider _lock = new();
+		protected MutableReference<bool> _isLoaded = new(false);
+		protected TaskCompletionSource<bool> _isLoadedTaskSource = null;
 	}
 
 	public abstract class SettingsParserBase : SettingsProviderBase
@@ -107,19 +111,19 @@ namespace ApplicationResources.Setup
 		protected readonly IDictionary<Enum, object> _parsedSettings = new Dictionary<Enum, object>();
 		private readonly List<ISettingsProvider> _settingsProviders = new();
 
-		public override void Load()
+		public override async Task Load(CancellationToken cancellationToken = default)
 		{
 			bool wasPerformed = false;
-			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
+			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
-				_settingsProviders.EachIndependently(provider =>
+				await _settingsProviders.AsAsyncEnumerable().EachIndependently(async provider =>
 				{
 					if (!provider.IsLoaded)
-						provider.Load();
-				});
+						await provider.Load(cancellationToken).WithoutContextCapture();
+				}).WithoutContextCapture();
 				ResolveAndSetSettings(AllSettings);
 				wasPerformed = true;
-			});
+			}).WithoutContextCapture();
 			if (wasPerformed)
 				OnLoad?.Invoke(AllSettings);
 		}
@@ -135,12 +139,12 @@ namespace ApplicationResources.Setup
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
 		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => OnSettingsAdded(settings, enumType);
 
-		public void RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
-		public void RegisterProvider(ISettingsProvider provider, int position = -1)
+		public Task RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
+		public async Task RegisterProvider(ISettingsProvider provider, int position = -1)
 		{
 			if (provider.IsLoaded)
 				throw new ArgumentException($"Cannot accept an already loaded settings provider");
-			lock (_loadLock)
+			using (await _lock.AcquireToken().WithoutContextCapture())
 			{
 				if (position < 0 || position >= _settingsProviders.Count)
 					_settingsProviders.Add(provider);
@@ -153,7 +157,7 @@ namespace ApplicationResources.Setup
 				if (IsLoaded)
 				{
 					if (!provider.IsLoaded)
-						provider.Load();
+						await provider.Load();
 					ResolveAndSetSettings(provider.LoadedSettings);
 					OnLoad?.Invoke(provider.LoadedSettings);
 				}

@@ -19,7 +19,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	public interface IWrappedElementContainer<T, out WrappedT> : IElementContainer<T>, IWrapper<WrappedT>
 		where WrappedT : IElementContainer<T>
 	{
-		IEqualityComparer<T> IElementContainer<T>.EqualityComparer => WrappedObject.EqualityComparer;
+		// TODO When the Mono default interface method bug is fixed, remove this from child classes of IWrappedElementContainer<,> and uncomment this 
+		//IEqualityComparer<T> IElementContainer<T>.EqualityComparer => WrappedObject.EqualityComparer;
 	}
 
 	public interface ICollectionWrapper<T, CollectionT> : IWrapper<CollectionT>, ICollection where CollectionT : IReadOnlyCollection<T>, ICollection<T>, ICollection

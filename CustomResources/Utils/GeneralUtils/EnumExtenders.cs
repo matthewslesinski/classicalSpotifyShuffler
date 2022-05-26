@@ -46,12 +46,22 @@ namespace CustomResources.Utils.GeneralUtils
 		internal IEnumerable<IEnumExtensionPair<ExtensionT>> GetPairs();
 	}
 
-	public interface IEnumExtensionProvider<EnumT, ExtensionT> : IGenericEnumExtensionProvider<ExtensionT> where EnumT : struct, Enum
+	// TODO Remove EnumExtensionProviderBase when the Mono default interface method bug is fixed and replace with this interface. Also remove override keywords in child classes where necessary
+	// TODO Also follow the to-do for EnumExtensionProviderAttribute
+	//public interface IEnumExtensionProvider<EnumT, ExtensionT> : IGenericEnumExtensionProvider<ExtensionT> where EnumT : struct, Enum
+	//{
+	//	IEnumerable<IEnumExtensionPair<ExtensionT>> IGenericEnumExtensionProvider<ExtensionT>.GetPairs() =>
+	//		Specifications.Select<KeyValuePair<EnumT, ExtensionT>, IEnumExtensionPair<ExtensionT>>(pair => new EnumExtensionPair<ExtensionT>(pair.Key, pair.Value));
+
+	//	IReadOnlyDictionary<EnumT, ExtensionT> Specifications { get; }
+	//}
+
+	public abstract class EnumExtensionProviderBase<EnumT, ExtensionT> : IGenericEnumExtensionProvider<ExtensionT> where EnumT : struct, Enum
 	{
 		IEnumerable<IEnumExtensionPair<ExtensionT>> IGenericEnumExtensionProvider<ExtensionT>.GetPairs() =>
 			Specifications.Select<KeyValuePair<EnumT, ExtensionT>, IEnumExtensionPair<ExtensionT>>(pair => new EnumExtensionPair<ExtensionT>(pair.Key, pair.Value));
 
-		IReadOnlyDictionary<EnumT, ExtensionT> Specifications { get; }
+		public abstract IReadOnlyDictionary<EnumT, ExtensionT> Specifications { get; }
 	}
 
 	internal interface IEnumExtensionPair<out ExtensionT>
@@ -87,12 +97,17 @@ namespace CustomResources.Utils.GeneralUtils
 		{
 			if (!providerType.IsClass)
 				throw new ArgumentException("The enum extension provider type must be a class");
-			var interfaceType = providerType
-				.FindInterfaces((interfaceType, criteria) => interfaceType.GetGenericTypeDefinition() == (Type) criteria, typeof(IEnumExtensionProvider<,>))
-				.Single();
+			// TODO When the Mono default interface method bug is fixed, remove this way of determining the interface type and use the commented out way instead, in conjunction
+			// with following the to-do for IEnumExtensionProvider
+			var interfaceType = providerType.BaseType;
+			if (interfaceType.GetGenericTypeDefinition() != typeof(EnumExtensionProviderBase<,>))
+				throw new InvalidOperationException($"Must have EnumExtensionProviderBase as a base class");
+			//var interfaceType = providerType
+			//	.FindInterfaces((interfaceType, criteria) => interfaceType.GetGenericTypeDefinition() == (Type) criteria, typeof(EnumExtensionProviderBase<,>))
+			//	.Single();
 			var constructor = providerType.GetConstructor(Array.Empty<Type>());
 			if (constructor == null)
-				throw new ArgumentException("The enum extension provider type must have an no argument constructor");
+				throw new ArgumentException("The enum extension provider type must have a no argument constructor");
 			var genericTypeArgs = interfaceType.GetGenericArguments();
 			Instance = Activator.CreateInstance(providerType);
 			EnumType = genericTypeArgs[0];

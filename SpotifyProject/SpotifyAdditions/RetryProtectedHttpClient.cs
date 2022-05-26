@@ -139,18 +139,19 @@ namespace SpotifyProject.SpotifyAdditions
 
 	internal interface IRequestTracker<NodeT, RequestT> : IRequestTracker<RequestT> where NodeT : IRequestTrackerNode
 	{
-		bool IRequestTracker<RequestT>.TryTrackRequest(RequestT request, DateTime? sendTime, out IRequestTrackerNode addedObject)
-		{
-			var success = TryTrackRequest(request, sendTime, out NodeT addedNode);
-			addedObject = addedNode;
-			return success;
-		}
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IRequestTracker<,> and uncomment these
+		//bool IRequestTracker<RequestT>.TryTrackRequest(RequestT request, DateTime? sendTime, out IRequestTrackerNode addedObject)
+		//{
+		//	var success = TryTrackRequest(request, sendTime, out NodeT addedNode);
+		//	addedObject = addedNode;
+		//	return success;
+		//}
+		//void IRequestTracker<RequestT>.MarkAsFinished(IRequestTrackerNode requestNode, RequestResult requestResult, DateTime? finishedTime, TimeSpan? retryAfter)
+		//{
+		//	if (requestNode is NodeT requestIdCasted) MarkAsFinished(requestIdCasted, requestResult, finishedTime, retryAfter);
+		//	else throw new ArgumentException("The request Node is not valid", nameof(requestNode));
+		//}
 		bool TryTrackRequest(RequestT request, DateTime? sendTime, out NodeT addedNode);
-		void IRequestTracker<RequestT>.MarkAsFinished(IRequestTrackerNode requestNode, RequestResult requestResult, DateTime? finishedTime, TimeSpan? retryAfter)
-		{
-			if (requestNode is NodeT requestIdCasted) MarkAsFinished(requestIdCasted, requestResult, finishedTime, retryAfter);
-			else throw new ArgumentException("The request Node is not valid", nameof(requestNode));
-		}
 		void MarkAsFinished(NodeT requestNode, RequestResult requestResult, DateTime? finishedTime, TimeSpan? retryAfter = null);
 	}
 
@@ -182,6 +183,19 @@ namespace SpotifyProject.SpotifyAdditions
 		{
 			_queue = new BagBasedRequestTrackerQueue();
 			_stats = new NaiveStatsTracker();
+		}
+
+		// TODO When the Mono default interface method bug is fixed, remove these from child classes of IRequestTracker<,> 
+		bool IRequestTracker<IRequest>.TryTrackRequest(IRequest request, DateTime? sendTime, out IRequestTrackerNode addedObject)
+		{
+			var success = TryTrackRequest(request, sendTime, out RequestTracker.Node addedNode);
+			addedObject = addedNode;
+			return success;
+		}
+		void IRequestTracker<IRequest>.MarkAsFinished(IRequestTrackerNode requestNode, RequestResult requestResult, DateTime? finishedTime, TimeSpan? retryAfter)
+		{
+			if (requestNode is RequestTracker.Node requestIdCasted) MarkAsFinished(requestIdCasted, requestResult, finishedTime, retryAfter);
+			else throw new ArgumentException("The request Node is not valid", nameof(requestNode));
 		}
 
 		public bool TryTrackRequest(IRequest request, DateTime? sendTime, out Node addedNode)
@@ -223,8 +237,10 @@ namespace SpotifyProject.SpotifyAdditions
 			if (requestResult == RequestResult.FailedNotSent)
 				Interlocked.Decrement(ref _numOut);
 			else
+			{
 				_queue.Enqueue(requestNode, endTime);
-			_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+			}
 		}
 
 		public CautionLevel CheckCautionLevel(out TimeSpan waitAtLeast)
@@ -310,7 +326,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
 
-		protected override bool Flush(Bag containerToFlush)
+		protected override Task<AdditionalFlushOptions> Flush(Bag containerToFlush)
 		{
 			var newBufferBag = containerToFlush;
 
@@ -324,7 +340,7 @@ namespace SpotifyProject.SpotifyAdditions
 			foreach (var oldElement in elementsToAddToQueue)
 				_orderedOldTimes.Enqueue(oldElement);
 
-			return recentElements.Any();
+			return Task.FromResult(recentElements.Any() ? AdditionalFlushOptions.NeedsAdditionalFlush : AdditionalFlushOptions.NoAdditionalFlushNeeded);
 		}
 
 		protected override Bag CreateNewContainer() => new Bag();
@@ -352,7 +368,7 @@ namespace SpotifyProject.SpotifyAdditions
 		private readonly ICollection<QueueContent> _elements;
 		private long _minTicks = _startingTicks;
 
-		internal int ScheduledToBeCollected = 0;
+		internal int ScheduledToBeCollected = false.AsInt();
 
 		internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
 
@@ -378,19 +394,20 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool Update(QueueContent itemToFlush) { Add(itemToFlush); return true; }
 
-		public bool RequestFlush() => Interlocked.Exchange(ref ScheduledToBeCollected, 1) != 1;
+		public bool RequestFlush() => CustomResources.Utils.GeneralUtils.Utils.IsFirstRequest(ref ScheduledToBeCollected);
 	}
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker
 	{
 		protected static readonly CalculatedStats _startingStats = new CalculatedStats(0, 0, 0, 0);
-		private readonly CachedFile<CalculatedStats> _statsDataStore;
+		private readonly CachedData<CalculatedStats> _statsDataStore;
 		private readonly BlockingCollection<IRequestStatsTracker.StatsData> _statsUpdates;
 
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
-			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName, CachedFile<CalculatedStats>.FileAccessType.SlightlyLongFlushing);
+			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, fileAccessType: CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing,
+				useDefaultValue: true, defaultValue: _startingStats);
 			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);
@@ -415,12 +432,14 @@ namespace SpotifyProject.SpotifyAdditions
 			_statsDataStore.Dispose();
 		}
 
-		private void DoCalculations()
+		private async Task DoCalculations()
 		{
 			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
 			{
-				if (_alreadyDisposed != 1)
+				if (!_alreadyDisposed.AsBool())
 				{
+					if (!_statsDataStore.IsLoaded)
+						await _statsDataStore.Initialize();
 					var newStats = CalculateNewStats(CurrentStats, startTime, endTime, requestResult, numOut);
 					CurrentStats = newStats;
 				}
