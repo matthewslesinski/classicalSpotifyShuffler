@@ -76,7 +76,8 @@ namespace ApplicationResources.ApplicationUtils
 					var initializedTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 					wasAlreadyLoaded = Interlocked.CompareExchange(ref _loadingTaskSource, initializedTaskSource, null) != null;
 				}
-				while (true) {
+				while (true)
+				{
 					var currVal = _cachedValue;
 					if (currVal != null && Equals(currVal.Value, value))
 						break;
