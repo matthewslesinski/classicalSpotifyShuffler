@@ -1,20 +1,21 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
 using GeneralUtils = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.ApplicationUtils
 {
-	public class CachedJSONFile<T> : CachedFile<T>
+	public class CachedJSONData<T> : CachedData<T>
 	{
-		public CachedJSONFile(string fileName, FileAccessType fileAccessType = FileAccessType.Basic)
+		public CachedJSONData(string fileName, FileAccessType fileAccessType = FileAccessType.Basic)
 			: base(fileName, ApplicationConstants<T>.JSONSerializer.Invert(), fileAccessType)
 		{ }
 	}
 
-	public class CachedFile<T> : StandardDisposable
+	public class CachedData<T> : StandardDisposable
 	{
 		public delegate void OnValueLoadedListener(T loadedValue);
 		public delegate void OnValueChangedListener(T previousValue, T newValue);
@@ -22,20 +23,20 @@ namespace ApplicationResources.ApplicationUtils
 		public event OnValueChangedListener OnValueChanged;
 
 		private readonly Bijection<string, T> _parser;
-		private readonly IFileAccessor _fileAccessor;
+		private readonly IDataAccessor _fileAccessor;
 
 		private Reference<T> _cachedValue;
 		private bool _isLoaded = false;
 		private readonly object _loadLock = new object();
 
-		public CachedFile(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing)
+		public CachedData(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing)
 		{
 			_parser = parser;
 			_fileAccessor = fileAccessType switch
 			{
-				FileAccessType.Basic => new BasicFileAccessor(fileName),
-				FileAccessType.Flushing => new FlushingFileAccessor(fileName),
-				FileAccessType.SlightlyLongFlushing => new FlushingFileAccessor(fileName, TimeSpan.FromSeconds(5)),
+				FileAccessType.Basic => new BasicDataAccessor(fileName),
+				FileAccessType.Flushing => new FlushingDataAccessor(fileName),
+				FileAccessType.SlightlyLongFlushing => new FlushingDataAccessor(fileName, TimeSpan.FromSeconds(5)),
 				_ => throw new NotImplementedException(),
 			};
 			Name = fileName;
@@ -102,40 +103,33 @@ namespace ApplicationResources.ApplicationUtils
 			return false;
 		}
 
-
-		private interface IFileAccessor : IDisposable
+		private class BasicDataAccessor : IDataAccessor
 		{
-			bool TryRead(out string foundContent);
-			void Save(string content);
-		}
-
-		private class BasicFileAccessor : IFileAccessor
-		{
-			private readonly string _fileName;
+			private readonly string _dataKey;
 			private readonly bool _shouldWriteAsync;
-			internal BasicFileAccessor(string fileName, bool shouldWriteAsync = true)
+			internal BasicDataAccessor(string fileName, bool shouldWriteAsync = true)
 			{
-				_fileName = fileName;
+				_dataKey = fileName;
 				_shouldWriteAsync = shouldWriteAsync;
 			}
 
 			public bool TryRead(out string foundContent)
 			{
-				if (!File.Exists(_fileName))
+				if (!File.Exists(_dataKey))
 				{
 					foundContent = null;
 					return false;
 				}
-				foundContent = File.ReadAllText(_fileName);
+				foundContent = File.ReadAllText(_dataKey);
 				return true;
 			}
 
 			public void Save(string content)
 			{
 				if (_shouldWriteAsync)
-					File.WriteAllTextAsync(_fileName, content);
+					File.WriteAllTextAsync(_dataKey, content);
 				else
-					File.WriteAllText(_fileName, content);
+					File.WriteAllText(_dataKey, content);
 			}
 
 			public void Dispose()
@@ -144,11 +138,11 @@ namespace ApplicationResources.ApplicationUtils
 			}
 		}
 
-		private class FlushingFileAccessor : Flusher<string, FileDataWrapper>, IFileAccessor
+		private class FlushingDataAccessor : Flusher<string, DataWrapper>, IDataAccessor
 		{
-			private readonly IFileAccessor _underlyingAccessor;
-			internal FlushingFileAccessor(string fileName, TimeSpan? flushWaitTime = null) : this(new BasicFileAccessor(fileName, false), flushWaitTime) { }
-			internal FlushingFileAccessor(IFileAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
+			private readonly IDataAccessor _underlyingAccessor;
+			internal FlushingDataAccessor(string dataKey, TimeSpan? flushWaitTime = null) : this(new BasicDataAccessor(dataKey, false), flushWaitTime) { }
+			internal FlushingDataAccessor(IDataAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
 			{
 				_underlyingAccessor = underlyingAccessor;
 			}
@@ -157,21 +151,21 @@ namespace ApplicationResources.ApplicationUtils
 
 			public bool TryRead(out string foundContent) => _underlyingAccessor.TryRead(out foundContent);
 
-			protected override FileDataWrapper CreateNewContainer() => new FileDataWrapper();
+			protected override DataWrapper CreateNewContainer() => new DataWrapper();
 
-			protected override bool Flush(FileDataWrapper containerToFlush) { _underlyingAccessor.Save(containerToFlush.FileContents); return false; }
+			protected override bool Flush(DataWrapper containerToFlush) { _underlyingAccessor.Save(containerToFlush.Contents); return false; }
 		}
 
-		private class FileDataWrapper : IFlushableContainer<string>
+		private class DataWrapper : IFlushableContainer<string>
 		{
-			private string _fileContents;
-			private int _isFlushScheduled = 0;
+			private string _contents;
+			private Reference<bool> _isFlushScheduled = false;
 
-			internal string FileContents => _fileContents;
+			internal string Contents => _contents;
 
-			public bool RequestFlush() => Interlocked.Exchange(ref _isFlushScheduled, 1) != 1;
+			public bool RequestFlush() => GeneralUtils.IsFirstRequest(ref _isFlushScheduled);
 
-			public bool Update(string itemToFlush) { Interlocked.Exchange(ref _fileContents, itemToFlush); return true; }
+			public bool Update(string itemToFlush) { Interlocked.Exchange(ref _contents, itemToFlush); return true; }
 		}
 
 		public enum FileAccessType
@@ -180,5 +174,11 @@ namespace ApplicationResources.ApplicationUtils
 			Flushing,
 			SlightlyLongFlushing
 		}
+	}
+
+	public interface IDataAccessor : IDisposable
+	{
+		bool TryRead(out string foundContent);
+		void Save(string content);
 	}
 }
