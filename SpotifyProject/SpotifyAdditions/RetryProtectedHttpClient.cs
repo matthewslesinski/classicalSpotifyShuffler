@@ -223,8 +223,10 @@ namespace SpotifyProject.SpotifyAdditions
 			if (requestResult == RequestResult.FailedNotSent)
 				Interlocked.Decrement(ref _numOut);
 			else
+			{
 				_queue.Enqueue(requestNode, endTime);
-			_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+			}
 		}
 
 		public CautionLevel CheckCautionLevel(out TimeSpan waitAtLeast)
