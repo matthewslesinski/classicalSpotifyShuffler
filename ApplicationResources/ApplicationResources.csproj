@@ -21,6 +21,7 @@
     <None Remove="ApplicationUtils\Parameters\" />
     <None Remove="Microsoft.Extensions.DependencyInjection" />
     <None Remove="Microsoft.Extensions.Hosting" />
+    <None Remove="Services\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Utils\" />
@@ -28,6 +29,7 @@
     <Folder Include="Logging\" />
     <Folder Include="ApplicationUtils\" />
     <Folder Include="ApplicationUtils\Parameters\" />
+    <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="NLog.config">
