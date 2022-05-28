@@ -392,7 +392,8 @@ namespace SpotifyProject.SpotifyAdditions
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
-			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing);
+			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, fileAccessType: CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing,
+				useDefaultValue: true, defaultValue: _startingStats);
 			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);
@@ -417,8 +418,10 @@ namespace SpotifyProject.SpotifyAdditions
 			_statsDataStore.Dispose();
 		}
 
-		private void DoCalculations()
+		private async Task DoCalculations()
 		{
+			if (!_statsDataStore.IsLoaded)
+				await _statsDataStore.Initialize().WithoutContextCapture();
 			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
 			{
 				if (!_alreadyDisposed.AsBool())

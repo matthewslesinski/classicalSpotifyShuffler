@@ -2,16 +2,18 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ApplicationResources.Services;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
+using CustomResources.Utils.Extensions;
 using GeneralUtils = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.ApplicationUtils
 {
 	public class CachedJSONData<T> : CachedData<T>
 	{
-		public CachedJSONData(string fileName, FileAccessType fileAccessType = FileAccessType.Basic)
-			: base(fileName, ApplicationConstants<T>.JSONSerializer.Invert(), fileAccessType)
+		public CachedJSONData(string fileName, FileAccessType fileAccessType = FileAccessType.Basic, bool useDefaultValue = false, T defaultValue = default)
+			: base(fileName, ApplicationConstants<T>.JSONSerializer.Invert(), fileAccessType, useDefaultValue, defaultValue)
 		{ }
 	}
 
@@ -24,14 +26,18 @@ namespace ApplicationResources.ApplicationUtils
 
 		private readonly Bijection<string, T> _parser;
 		private readonly IDataAccessor _fileAccessor;
+		private readonly CallbackTaskQueue<T> _persistQueue;
+		private readonly bool _useDefaultValue;
+		private readonly T _defaultValue;
 
 		private Reference<T> _cachedValue;
-		private bool _isLoaded = false;
-		private readonly object _loadLock = new object();
+		private TaskCompletionSource<bool> _loadingTaskSource = null;
 
-		public CachedData(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing)
+		public CachedData(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing,
+			bool useDefaultValue = false, T defaultValue = default)
 		{
 			_parser = parser;
+			_persistQueue = new((toPersist, _) => Persist(toPersist));
 			_fileAccessor = fileAccessType switch
 			{
 				FileAccessType.Basic => new BasicDataAccessor(fileName),
@@ -40,34 +46,46 @@ namespace ApplicationResources.ApplicationUtils
 				_ => throw new NotImplementedException(),
 			};
 			Name = fileName;
-			OnValueChanged += (_, newValue) => Persist(newValue);
-			
+			_useDefaultValue = useDefaultValue;
+			_defaultValue = defaultValue;
+			OnValueChanged += (_, newValue) => _persistQueue.Schedule(newValue);
 		}
 
 		public string Name { get; }
+
+		public bool IsLoaded => _loadingTaskSource != null && _loadingTaskSource.Task.IsCompleted;
 
 		public T CachedValue
 		{
 			get
 			{
-				if (_cachedValue == null && !_isLoaded)
+				if (_cachedValue == null && !IsLoaded)
 				{
-					GeneralUtils.LoadOnceBlocking(ref _isLoaded, _loadLock, () =>
-					{
-						if (InitializeField(ref _cachedValue, () => Load(), out var loadedValue))
-							OnValueLoaded?.Invoke(loadedValue);
-					});
+					if (_useDefaultValue)
+						return _defaultValue;
+					else
+						throw new NullReferenceException("The cached data must be initialized before accessing");
 				}
 				return _cachedValue;
 			}
 			set
 			{
+				bool wasAlreadyLoaded = true;
+				if (_loadingTaskSource == null)
+				{
+					var initializedTaskSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+					wasAlreadyLoaded = Interlocked.CompareExchange(ref _loadingTaskSource, initializedTaskSource, null) != null;
+				}
 				while (true) {
 					var currVal = _cachedValue;
 					if (currVal != null && Equals(currVal.Value, value))
 						break;
+					// This is not necessarily thread/task safe. If two threads call set at the same time, one can set the _cachedValue first but
+					// persist its value second
 					else if (Interlocked.CompareExchange(ref _cachedValue, value, currVal) == currVal)
 					{
+						if (!wasAlreadyLoaded)
+							_loadingTaskSource.SetResult(false);
 						OnValueChanged?.Invoke(currVal, value);
 						break;
 					}
@@ -75,62 +93,52 @@ namespace ApplicationResources.ApplicationUtils
 			}
 		}
 
+		public async Task<CachedData<T>> Initialize()
+		{
+			bool wasLoaded = false;
+			T loadedValue = default;
+			var wasPerformed = await GeneralUtils.LoadOnceBlockingAsync(ref _loadingTaskSource, async () =>
+			{
+				wasLoaded = _cachedValue == null && Interlocked.CompareExchange(ref _cachedValue, await Load().WithoutContextCapture(), null) == null;
+				if (wasLoaded)
+					loadedValue = _cachedValue;
+			}).WithoutContextCapture();
+			if (wasPerformed && wasLoaded)
+				OnValueLoaded?.Invoke(_cachedValue);
+			return this;
+		}
+
 		protected override void DoDispose()
 		{
+			_persistQueue.Dispose();
 			_fileAccessor.Dispose();
 		}
 
-		private T Load()
+		private async Task<T> Load()
 		{
-			return _fileAccessor.TryRead(out var foundContent) ? _parser.Invoke(foundContent) : default;
+			var (exists, foundContent) = await _fileAccessor.TryReadAsync().WithoutContextCapture();
+			return exists ? _parser.Invoke(foundContent) : default;
 		}
 
-		private void Persist(T value)
+		private Task Persist(T value)
 		{
 			var persistString = _parser.InvokeInverse(value);
-			_fileAccessor.Save(persistString);
-		}
-
-		private static bool InitializeField<F>(ref F field, Func<F> loadFunc, out F loadedField) where F : class
-		{
-			F loadedValue;
-			if (field == null && Interlocked.CompareExchange(ref field, loadedValue = loadFunc(), null) == null)
-			{
-				loadedField = loadedValue;
-				return true;
-			}
-			loadedField = default;
-			return false;
+			return _fileAccessor.SaveAsync(persistString);
 		}
 
 		private class BasicDataAccessor : IDataAccessor
 		{
 			private readonly string _dataKey;
-			private readonly bool _shouldWriteAsync;
-			internal BasicDataAccessor(string fileName, bool shouldWriteAsync = true)
+			private readonly IDataStoreAccessor _dataStoreAccessor;
+			internal BasicDataAccessor(string dataKey, IDataStoreAccessor dataStoreAccessor = null)
 			{
-				_dataKey = fileName;
-				_shouldWriteAsync = shouldWriteAsync;
+				_dataKey = dataKey;
+				_dataStoreAccessor = dataStoreAccessor ?? new FileAccessor();
 			}
 
-			public bool TryRead(out string foundContent)
-			{
-				if (!File.Exists(_dataKey))
-				{
-					foundContent = null;
-					return false;
-				}
-				foundContent = File.ReadAllText(_dataKey);
-				return true;
-			}
+			public Task<(bool exists, string foundContent)> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);
 
-			public void Save(string content)
-			{
-				if (_shouldWriteAsync)
-					File.WriteAllTextAsync(_dataKey, content);
-				else
-					File.WriteAllText(_dataKey, content);
-			}
+			public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content);
 
 			public void Dispose()
 			{
@@ -141,21 +149,23 @@ namespace ApplicationResources.ApplicationUtils
 		private class FlushingDataAccessor : Flusher<string, DataWrapper>, IDataAccessor
 		{
 			private readonly IDataAccessor _underlyingAccessor;
-			internal FlushingDataAccessor(string dataKey, TimeSpan? flushWaitTime = null) : this(new BasicDataAccessor(dataKey, false), flushWaitTime) { }
+			internal FlushingDataAccessor(string dataKey, TimeSpan? flushWaitTime = null, IDataStoreAccessor dataStoreAccessor = null)
+				: this(new BasicDataAccessor(dataKey, dataStoreAccessor), flushWaitTime)
+			{ }
 			internal FlushingDataAccessor(IDataAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
 			{
 				_underlyingAccessor = underlyingAccessor;
 			}
 
-			public void Save(string content) => Add(content);
+			public Task SaveAsync(string content) { Add(content); return Task.CompletedTask; }
 
-			public bool TryRead(out string foundContent) => _underlyingAccessor.TryRead(out foundContent);
+			public Task<(bool exists, string foundContent)> TryReadAsync() => _underlyingAccessor.TryReadAsync();
 
 			protected override DataWrapper CreateNewContainer() => new DataWrapper();
 
 			protected override Task<AdditionalFlushOptions> Flush(DataWrapper containerToFlush)
 			{
-				_underlyingAccessor.Save(containerToFlush.Contents);
+				_underlyingAccessor.SaveAsync(containerToFlush.Contents);
 				return Task.FromResult(AdditionalFlushOptions.NoAdditionalFlushNeeded);
 			}
 		}
@@ -182,7 +192,7 @@ namespace ApplicationResources.ApplicationUtils
 
 	public interface IDataAccessor : IDisposable
 	{
-		bool TryRead(out string foundContent);
-		void Save(string content);
+		Task<(bool exists, string foundContent)> TryReadAsync();
+		Task SaveAsync(string content);
 	}
 }
