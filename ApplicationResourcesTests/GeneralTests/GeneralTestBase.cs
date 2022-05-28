@@ -16,7 +16,7 @@ namespace ApplicationResourcesTests.GeneralTests
 		[OneTimeSetUp]
 		public void OneTimeSetUp__GeneralTestBase()
 		{
-			Utils.LoadOnce(ref _isLoaded, _lock, () =>
+			Utils.LoadOnceBlocking(ref _isLoaded, _lock, () =>
 			{
 				if (File.Exists(ApplicationConstants.StandardSettingsFile))
 					Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile));

@@ -16,6 +16,7 @@ using SpotifyProject.SpotifyUtils;
 using System.IO;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyProject.Utils;
+using CustomResources.Utils.Concepts.DataStructures;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -28,7 +29,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		public static void OneTimeSetUp__SpotifyProjectTestBase()
 		{
 			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			Utils.LoadOnce(ref _isLoaded, _lock, () =>
+			Utils.LoadOnceBlocking(ref _isLoaded, _lock, () =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
 				TaskParameters.RegisterParameters<SpotifyParameters>();
@@ -41,8 +42,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 
 	public class SpotifyTestBase : SpotifyProjectTestBase
 	{
-		private readonly static object _lock = new object();
-		private static bool _isLoaded = false;
+		private static Reference<bool> _isLoaded = false;
 		private static ISpotifyAccessor _globalSpotifyAccessor;
 		protected static ISpotifyAccessor SpotifyAccessor => _globalSpotifyAccessor;
 
@@ -50,7 +50,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		public static async Task OneTimeSetUp__SpotifyTestBase()
 		{
 			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
+			await Utils.LoadOnceAsync(ref _isLoaded, async () =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");
 				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);

@@ -52,7 +52,7 @@ namespace ApplicationResources.ApplicationUtils
 			{
 				if (_cachedValue == null && !_isLoaded)
 				{
-					GeneralUtils.LoadOnce(ref _isLoaded, _loadLock, () =>
+					GeneralUtils.LoadOnceBlocking(ref _isLoaded, _loadLock, () =>
 					{
 						if (InitializeField(ref _cachedValue, () => Load(), out var loadedValue))
 							OnValueLoaded?.Invoke(loadedValue);

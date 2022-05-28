@@ -21,7 +21,7 @@ namespace ApplicationResourcesTests
 		public static void OneTimeSetUp__UnitTestBase()
 		{
 			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
-			Utils.LoadOnce(ref _isLoaded, _lock, () =>
+			Utils.LoadOnceBlocking(ref _isLoaded, _lock, () =>
 			{
 				Settings.RegisterSettings<BasicSettings>();
 				LoadSettingsFiles(false, ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile);

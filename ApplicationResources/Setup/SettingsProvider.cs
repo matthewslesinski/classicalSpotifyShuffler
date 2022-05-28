@@ -110,7 +110,7 @@ namespace ApplicationResources.Setup
 		public override void Load()
 		{
 			bool wasPerformed = false;
-			Util.LoadOnce(ref _isLoaded, _loadLock, () =>
+			Util.LoadOnceBlocking(ref _isLoaded, _loadLock, () =>
 			{
 				_settingsProviders.EachIndependently(provider =>
 				{

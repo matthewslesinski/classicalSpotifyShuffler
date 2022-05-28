@@ -22,7 +22,7 @@ namespace ApplicationResources.Setup
 
 		public override void Load()
 		{
-			Util.LoadOnce(ref _isLoaded, _fileName, () =>
+			Util.LoadOnceBlocking(ref _isLoaded, _fileName, () =>
 			{
 				var doc = XElement.Load(_fileName);
 				_loadedValues = doc.Descendants(_settingNodeName)
