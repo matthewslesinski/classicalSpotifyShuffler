@@ -11,7 +11,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-		protected void CopyToImpl(Array array, int index, IReadOnlyCollection<T> elements)
+		protected static void CopyToImpl(Array array, int index, IReadOnlyCollection<T> elements)
 		{
 			Ensure.ArgumentNotNull(array, nameof(array));
 			if (index < 0)

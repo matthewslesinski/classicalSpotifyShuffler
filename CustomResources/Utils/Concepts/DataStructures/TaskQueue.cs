@@ -10,7 +10,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		private readonly BlockingCollection<Node> _queue = new BlockingCollection<Node>();
 
-		private int _isRunning = 1;
+		private int _isRunning = true.AsInt();
 
 		public TaskQueue(CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
@@ -20,7 +20,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public void StopRunning()
 		{
-			if (Interlocked.Exchange(ref _isRunning, 0) == 1)
+			if (Interlocked.Exchange(ref _isRunning, false.AsInt()).AsBool())
 			{
 				_queue.CompleteAdding();
 				while (_queue.TryTake(out var node))
@@ -105,5 +105,15 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			return _callback(input, taskCancellationToken);
 		}
+	}
+
+	public class CallbackTaskQueue<InputT> : CallbackTaskQueue<InputT, object /*Represents a void return type*/>
+	{
+		public CallbackTaskQueue(Func<InputT, CancellationToken, Task> callback, CancellationToken cancellationToken = default)
+			: base(async (input, taskToken) => { await callback(input, taskToken).WithoutContextCapture(); return null; }, cancellationToken)
+		{ }
+
+		public new Task Schedule(InputT input, CancellationToken cancellationToken = default) => base.Schedule(input, cancellationToken);
+
 	}
 }

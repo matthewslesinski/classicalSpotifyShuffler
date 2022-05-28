@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.GeneralUtils
@@ -62,6 +64,11 @@ namespace CustomResources.Utils.GeneralUtils
 			}
 		}
 
+		public static bool IsFirstRequest(ref int requestSwitch) => !Interlocked.Exchange(ref requestSwitch, true.AsInt()).AsBool();
+		public static bool IsFirstRequest(ref Reference<bool> requestSwitch) => !Interlocked.Exchange(ref requestSwitch, true);
+		public static bool IsFirstRequest(MutableReference<bool> requestSwitch) => !requestSwitch.AtomicExchange(true);
+
+		// TODO Make these loading methods into a class
 		public static bool LoadOnce(ref bool isLoaded, object loadLock, Action loadAction)
 		{
 			if (!isLoaded)

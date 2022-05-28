@@ -272,13 +272,13 @@ namespace CustomResources.Utils.Extensions
 
 		#region Async Linq Extensions
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+		#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 		public static async IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IEnumerable<T> sequence)
 		{
 			foreach (var e in sequence)
 				yield return e;
 		}
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+		#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 
 
 		public static Task<IAsyncEnumerable<T>> Each<T>(this IAsyncEnumerable<T> sequence, Action<T> action) =>
@@ -378,6 +378,5 @@ namespace CustomResources.Utils.Extensions
 		}
 
 		#endregion
-
 	}
 }
