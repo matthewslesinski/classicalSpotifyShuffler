@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("SpotifyProjectTests")]
 
+
 namespace SpotifyProject.SpotifyPlaybackModifier
 {
     public class SpotifyPlaybackReorderer : SpotifyAccessorBase
