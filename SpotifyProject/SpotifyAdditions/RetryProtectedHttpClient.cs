@@ -312,7 +312,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
 
-		protected override bool Flush(Bag containerToFlush)
+		protected override Task<AdditionalFlushOptions> Flush(Bag containerToFlush)
 		{
 			var newBufferBag = containerToFlush;
 
@@ -326,7 +326,7 @@ namespace SpotifyProject.SpotifyAdditions
 			foreach (var oldElement in elementsToAddToQueue)
 				_orderedOldTimes.Enqueue(oldElement);
 
-			return recentElements.Any();
+			return Task.FromResult(recentElements.Any() ? AdditionalFlushOptions.NeedsAdditionalFlush : AdditionalFlushOptions.NoAdditionalFlushNeeded);
 		}
 
 		protected override Bag CreateNewContainer() => new Bag();
@@ -354,7 +354,7 @@ namespace SpotifyProject.SpotifyAdditions
 		private readonly ICollection<QueueContent> _elements;
 		private long _minTicks = _startingTicks;
 
-		internal int ScheduledToBeCollected = 0;
+		internal int ScheduledToBeCollected = false.AsInt();
 
 		internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
 
@@ -380,7 +380,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool Update(QueueContent itemToFlush) { Add(itemToFlush); return true; }
 
-		public bool RequestFlush() => Interlocked.Exchange(ref ScheduledToBeCollected, 1) != 1;
+		public bool RequestFlush() => CustomResources.Utils.GeneralUtils.Utils.IsFirstRequest(ref ScheduledToBeCollected);
 	}
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker
@@ -421,7 +421,7 @@ namespace SpotifyProject.SpotifyAdditions
 		{
 			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
 			{
-				if (_alreadyDisposed != 1)
+				if (!_alreadyDisposed.AsBool())
 				{
 					var newStats = CalculateNewStats(CurrentStats, startTime, endTime, requestResult, numOut);
 					CurrentStats = newStats;

@@ -153,7 +153,11 @@ namespace ApplicationResources.ApplicationUtils
 
 			protected override DataWrapper CreateNewContainer() => new DataWrapper();
 
-			protected override bool Flush(DataWrapper containerToFlush) { _underlyingAccessor.Save(containerToFlush.Contents); return false; }
+			protected override Task<AdditionalFlushOptions> Flush(DataWrapper containerToFlush)
+			{
+				_underlyingAccessor.Save(containerToFlush.Contents);
+				return Task.FromResult(AdditionalFlushOptions.NoAdditionalFlushNeeded);
+			}
 		}
 
 		private class DataWrapper : IFlushableContainer<string>
