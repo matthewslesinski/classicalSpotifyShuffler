@@ -7,8 +7,8 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Extensions
 {
-	public static class ThreadingExtensions
-	{
+    public static class ThreadingExtensions
+    {
         public static Func<Task> AndThen(this Func<Task> asyncAction, Action action) => TaskUtils.Compose(action, asyncAction);
         public static Func<Task<R>> AndThen<T, R>(this Func<Task<T>> asyncFunc, Func<T, R> func) => TaskUtils.Compose(func, asyncFunc);
         public static R Wait<R>(this Task<R> task) { task.Wait(); return task.Result; }
@@ -27,7 +27,7 @@ namespace CustomResources.Utils.Extensions
         public static MonitorLockToken FullLockToken(this object lockObj) => new MonitorLockToken(lockObj);
 
         public abstract class LockToken<LockT> : IDisposable where LockT : class
-		{
+        {
             protected LockT _underlyingLock;
             public LockToken(LockT underlyingLock)
             {
@@ -58,7 +58,7 @@ namespace CustomResources.Utils.Extensions
         }
 
         public sealed class ReadLockToken : LockToken<ReaderWriterLockSlim>
-		{
+        {
             internal ReadLockToken(ReaderWriterLockSlim underlyingLock) : base(underlyingLock) { }
 
             protected override void EnterLock(ReaderWriterLockSlim rwLock) => rwLock.EnterReadLock();
@@ -74,11 +74,11 @@ namespace CustomResources.Utils.Extensions
 
             public WriteLockToken Upgrade() => _underlyingLock.WriteToken();
             public ReadLockToken DownGrade()
-			{
+            {
                 var readToken = _underlyingLock.ReadToken();
                 Dispose();
                 return readToken;
-			}
+            }
         }
 
         public sealed class WriteLockToken : LockToken<ReaderWriterLockSlim>
@@ -90,7 +90,7 @@ namespace CustomResources.Utils.Extensions
         }
 
         public sealed class MonitorLockToken : LockToken<object>
-		{
+        {
             internal MonitorLockToken(object underlyingLock) : base(underlyingLock) { }
 
             protected override void EnterLock(object @lock) => Monitor.Enter(@lock);
