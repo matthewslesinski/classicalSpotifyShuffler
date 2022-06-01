@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Extensions
@@ -139,6 +141,11 @@ namespace CustomResources.Utils.Extensions
 
 		public static bool AsBool(this int num) => num != 0;
 		public static int AsInt(this bool b) => b ? 1 : 0;
+
+		public static IEnumerable<T> AsIEnumerable<T>(this T item) => (SingleEnumerable<T>) item;
+
+		public static IEnumerable<DelegateT> GetAllCalls<DelegateT>(this DelegateT multiDelegate) where DelegateT : Delegate =>
+			multiDelegate == null ? Array.Empty<DelegateT>() : multiDelegate.GetInvocationList().Cast<DelegateT>();
 
 		public static A GetFirst<A, B>(this (A item1, B item2) tuple) => tuple.item1;
 		public static B GetSecond<A, B>(this (A item1, B item2) tuple) => tuple.item2;

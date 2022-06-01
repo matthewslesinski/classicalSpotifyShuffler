@@ -7,6 +7,10 @@ namespace CustomResources.Utils.GeneralUtils
 {
 	public static class TaskUtils
 	{
+		public delegate Task AsyncEvent();
+		public delegate Task AsyncEvent<ArgsT>(ArgsT eventArgs);
+		public delegate Task AsyncEvent<SenderT, ArgsT>(SenderT sender, ArgsT eventArgs);
+
 		public static Func<Task> Compose(Action action, Func<Task> asyncAction)
 		{
 			Ensure.ArgumentNotNull(asyncAction, nameof(asyncAction));
