@@ -38,10 +38,12 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 		private Task OnProviderLoaded(IEnumerable<Enum> loadedSettings)
 		{
-			if (!IsLoaded)
+			if (!this._startedLoading)
 				return Load();
-			else
+			else if (IsLoaded)
 				return OnSettingsReloaded(loadedSettings);
+			// Do nothing in the else case because this is being called in the middle of a load
+			return Task.CompletedTask;
 		}
 
 		public ParameterBuilder GetBuilder() => new ParameterBuilder(this);
