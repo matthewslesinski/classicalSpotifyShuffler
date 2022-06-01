@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ApplicationResources.Logging;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
@@ -11,8 +13,9 @@ namespace ApplicationResources.Setup
 {
 	public interface ISettingsProvider
 	{
-		void Load();
+		Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default);
 		bool IsLoaded { get; }
+		MemoryScope Scope { get; }
 		IEnumerable<Enum> LoadedSettings { get; }
 		bool TryGetValue<R>(Enum setting, out R value);
 		bool TryGetValue(Enum setting, out object value);
@@ -27,8 +30,9 @@ namespace ApplicationResources.Setup
 		public EnumNamesDictionary AllSettings { get; } = new();
 		public abstract IEnumerable<Enum> LoadedSettings { get; }
 		public bool IsLoaded => _isLoaded;
+		public abstract MemoryScope Scope { get; }
 
-		public abstract void Load();
+		public abstract Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default);
 
 		public abstract bool TryGetValue(Enum setting, out object value);
 		public bool TryGetValue<R>(Enum setting, out R value)
@@ -52,9 +56,9 @@ namespace ApplicationResources.Setup
 		public void OnSettingsAdded(IEnumerable<Enum> newSettings) => newSettings.GroupBy(setting => setting.GetType()).EachIndependently(group => OnSettingsAdded(group, group.Key));
 		public void OnSettingsAdded(IEnumerable<Enum> settings, Type enumType)
 		{
-			lock (_loadLock)
+			lock (_settingsAddedLock)
 			{
-				if (IsLoaded)
+				if (IsLoaded || _startedLoading)
 					throw new NotSupportedException("Cannot add new settings types after they have already been loaded");
 
 				var newSettings = settings.Where(AllSettings.NotContains).ToList();
@@ -70,12 +74,15 @@ namespace ApplicationResources.Setup
 			newSettings.EachIndependently(setting => AllSettings.Expand(setting, setting.ToString()));
 		}
 
-		protected readonly object _loadLock = new object();
-		protected bool _isLoaded = false;
+		protected readonly object _settingsAddedLock = new object();
+		protected readonly AsyncLockProvider _lock = new();
+		protected readonly MutableReference<bool> _isLoaded = new(false);
+		protected bool _startedLoading = false;
 	}
 
 	public abstract class SettingsParserBase : SettingsProviderBase
 	{
+		public override MemoryScope Scope => MemoryScope.Global;
 		public override bool TryGetValue(Enum setting, out object value)
 		{
 			var foundValue = TryGetValues(setting, out var rawValues);
@@ -95,38 +102,45 @@ namespace ApplicationResources.Setup
 	public class SettingsStore : SettingsProviderBase, IOverrideableDictionary<Enum, object>
 	{
 		public event Action<IEnumerable<Enum>, Type> SettingsAdded;
-		public event Action<IEnumerable<Enum>> OnLoad;
+		public event TaskUtils.AsyncEvent<IEnumerable<Enum>> OnLoad;
 
-		public override IEnumerable<Enum> LoadedSettings => _parsedSettings.Keys;
+		public override IEnumerable<Enum> LoadedSettings => _overriddenSettings.Count > 0
+			? _parsedSettings.Keys.Concat(_overriddenSettings.Keys).Distinct()
+			: _parsedSettings.Keys;
+		public override MemoryScope Scope { get; }
 
 		public SettingsStore(MemoryScope? scope = null)
 		{
-			_parsedSettings = scope.HasValue ? new ScopedConcurrentDictionary<Enum, object>(scope.Value) : new Dictionary<Enum, object>();
+			Scope = scope ?? MemoryScope.Global;
+			_parsedSettings = new Dictionary<Enum, object>();
+			_overriddenSettings = new ScopedConcurrentDictionary<Enum, object>(Scope);
 		}
 
-		protected readonly IDictionary<Enum, object> _parsedSettings = new Dictionary<Enum, object>();
+		protected readonly IDictionary<Enum, object> _overriddenSettings;
+		protected readonly IDictionary<Enum, object> _parsedSettings;
 		private readonly List<ISettingsProvider> _settingsProviders = new();
 
-		public override void Load()
+		public override async Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default)
 		{
-			bool wasPerformed = false;
-			Util.LoadOnceBlocking(ref _isLoaded, _loadLock, () =>
+			var wasPerformed = await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
-				_settingsProviders.EachIndependently(provider =>
+				_startedLoading = true;
+				await _settingsProviders.AsAsyncEnumerable().EachIndependently(async provider =>
 				{
 					if (!provider.IsLoaded)
-						provider.Load();
-				});
+						await provider.Load(cancellationToken).WithoutContextCapture();
+				}).WithoutContextCapture();
 				ResolveAndSetSettings(AllSettings);
-				wasPerformed = true;
-			});
-			if (wasPerformed)
-				OnLoad?.Invoke(AllSettings);
+			}).WithoutContextCapture();
+			if (OnLoad != null && wasPerformed)
+				await OnLoad.InvokeAsync(AllSettings).WithoutContextCapture();
+			return AllSettings;
 		}
 
 		public override bool TryGetValue(Enum setting, out object value)
 		{
-			var foundValue = _parsedSettings.TryGetValue(setting, out var uncastedValue);
+			var foundValue = _overriddenSettings.TryGetValue(setting, out var uncastedValue)
+				|| _parsedSettings.TryGetValue(setting, out uncastedValue);
 			value = !foundValue ? null : uncastedValue;
 			return foundValue;
 		}
@@ -135,12 +149,15 @@ namespace ApplicationResources.Setup
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
 		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => OnSettingsAdded(settings, enumType);
 
-		public void RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
-		public void RegisterProvider(ISettingsProvider provider, int position = -1)
+		public Task RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
+		public async Task RegisterProvider(ISettingsProvider provider, int position = -1)
 		{
+			if (provider.Scope != MemoryScope.Global && provider.Scope != this.Scope)
+				throw new ArgumentException("Cannot attach to a different non-global scope");
 			if (provider.IsLoaded)
 				throw new ArgumentException($"Cannot accept an already loaded settings provider");
-			lock (_loadLock)
+			IEnumerable<Enum> newlyLoadedSettings = null;
+			using (await _lock.AcquireToken().WithoutContextCapture())
 			{
 				if (position < 0 || position >= _settingsProviders.Count)
 					_settingsProviders.Add(provider);
@@ -149,22 +166,22 @@ namespace ApplicationResources.Setup
 				provider.OnSettingsAdded(AllSettings);
 				SettingsAdded -= provider.OnSettingsAdded;
 				SettingsAdded += provider.OnSettingsAdded;
-
 				if (IsLoaded)
 				{
 					if (!provider.IsLoaded)
-						provider.Load();
-					ResolveAndSetSettings(provider.LoadedSettings);
-					OnLoad?.Invoke(provider.LoadedSettings);
+						newlyLoadedSettings = await provider.Load().WithoutContextCapture();
+					ResolveAndSetSettings(newlyLoadedSettings);
 				}
 			}
+			if (OnLoad != null && newlyLoadedSettings != null)
+				await OnLoad.InvokeAsync(provider.LoadedSettings).WithoutContextCapture();
 		}
 
 		#region Overrides
 
 		public IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => AddOverrides(keyValuePairs.As<IEnumerable<(Enum key, object value)>>());
-		public IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _parsedSettings.AddOverrides(keyValuePairs, OnAddOverride, OnRemoveOverride);
-		public IDisposable AddOverride(Enum key, object value) => _parsedSettings.AddOverride(key, value, OnAddOverride, OnRemoveOverride);
+		public IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _overriddenSettings.AddOverrides(keyValuePairs, OnAddOverride, OnRemoveOverride);
+		public IDisposable AddOverride(Enum key, object value) => _overriddenSettings.AddOverride(key, value, OnAddOverride, OnRemoveOverride);
 
 		private void OnAddOverride(Enum key, bool settingAlreadySet, object existingValue, object overrideValue)
 		{
@@ -186,7 +203,7 @@ namespace ApplicationResources.Setup
 		internal IEnumerable<(Enum setting, bool isValueSet, string stringValue)> GetAllSettingsAsStrings(IEnumerable<Enum> enumsToGet = null) =>
 			(enumsToGet ?? AllSettings).Select(setting =>
 			{
-				var isValueSet = _parsedSettings.TryGetValue(setting, out var parsedSettingValue);
+				var isValueSet = TryGetValue(setting, out var parsedSettingValue);
 				return (setting, isValueSet, isValueSet ? setting.GetExtension<ISettingSpecification>().StringFormatter(parsedSettingValue) : null);
 			});
 
@@ -196,10 +213,16 @@ namespace ApplicationResources.Setup
 			SettingsAdded?.Invoke(newSettings, enumType);
 		}
 
-		protected void OnSettingsReloaded(IEnumerable<Enum> settingsToReload)
+		protected async Task OnSettingsReloaded(IEnumerable<Enum> settingsToReload)
 		{
-			ResolveAndSetSettings(settingsToReload);
-			OnLoad?.Invoke(settingsToReload);
+			if (!IsLoaded)
+				throw new NotSupportedException("Cannot reload settings if they haven't been loaded");
+			using (await _lock.AcquireToken().WithoutContextCapture())
+			{
+				ResolveAndSetSettings(settingsToReload);
+			}
+			if (OnLoad != null)
+				await OnLoad.InvokeAsync(settingsToReload).WithoutContextCapture();
 		}
 
 		protected void EnsureSettingValueIsAllowed(Enum setting, object value)
@@ -213,20 +236,25 @@ namespace ApplicationResources.Setup
 
 		private void ResolveAndSetSettings(IEnumerable<Enum> settingsToResolve = null)
 		{
-			var settings = settingsToResolve ?? AllSettings;
-			settings.Where(AllSettings.Contains).EachIndependently(settingName =>
+			IEnumerable<Enum> settings;
+			// Lock to make sure there are no active calls for registering settings
+			lock (_settingsAddedLock)
 			{
-				var specification = settingName.GetExtension<ISettingSpecification>();
-				var didFindValue = _settingsProviders
-					.Where(provider => provider != null && provider.IsLoaded)
-					.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
-				if (didFindValue)
-					_parsedSettings[settingName] = foundValue;
-				else if (specification.IsRequired)
-					throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
-				else if (specification.HasDefault)
-					_parsedSettings[settingName] = specification.Default;
-			});
+				settings = settingsToResolve ?? AllSettings;
+				settings.Where(AllSettings.Contains).EachIndependently(settingName =>
+				{
+					var specification = settingName.GetExtension<ISettingSpecification>();
+					var didFindValue = _settingsProviders
+						.Where(provider => provider != null && provider.IsLoaded)
+						.TryGetFirst((ISettingsProvider provider, out object value) => provider.TryGetValue(settingName, out value), out var foundValue);
+					if (didFindValue)
+						_parsedSettings[settingName] = foundValue;
+					else if (specification.IsRequired)
+						throw new KeyNotFoundException($"A value for setting {settingName.GetType().Name}.{settingName} is required but nothing was provided");
+					else if (specification.HasDefault)
+						_parsedSettings[settingName] = specification.Default;
+				});
+			}
 			GetAllSettingsAsStrings(settings).Each(settingState =>
 			{
 				if (settingState.isValueSet)

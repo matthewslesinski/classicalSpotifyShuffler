@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml.Linq;
+using ApplicationResources.Services;
 using CustomResources.Utils.Extensions;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
 
@@ -20,11 +24,12 @@ namespace ApplicationResources.Setup
 
 		public override IEnumerable<Enum> LoadedSettings => _loadedValues.Keys;
 
-		public override void Load()
+		public override async Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default)
 		{
-			Util.LoadOnceBlocking(ref _isLoaded, _fileName, () =>
+			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
-				var doc = XElement.Load(_fileName);
+				var fileContents = await new FileAccessor().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
+				var doc = XElement.Load(new StringReader(fileContents));
 				_loadedValues = doc.Descendants(_settingNodeName)
 					.Select(node => (node.Attribute(_settingNodeIdentifier).Value, node.Value))
 					.GroupBy(GeneralExtensions.GetFirst, GeneralExtensions.GetSecond)
@@ -32,7 +37,8 @@ namespace ApplicationResources.Setup
 				var missingSettings = _requiredSettings.Where(_loadedValues.NotContainsKey);
 				if (missingSettings.Any())
 					throw new KeyNotFoundException($"In order to use {_fileName} for settings, it must specify a value for the following settings: {string.Join(", ", missingSettings)}");
-			});
+			}).WithoutContextCapture();
+			return LoadedSettings;
 		}
 
 		public override string ToString() => $"{nameof(XmlSettingsProvider)}({_fileName})";

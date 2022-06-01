@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 
@@ -22,13 +24,13 @@ namespace ApplicationResources.Setup
 			if (enumType.IsEnum) _settingsStore.RegisterSettings(enumType);
 			else throw new InvalidOperationException($"Only enum types can be used to provide settings, but the given type, {enumType.Name} is not an enum type");
 		}
-		public static void RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers.As<IEnumerable<ISettingsProvider>>());
-		public static void RegisterProviders(IEnumerable<ISettingsProvider> providers) => providers.EachIndependently(RegisterProvider);
-		public static void RegisterProvider(ISettingsProvider provider) => _settingsStore.RegisterProvider(provider);
-		public static void RegisterHighestPriorityProviders(params ISettingsProvider[] providers) => RegisterHighestPriorityProviders(providers.As<IEnumerable<ISettingsProvider>>());
-		public static void RegisterHighestPriorityProviders(IEnumerable<ISettingsProvider> providers) => providers.Reverse().EachIndependently(RegisterHighestPriorityProvider);
-		public static void RegisterHighestPriorityProvider(ISettingsProvider provider) => _settingsStore.RegisterHighestPriorityProvider(provider);
-		public static void Load() => _settingsStore.Load();
+		public static Task RegisterProviders(params ISettingsProvider[] providers) => RegisterProviders(providers.As<IEnumerable<ISettingsProvider>>());
+		public static Task RegisterProviders(IEnumerable<ISettingsProvider> providers) => providers.AsAsyncEnumerable().EachIndependently(RegisterProvider);
+		public static Task RegisterProvider(ISettingsProvider provider) => _settingsStore.RegisterProvider(provider);
+		public static Task RegisterHighestPriorityProviders(params ISettingsProvider[] providers) => RegisterHighestPriorityProviders(providers.As<IEnumerable<ISettingsProvider>>());
+		public static Task RegisterHighestPriorityProviders(IEnumerable<ISettingsProvider> providers) => providers.Reverse().AsAsyncEnumerable().EachIndependently(RegisterHighestPriorityProvider);
+		public static Task RegisterHighestPriorityProvider(ISettingsProvider provider) => _settingsStore.RegisterHighestPriorityProvider(provider);
+		public static Task Load(CancellationToken cancellationToken = default) => _settingsStore.Load(cancellationToken);
 
 		public static IDisposable AddOverrides(params (Enum key, object value)[] keyValuePairs) => _settingsStore.AddOverrides(keyValuePairs);
 		public static IDisposable AddOverrides(IEnumerable<(Enum key, object value)> keyValuePairs) => _settingsStore.AddOverrides(keyValuePairs);

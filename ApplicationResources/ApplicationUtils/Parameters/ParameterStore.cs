@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
@@ -10,12 +11,22 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 {
 	public class ParameterStore : SettingsStore
 	{
-		public ParameterStore(SettingsStore defaultValueProvider) : base(MemoryScope.AsyncLocal)
+		public ParameterStore() : base(MemoryScope.AsyncLocal)
+		{ }
+
+		public async Task AttachTo(SettingsStore defaultValueProvider)
 		{
-			RegisterProvider(defaultValueProvider);
+			await RegisterProvider(defaultValueProvider).WithoutContextCapture();
 			defaultValueProvider.OnLoad += OnProviderLoaded;
 			if (defaultValueProvider.IsLoaded)
-				Load();
+				await Load().WithoutContextCapture();
+		}
+
+		public static async Task<ParameterStore> DerivedFrom(SettingsStore defaultValueProvider)
+		{
+			var paramStore = new ParameterStore();
+			await paramStore.AttachTo(defaultValueProvider).WithoutContextCapture();
+			return paramStore;
 		}
 
 		protected override void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
@@ -25,12 +36,12 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 			base.OnNewSettingsAdded(newSettings, enumType);
 		}
 
-		private void OnProviderLoaded(IEnumerable<Enum> loadedSettings)
+		private Task OnProviderLoaded(IEnumerable<Enum> loadedSettings)
 		{
 			if (!IsLoaded)
-				Load();
+				return Load();
 			else
-				OnSettingsReloaded(loadedSettings);
+				return OnSettingsReloaded(loadedSettings);
 		}
 
 		public ParameterBuilder GetBuilder() => new ParameterBuilder(this);

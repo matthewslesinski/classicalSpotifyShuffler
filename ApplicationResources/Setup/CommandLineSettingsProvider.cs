@@ -5,6 +5,9 @@ using System.Linq;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using ApplicationResources.Logging;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Collections.Immutable;
 
 namespace ApplicationResources.Setup
 {
@@ -21,9 +24,10 @@ namespace ApplicationResources.Setup
 
 		public override IEnumerable<Enum> LoadedSettings => _options.Where(kvp => kvp.Value.HasValue()).Select(kvp => kvp.Key);
 
-		public override void Load()
+		public override Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default)
 		{
-			_isLoaded = true;
+			_isLoaded.Value = true;
+			return Task.FromResult<IEnumerable<Enum>>(LoadedSettings.ToImmutableArray());
 		}
 
 		protected override bool TryGetValues(Enum setting, out IEnumerable<string> values)

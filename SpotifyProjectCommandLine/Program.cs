@@ -18,9 +18,9 @@ namespace SpotifyProject
 {
     class Program
     {
-        static void Main(string[] args)
+        static Task Main(string[] args)
         {
-            ProgramUtils.ExecuteProgramAsync(Run, new ProgramUtils.StartupArgs(args)
+            return ProgramUtils.ExecuteCommandLineProgram(Run, new ProgramUtils.StartupArgs(args)
             {
                 XmlSettingsFileFlag = ApplicationConstants.XmlSettingsFileFlag,
                 SettingsTypes = new [] { typeof(SpotifySettings) },
@@ -34,7 +34,8 @@ namespace SpotifyProject
             try
             {
                 Logger.Information("Starting Spotify Project");
-                Settings.RegisterProvider(new XmlSettingsProvider(Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)));
+                var authorizationSettingsPath = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile);
+                await Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsPath)).WithoutContextCapture();
 				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
 				var reorderer = new SpotifyPlaybackReorderer(spotify);
                 if (Settings.Get<bool>(SpotifySettings.AskUser))
