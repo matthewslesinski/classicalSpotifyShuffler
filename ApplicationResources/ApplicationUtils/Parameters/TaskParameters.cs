@@ -33,8 +33,11 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 		public static void RegisterParameters<EnumT>() where EnumT : struct, Enum => RegisterParameters(typeof(EnumT));
 		public static void RegisterParameters(Type enumType)
 		{
-			if (enumType.IsEnum && _isReady) _parameterStore.RegisterSettings(enumType);
-			else throw new InvalidOperationException($"Only enum types can be used to provide parameters, but the given type, {enumType.Name} is not an enum type");
+			if (!enumType.IsEnum)
+				throw new InvalidOperationException($"Only enum types can be used to provide parameters, but the given type, {enumType.Name} is not an enum type");
+			if (!_isReady)
+				throw new NotSupportedException("Attempt to register parameters before initializing the store");
+			_parameterStore.RegisterSettings(enumType);
 		}
 
 		public static ParameterBuilder GetBuilder() => _parameterStore.GetBuilder();

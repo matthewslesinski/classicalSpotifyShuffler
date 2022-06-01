@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using ApplicationResources.Services;
 using System.Threading.Tasks;
 using CustomResources.Utils.Concepts.DataStructures;
+using ApplicationResources.ApplicationUtils.Parameters;
 
 namespace ApplicationResourcesTests
 {
@@ -24,10 +25,11 @@ namespace ApplicationResourcesTests
 		public static async Task OneTimeSetUp__UnitTestBase()
 		{
 			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
-			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, () =>
+			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
+				await TaskParameters.Initialize().WithoutContextCapture();
 				Settings.RegisterSettings<BasicSettings>();
-				return LoadSettingsFiles(false, ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile);
+				await LoadSettingsFiles(false, ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile).WithoutContextCapture();
 			}).WithoutContextCapture();
 		}
 
