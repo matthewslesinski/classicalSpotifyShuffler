@@ -47,7 +47,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		private async Task Process()
 		{
-			foreach(var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(StopToken))
+			foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(StopToken))
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
@@ -93,7 +93,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	public class CallbackTaskQueue<InputT, OutputT> : TaskQueue<InputT, OutputT>
 	{
 		private readonly Func<InputT, CancellationToken, Task<OutputT>> _callback;
-		public CallbackTaskQueue(Func<InputT, CancellationToken, Task<OutputT>> callback, CancellationToken cancellationToken = default) : base (cancellationToken)
+		public CallbackTaskQueue(Func<InputT, CancellationToken, Task<OutputT>> callback, CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
 			_callback = callback;
 		}

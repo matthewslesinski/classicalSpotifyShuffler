@@ -34,7 +34,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			{
 				Settings.RegisterSettings<SpotifySettings>();
 				TaskParameters.RegisterParameters<SpotifyParameters>();
-				await LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile).WithoutContextCapture();
+				await LoadSettingsFiles(true, settingsFiles).WithoutContextCapture();
 				await Settings.Load().WithoutContextCapture();
 				await LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)).WithoutContextCapture();
 			}).WithoutContextCapture();
@@ -51,7 +51,6 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[OneTimeSetUp]
 		public static Task OneTimeSetUp__SpotifyTestBase()
 		{
-			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
 			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");

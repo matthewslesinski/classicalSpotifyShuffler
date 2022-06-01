@@ -73,8 +73,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			return exiting && currentSource.TrySetResult();
 		}
 
-
-
 		public Task<IDisposable> AcquireToken(CancellationToken cancellationToken = default) => new AsyncLockToken(this).Initialized(cancellationToken);
 
 
@@ -95,7 +93,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				return this;
 			}
 
-
 			public void Dispose()
 			{
 				AsyncLockProvider currentProvider;
@@ -112,7 +109,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 					Dispose();
 			}
 		}
-
 
 		private static TaskCompletionSource NewCompletionSource() => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 	}

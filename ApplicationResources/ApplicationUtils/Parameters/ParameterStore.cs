@@ -73,7 +73,5 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 			public IDisposable Apply() => _paramStore.AddOverrides(paramsToSet.Select(kvp => (kvp.Key, kvp.Value)));
 		}
-
 	}
-
 }

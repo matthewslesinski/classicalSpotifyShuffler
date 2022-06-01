@@ -33,4 +33,3 @@ namespace CustomResources.Utils.GeneralUtils
 		}
 	}
 }
-
