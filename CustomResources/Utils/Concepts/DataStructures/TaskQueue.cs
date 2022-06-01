@@ -41,11 +41,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			var ec = ExecutionContext.Capture();
 			var node = new Node(input, taskCompleter, ec, cancellationToken);
 			if (!_queue.TryAdd(node))
-			{
-				await Task.Yield();
-				_queue.Add(node, cancellationToken);
-			}
-			return await taskCompleter.Task;
+				await Task.Run(() => _queue.Add(node, cancellationToken), cancellationToken).WithoutContextCapture();
+			return await taskCompleter.Task.WithoutContextCapture();
 		}
 
 		private async Task Process()
@@ -90,7 +87,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		protected abstract Task<OutputT> HandleTask(InputT input, CancellationToken taskCancellationToken);
 
-		private record Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
+		private record struct Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
 	}
 
 	public class CallbackTaskQueue<InputT, OutputT> : TaskQueue<InputT, OutputT>

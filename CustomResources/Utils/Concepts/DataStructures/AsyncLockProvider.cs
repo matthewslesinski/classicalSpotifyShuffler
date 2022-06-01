@@ -8,12 +8,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public class AsyncLockProvider
 	{
-		private readonly AsyncLocal<int> _numEntries = new AsyncLocal<int>();
+		private readonly AsyncLocal<bool> _alreadyEntered = new AsyncLocal<bool>();
 		private TaskCompletionSource _taskSource = null;
 
 		public AsyncLockProvider()
 		{
-			_numEntries.Value = 0;
+			_alreadyEntered.Value = false;
 		}
 
 		public Task LockReleased
@@ -49,8 +49,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public bool TryEnterAloneImmediately(ref TaskCompletionSource newSourceToUse)
 		{
+			if (_alreadyEntered.Value)
+				throw new LockRecursionException("Attempting to enter a non-reentrant Async Lock");
 			var entered = _taskSource == null
 				&& Interlocked.CompareExchange(ref _taskSource, newSourceToUse ??= NewCompletionSource(), null) == null;
+			if (entered)
+				_alreadyEntered.Value = true;
 			return entered;
 		}
 
@@ -63,7 +67,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		private bool TryExit()
 		{
 			var currentSource = Interlocked.Exchange(ref _taskSource, null);
-			return currentSource != null && currentSource.TrySetResult();
+			var exiting = currentSource != null && !currentSource.Task.IsCompleted;
+			if (exiting)
+				_alreadyEntered.Value = false;
+			return exiting && currentSource.TrySetResult();
 		}
 
 
@@ -78,7 +85,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			public AsyncLockToken(AsyncLockProvider underlyingProvider)
 			{
 				Ensure.ArgumentNotNull(underlyingProvider, nameof(underlyingProvider));
-
 				_underlyingProvider = underlyingProvider;
 			}
 
@@ -92,9 +98,10 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 			public void Dispose()
 			{
-				if (Interlocked.Exchange(ref _underlyingProvider, null) != null)
+				AsyncLockProvider currentProvider;
+				if ((currentProvider = Interlocked.Exchange(ref _underlyingProvider, null)) != null)
 				{
-					_underlyingProvider.Exit();
+					currentProvider.Exit();
 					GC.SuppressFinalize(this);
 				}
 			}

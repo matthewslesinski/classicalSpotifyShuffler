@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CustomResources.Utils.GeneralUtils;
@@ -11,6 +13,12 @@ namespace CustomResources.Utils.Extensions
         public static Func<Task<R>> AndThen<T, R>(this Func<Task<T>> asyncFunc, Func<T, R> func) => TaskUtils.Compose(func, asyncFunc);
         public static R Wait<R>(this Task<R> task) { task.Wait(); return task.Result; }
 
+        public static Task InvokeAsync(this TaskUtils.AsyncEvent asyncEvent) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription()));
+        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<ArgsT> asyncEvent, ArgsT args) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(args)));
+        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<object, ArgsT> asyncEvent, object sender, ArgsT args) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(sender, args)));
 
         public static ReadLockToken ReadToken(this ReaderWriterLockSlim rwLock) => new ReadLockToken(rwLock);
         public static UpgradeableReadLockToken UpgradeableToken(this ReaderWriterLockSlim rwLock) => new UpgradeableReadLockToken(rwLock);
@@ -31,9 +39,10 @@ namespace CustomResources.Utils.Extensions
 
             public void Dispose()
             {
-                if (Interlocked.Exchange(ref _underlyingLock, null) != null)
+                LockT currentLock;
+                if ((currentLock = Interlocked.Exchange(ref _underlyingLock, null)) != null)
                 {
-                    ExitLock(_underlyingLock);
+                    ExitLock(currentLock);
                     GC.SuppressFinalize(this);
                 }
             }
