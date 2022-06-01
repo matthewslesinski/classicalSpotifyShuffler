@@ -125,6 +125,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public override V AddOrUpdate(K key, Func<K, V> addValueFactory, Func<K, V, V> updateValueFactory) {
 			Ensure.ArgumentNotNull(addValueFactory, nameof(addValueFactory));
 			Ensure.ArgumentNotNull(updateValueFactory, nameof(updateValueFactory));
+			// Use generic typing of object because the type is only used for arguments that don't matter
 			return AddOrUpdate<object>(key,
 				(k, _) => addValueFactory(k),
 				(k, v, _) => updateValueFactory(k, v),
