@@ -80,7 +80,7 @@ namespace ApplicationResources.Services
 
 			public IServiceBuilder AddGlobalService<ServiceT>(ServiceT service) where ServiceT : class
 			{
-				_registerActions.Add(services => services.AddSingleton<ServiceT>(service));
+				_registerActions.Add(services => services.AddSingleton(service));
 				return this;
 			}
 
