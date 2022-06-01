@@ -13,7 +13,6 @@ namespace ApplicationResourcesTests.GeneralTests
 	public class UtilsTests : GeneralTestBase
 	{
 
-
 		[Test]
 		public async Task TestSettingsOverrides()
 		{

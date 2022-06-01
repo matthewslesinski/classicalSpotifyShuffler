@@ -64,8 +64,6 @@ namespace ApplicationResourcesTests.GeneralTests
 			var lastCanceledTask = queue.Schedule(0);
 			Assert.ThrowsAsync<InvalidOperationException>(async () => await lastCanceledTask);
 			Assert.Pass();
-
 		}
-
 	}
 }
