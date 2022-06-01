@@ -6,6 +6,7 @@ using ApplicationResources.Services;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using GeneralUtils = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.ApplicationUtils
@@ -134,7 +135,7 @@ namespace ApplicationResources.ApplicationUtils
 			internal BasicDataAccessor(string dataKey, IDataStoreAccessor dataStoreAccessor = null)
 			{
 				_dataKey = dataKey;
-				_dataStoreAccessor = dataStoreAccessor ?? new FileAccessor();
+				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
 			}
 
 			public Task<(bool exists, string foundContent)> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);

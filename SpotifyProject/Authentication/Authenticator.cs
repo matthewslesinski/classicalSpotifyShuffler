@@ -13,13 +13,15 @@ using ApplicationResources.Logging;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Utils;
+using System.Collections.Generic;
+using ApplicationResources.Services;
 
 namespace SpotifyProject.Authentication
 {
     /**
      * Abstracts out the authentication process
      */
-    public abstract class Authenticator
+    public abstract class Authenticator : IGlobalServiceUser
     {
         protected SpotifyClientConfig _config;
 
@@ -37,11 +39,16 @@ namespace SpotifyProject.Authentication
             return new SpotifyClient(_config);
 		}
 
-        public static async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
+        public async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
         {
             Logger.Verbose($"Reading Client Id and Secret from {clientInfoPath}");
-            return (await File.ReadAllTextAsync(clientInfoPath).WithoutContextCapture()).FromJsonString<ClientInfo>();
+            var (foundClientInfo, clientInfo) = await ReadStoredData(clientInfoPath).WithoutContextCapture();
+            if (!foundClientInfo)
+                throw new KeyNotFoundException("Cannot find the client ID and secret necessary for authenticating with the Spotify API");
+            return clientInfo.FromJsonString<ClientInfo>();
         }
+
+        protected Task<(bool foundData, string data)> ReadStoredData(string storedDataPath) => this.AccessLocalDataStore().TryGetAsync(storedDataPath);
     }
 
     public static class Authenticators
@@ -49,7 +56,7 @@ namespace SpotifyProject.Authentication
         public delegate Authenticator AuthenticatorConstructor(SpotifyClientConfig config, string tokenFilePath);
 
         public static readonly AuthenticatorConstructor AuthorizationCodeAuthenticator
-            = (config, tokenFilePath) => new AuthorizationCodeAuthenticator(config, tokenFilePath);
+            = (config, tokenFilePath) => new AuthorizationCodeCommandLineAuthenticator(config, tokenFilePath);
 
         public static readonly AuthenticatorConstructor ClientCredentialsAuthenticator
             = (config, _) => new ClientCredentialsAuthenticator(config);
@@ -91,7 +98,7 @@ namespace SpotifyProject.Authentication
                 .WithDefaultPaginator(paginator)
                 .WithAPIConnectorConstructor(apiConnectorConstructor);
             var authenticator = authenticatorConstructor(config, tokenFilePath);
-            var clientInfo = await Authenticator.ReadClientInfoPath(clientInfoFilePath).WithoutContextCapture();
+            var clientInfo = await authenticator.ReadClientInfoPath(clientInfoFilePath).WithoutContextCapture();
             var authorizationSource = new AuthorizationSource
             {
                 ClientInfo = clientInfo,

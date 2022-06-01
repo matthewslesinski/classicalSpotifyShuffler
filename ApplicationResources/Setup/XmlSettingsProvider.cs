@@ -11,7 +11,7 @@ using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace ApplicationResources.Setup
 {
-	public class XmlSettingsProvider : SettingsParserBase
+	public class XmlSettingsProvider : SettingsParserBase, IGlobalServiceUser
 	{
 		private readonly string _fileName;
 		private readonly IEnumerable<Enum> _requiredSettings;
@@ -28,7 +28,7 @@ namespace ApplicationResources.Setup
 		{
 			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
-				var fileContents = await new FileAccessor().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
+				var fileContents = await this.AccessLocalDataStore().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
 				var doc = XElement.Load(new StringReader(fileContents));
 				_loadedValues = doc.Descendants(_settingNodeName)
 					.Select(node => (node.Attribute(_settingNodeIdentifier).Value, node.Value))

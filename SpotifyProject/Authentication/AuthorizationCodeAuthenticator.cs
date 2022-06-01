@@ -7,6 +7,7 @@ using SpotifyProject.SpotifyAdditions;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using ApplicationResources.Utils;
+using ApplicationResources.Services;
 
 namespace SpotifyProject.Authentication
 {
@@ -17,11 +18,11 @@ namespace SpotifyProject.Authentication
 	 * used to acquire a new access token. Therefore, this should theoretically only require logging in once, no matter when the containing program is run. If no file path is provided,
 	 * the user will be required to log in everytime the containing program is run. Note that the user will also be required to log in again if a new AuthorizationSource is provided.
 	 */
-	public class AuthorizationCodeAuthenticator : Authenticator
+	public abstract class AuthorizationCodeAuthenticatorBase : Authenticator
 	{
 		private readonly string _credentialsFilePath;
 
-		public AuthorizationCodeAuthenticator(SpotifyClientConfig config, string credentialsFilePath) : base(config)
+		public AuthorizationCodeAuthenticatorBase(SpotifyClientConfig config, string credentialsFilePath) : base(config)
 		{
 			_credentialsFilePath = string.IsNullOrWhiteSpace(credentialsFilePath) ? null : credentialsFilePath;
 		}
@@ -31,10 +32,12 @@ namespace SpotifyProject.Authentication
 			SpotifyAuthenticationArguments BuildAuthenticationArgumentsFromTokenResponse(AuthorizationCodeTokenResponse tokenResponse) =>
 				new SpotifyAuthenticationArguments { AuthorizationSource = authorizationSource, TokenResponse = tokenResponse};
 
+			bool credentialsFileExists;
 			SpotifyAuthenticationArguments authenticationArguments;
 			bool askForLogin = false;
-			if (_credentialsFilePath == null || !File.Exists(_credentialsFilePath)
-				|| !Equals((authenticationArguments = await ReadExistingAuthenticationArguments().WithoutContextCapture()).AuthorizationSource, authorizationSource))
+			if (_credentialsFilePath == null
+				|| !((credentialsFileExists, authenticationArguments) = await ReadExistingAuthenticationArguments().WithoutContextCapture()).credentialsFileExists
+				|| !Equals(authenticationArguments.AuthorizationSource, authorizationSource))
 			{
 				askForLogin = true;
 				authenticationArguments = BuildAuthenticationArgumentsFromTokenResponse(await RequestInitialToken(authorizationSource).WithoutContextCapture());
@@ -48,32 +51,51 @@ namespace SpotifyProject.Authentication
 			return authenticator;
 		}
 
-		private static async Task<AuthorizationCodeTokenResponse> RequestInitialToken(AuthorizationSource authorizationSource)
+		protected abstract Task<string> RequestLoginFromUser(Uri loginUri);
+
+		private async Task<AuthorizationCodeTokenResponse> RequestInitialToken(AuthorizationSource authorizationSource)
 		{
 			var loginRequest = new LoginRequest(authorizationSource.RedirectUri, authorizationSource.ClientId, LoginRequest.ResponseType.Code)
 			{
 				Scope = authorizationSource.Scopes
 			};
 			var loginUri = loginRequest.ToUri();
-			UserInterface.Instance.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
-			UserInterface.Instance.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
-			var authorizationCode = await UserInterface.Instance.ReadNextUserInputAsync().WithoutContextCapture();
+			var authorizationCode = await RequestLoginFromUser(loginUri).WithoutContextCapture();
 			var response = await new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(authorizationSource.ClientId, authorizationSource.ClientSecret, authorizationCode, authorizationSource.RedirectUri)).WithoutContextCapture();
 			return response;
 		}
 
-		private async Task<SpotifyAuthenticationArguments> ReadExistingAuthenticationArguments()
+		private async Task<(bool foundToken, SpotifyAuthenticationArguments token)> ReadExistingAuthenticationArguments()
 		{
-			Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");
-			var json = await File.ReadAllTextAsync(_credentialsFilePath).WithoutContextCapture();
-			return json.FromJsonString<SpotifyAuthenticationArguments>();
+			var (foundToken, json) = await ReadStoredData(_credentialsFilePath).WithoutContextCapture();
+			if (foundToken)
+			{
+				Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");
+				return (true, json.FromJsonString<SpotifyAuthenticationArguments>());
+			}
+			return (false, default);
 		}
 
 		private void WriteTokenToFile(SpotifyAuthenticationArguments token)
 		{
 			Logger.Verbose($"Writing new Spotify access/refresh tokens to file {_credentialsFilePath}");
 			var json = token.ToJsonString();
-			File.WriteAllText(_credentialsFilePath, json);
+			this.AccessLocalDataStore().SaveAsync(_credentialsFilePath, json);
+		}
+	}
+
+	public class AuthorizationCodeCommandLineAuthenticator : AuthorizationCodeAuthenticatorBase
+	{
+		public AuthorizationCodeCommandLineAuthenticator(SpotifyClientConfig config, string credentialsFilePath) : base(config, credentialsFilePath)
+		{
+		}
+
+		protected override async Task<string> RequestLoginFromUser(Uri loginUri)
+		{
+			UserInterface.Instance.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
+			UserInterface.Instance.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
+			var authorizationCode = await UserInterface.Instance.ReadNextUserInputAsync().WithoutContextCapture();
+			return authorizationCode;
 		}
 	}
 }

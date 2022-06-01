@@ -10,6 +10,7 @@ using System.Linq;
 using CustomResources.Utils.Extensions;
 using System.Collections.Generic;
 using ApplicationResources.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using CustomResources.Utils.Concepts.DataStructures;
 using ApplicationResources.ApplicationUtils.Parameters;
@@ -27,6 +28,7 @@ namespace ApplicationResourcesTests
 			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
 			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
 			{
+				GlobalDependencies.Initialize().AddGlobalService<IDataStoreAccessor, FileAccessor>().Build();
 				await TaskParameters.Initialize().WithoutContextCapture();
 				Settings.RegisterSettings<BasicSettings>();
 				await LoadSettingsFiles(false, ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile).WithoutContextCapture();
@@ -45,7 +47,7 @@ namespace ApplicationResourcesTests
 
 		protected static async Task LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
 		{
-			IDataStoreAccessor localData = new FileAccessor();
+			var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
 			Func<IEnumerable<ISettingsProvider>, Task> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
 			var checkedSettingsFiles = (await settingsFiles
 				.SelectAsync<string, (string fileName, bool exists)>(async fileName => (fileName, await localData.ExistsAsync(fileName).WithoutContextCapture()))
