@@ -7,13 +7,12 @@ using ClassicalSpotifyShuffler.Utils;
 using CustomResources.Utils.Extensions;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using static ApplicationResources.ApplicationUtils.ProgramUtils;
 
 namespace BlazorApplicationResources.BlazorApplicationUtils
 {
 	public static class BlazorAppUtils
 	{
-		public static async Task StartApp(Func<WebAssemblyHostBuilder, Task> hostSetup, Func<Task> postSetup, StartupArgs startupArgs, Func<IDisposable>? dependencyInitializer = null)
+		public static async Task StartApp(Func<WebAssemblyHostBuilder, Task> hostSetup, Func<Task> postSetup, ProgramUtils.StartupArgs startupArgs)
 		{
 			var hostBuilder = WebAssemblyHostBuilder.CreateDefault(startupArgs.CommandLineArgs);
 
