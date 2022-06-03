@@ -80,7 +80,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	}
 
 	public class CollectionWrapper<T, WrappedElementT, CollectionT> : ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT>,
-		IGenericInternalCollection<T>, IInternalReadOnlyCollection<T>, ICollectionWrapper<WrappedElementT, CollectionT>
+		IInternalCollection<T>, ICollectionWrapper<WrappedElementT, CollectionT>
 		where CollectionT : ICollection<WrappedElementT>, IReadOnlyCollection<WrappedElementT>, ICollection
 	{
 		protected readonly Func<T, WrappedElementT> _mappingFunction;

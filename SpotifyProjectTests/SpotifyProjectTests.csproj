@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
-    <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
-    <SelfContained>false</SelfContained>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

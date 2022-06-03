@@ -24,14 +24,27 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		}
 	}
 
-	public interface IGenericInternalCollection<T> : ICollection<T>, IGenericInternalReadOnlyCollection<T>
+
+	// TODO When the latest bug (https://github.com/dotnet/runtime/issues/70190) for mono vtable setup is fixed, remove 
+	// these pass through interfaces in place of the similarly named ones below.
+	// These solve the mono bug by adding an extra generic variable, so that implementing types don't have more than this
+	public interface IGenericInternalCollectionTemp<T, UnusedT> : ICollection<T>, IGenericInternalReadOnlyCollection<T>
 	{
 		void ICollection<T>.CopyTo(T[] array, int index) => CopyToImpl(array, index, this);
 	}
 
-	public interface IInternalReadOnlyCollection<T> : IGenericInternalReadOnlyCollection<T>, ICollection
+	public interface IInternalReadOnlyCollectionTemp<T, UnusedT> : ICollection, IGenericInternalReadOnlyCollection<T>
 	{
 		void ICollection.CopyTo(Array array, int index) => CopyToImpl(array, index, this);
+	}
+
+
+	public interface IGenericInternalCollection<T> : IGenericInternalCollectionTemp<T, object>
+	{
+	}
+
+	public interface IInternalReadOnlyCollection<T> : IInternalReadOnlyCollectionTemp<T, object>
+	{
 	}
 
 	public interface IInternalCollection<T> : IInternalReadOnlyCollection<T>, IGenericInternalCollection<T> { }
