@@ -1,0 +1,10 @@
+<Project>
+ <PropertyGroup>
+   <TargetFrameworkForProject>net7.0</TargetFrameworkForProject>
+   <UseMonoForCLI>true</UseMonoForCLI>
+   <SelfContainedCLIPackage>true</SelfContainedCLIPackage>
+   <RuntimeIdentifierForCLI>osx-x64</RuntimeIdentifierForCLI>
+   <SettingsTemplatesDir>../SettingsTemplates</SettingsTemplatesDir>
+   <AdditionalBinaryDependenciesDir>../SpotifyAPIBinaries</AdditionalBinaryDependenciesDir>
+ </PropertyGroup>
+</Project>

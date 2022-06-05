@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -24,7 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\SettingsTemplates\standardSpotifyUnitTestSettings.xml">
+    <None Include="$(SettingsTemplatesDir)\standardSpotifyUnitTestSettings.xml">
       <Link>standardSpotifyUnitTestSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -35,10 +35,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="SpotifyAPI.Web.Auth">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.Auth.dll</HintPath>
     </Reference>
     <Reference Include="SpotifyAPI.Web">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

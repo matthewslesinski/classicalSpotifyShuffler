@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
-    <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
+    <SelfContained>$(SelfContainedCLIPackage)</SelfContained>
+    <RuntimeIdentifier>$(RuntimeIdentifierForCLI)</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -27,10 +27,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="SpotifyAPI.Web.Auth">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.Auth.dll</HintPath>
     </Reference>
     <Reference Include="SpotifyAPI.Web">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

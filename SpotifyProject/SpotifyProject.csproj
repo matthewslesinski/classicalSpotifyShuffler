@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -40,15 +40,15 @@
       <Link>libworkIdentifier.dylib</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\SettingsTemplates\lukesShuffleSettings.xml">
+    <None Include="$(SettingsTemplatesDir)\lukesShuffleSettings.xml">
       <Link>lukesShuffleSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\SettingsTemplates\allLikedTracksSettings.xml">
+    <None Include="$(SettingsTemplatesDir)\allLikedTracksSettings.xml">
       <Link>allLikedTracksSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\SettingsTemplates\standardSpotifySettings.xml">
+    <None Include="$(SettingsTemplatesDir)\standardSpotifySettings.xml">
       <Link>standardSpotifySettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -59,10 +59,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="SpotifyAPI.Web.Auth">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.Auth.dll</HintPath>
     </Reference>
     <Reference Include="SpotifyAPI.Web">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

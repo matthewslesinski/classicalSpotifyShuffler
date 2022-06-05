@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
   </PropertyGroup>
 
   <ItemGroup>

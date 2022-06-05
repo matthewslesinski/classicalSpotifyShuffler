@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,7 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\SettingsTemplates\standardSettings.xml">
+    <None Include="$(SettingsTemplatesDir)\standardSettings.xml">
       <Link>standardSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

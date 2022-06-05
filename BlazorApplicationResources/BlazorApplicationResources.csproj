@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\SettingsTemplates\standardBlazorSettings.xml">
+    <None Include="$(SettingsTemplatesDir)\standardBlazorSettings.xml">
       <Link>standardBlazorSettings.xml</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
