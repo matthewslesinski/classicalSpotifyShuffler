@@ -1,7 +1,7 @@
 <Project>
  <PropertyGroup>
    <TargetFrameworkForProject>net7.0</TargetFrameworkForProject>
-   <UseMonoForCLI>true</UseMonoForCLI>
+   <UseMonoForCLI>false</UseMonoForCLI>
    <SelfContainedCLIPackage>true</SelfContainedCLIPackage>
    <RuntimeIdentifierForCLI>osx-x64</RuntimeIdentifierForCLI>
    <SettingsTemplatesDir>../SettingsTemplates</SettingsTemplatesDir>
