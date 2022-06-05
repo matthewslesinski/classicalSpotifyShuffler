@@ -2,9 +2,9 @@
 using ClassicalSpotifyShuffler;
 using BlazorApplicationResources.BlazorApplicationUtils;
 using ApplicationResources.Services;
-using CustomResources.Utils.Extensions;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyUtils;
+using ApplicationResources.Logging;
 
 await BlazorAppUtils.StartApp(
 	builder =>
@@ -15,8 +15,9 @@ await BlazorAppUtils.StartApp(
 	},
 	async () =>
 	{
+		LoggerTargetProvider.OnLog += (logArgs) => Console.WriteLine(logArgs.FullMessage);
 		var weatherForecast = await GlobalDependencies.GlobalDependencyContainer.GetRequiredService<HttpClient>().GetStringAsync("sample-data/weather.json");
-		Console.WriteLine($"{weatherForecast}");
+		Logger.Information($"{weatherForecast}");
 	},
 	new(args)
 	{
@@ -24,5 +25,3 @@ await BlazorAppUtils.StartApp(
 		ParameterTypes = new[] { typeof(SpotifyParameters) },
 		AdditionalXmlSettingsFiles = new[] { GeneralConstants.StandardSpotifySettingsFile }
 	});
-
-

@@ -39,6 +39,7 @@ namespace ApplicationResources.ApplicationUtils
 				startupArgs.SettingsTypes.Each(Settings.RegisterSettings);
 				startupArgs.ParameterTypes.Each(TaskParameters.RegisterParameters);
 				Func<CancellationToken, Task> runner = ((Func<CancellationToken, Task>)Settings.Load)
+					.FollowedByAsync(LoggerConfigurationProvider.InitializeAsync)
 					.FollowedByAsync(program)
 					.AndThenAsync(OnTerminate);
 				if (!string.IsNullOrWhiteSpace(startupArgs.XmlSettingsFileFlag))
@@ -49,12 +50,12 @@ namespace ApplicationResources.ApplicationUtils
 						var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
 						if (xmlSettingsFileOption.HasValue())
 						{
-							var existingFiles = await xmlSettingsFileOption.Values.WhereAsync(localData.ExistsAsync, cancellationToken).ToList().WithoutContextCapture();
+							var existingFiles = await xmlSettingsFileOption.Values.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
 							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName))).WithoutContextCapture();
 						}
 						if (startupArgs.AdditionalXmlSettingsFiles.Any())
 						{
-							var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync, cancellationToken).ToList().WithoutContextCapture();
+							var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
 							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName))).WithoutContextCapture();
 						}
 						if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile).WithoutContextCapture())
@@ -92,6 +93,7 @@ namespace ApplicationResources.ApplicationUtils
 				if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile).WithoutContextCapture())
 					await Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile)).WithoutContextCapture();
 				await Settings.Load().WithoutContextCapture();
+				await LoggerConfigurationProvider.InitializeAsync().WithoutContextCapture();
 				await program().WithoutContextCapture();
 				OnTerminate();
 			}
