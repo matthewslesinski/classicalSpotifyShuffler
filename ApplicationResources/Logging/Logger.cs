@@ -51,6 +51,7 @@ namespace ApplicationResources.Logging
         private const string _logFileNameKeyName = "logFileName";
         private const string _consoleMinLogLevelKeyName = "consoleMinLogLevel";
         private const string _logFileMinLogLevelKeyName = "logFileMinLogLevel";
+        private const string _methodCallMinLogLevelKeyName = "methodCallMinLogLevel";
 
         static Logger()
 		{
@@ -58,12 +59,14 @@ namespace ApplicationResources.Logging
             var minFileLogLevel = LogLevelMappingContainer.LevelMapping.Invoke(Settings.Get<LogLevel>(BasicSettings.OutputFileLogLevel));
             var logDirectoryParent = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
             var logFileName = Settings.Get<string>(BasicSettings.LogFileName);
-                
+            var minMethodCallLogLevel = LogLevelMappingContainer.LevelMapping.Invoke(Settings.Get<LogLevel>(BasicSettings.MethodCallLogLevel));
+
             NLog.GlobalDiagnosticsContext.Set(_logDirectoryParentKeyName, logDirectoryParent);
             NLog.GlobalDiagnosticsContext.Set(_logFileNameKeyName, logFileName);
             NLog.GlobalDiagnosticsContext.Set(_consoleMinLogLevelKeyName, minConsoleLogLevel);
             NLog.GlobalDiagnosticsContext.Set(_logFileMinLogLevelKeyName, minFileLogLevel);
-		}
+            NLog.GlobalDiagnosticsContext.Set(_methodCallMinLogLevelKeyName, minMethodCallLogLevel);
+        }
     }
 
     public static class LoggerConfigurationProvider

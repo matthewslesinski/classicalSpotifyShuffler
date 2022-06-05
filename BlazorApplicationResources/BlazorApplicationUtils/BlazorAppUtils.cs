@@ -2,6 +2,7 @@
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using ApplicationResources.Services;
+using ApplicationResources.Setup;
 using Blazored.LocalStorage;
 using ClassicalSpotifyShuffler.Utils;
 using CustomResources.Utils.Extensions;
@@ -25,14 +26,19 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 
 			await ProgramUtils.ExecuteProgram(async () =>
 			{
-				Console.WriteLine("Starting");
-				Logger.Information("Starting");
+				var consoleLogLevel = Settings.Get<LogLevel>(BasicSettings.ConsoleLogLevel);
+				LoggerTargetProvider.OnLog += (args) =>
+				{
+					if (args.Level >= consoleLogLevel) Console.WriteLine(args.BareMessage);
+				};
 
-				Console.WriteLine($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
+				Logger.Information("Starting");
+				Logger.Information($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
+
 				await postSetup().WithoutContextCapture();
 				await host.RunAsync();
 			}, startupArgs with {
-				AdditionalXmlSettingsFiles = startupArgs.AdditionalXmlSettingsFiles.Append(BlazorApplicationResources.Utils.BlazorApplicationConstants.StandardSettingsFile)
+				AdditionalXmlSettingsFiles = startupArgs.AdditionalXmlSettingsFiles.Append(Utils.BlazorApplicationConstants.StandardSettingsFile)
 			}, () => GlobalDependencies.InitializeWith(host.Services)).WithoutContextCapture();
 		}
 	}

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Settings>
+  <Setting name="ConsoleLogLevel">Info</Setting>
   <Setting name="LoggerConfigurationFile">NLog.config</Setting>
   <Setting name="ProjectRootDirectory">.</Setting>
 </Settings>
