@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CustomResources.Utils.Extensions;
@@ -6,8 +7,9 @@ using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public class BijectiveDictionary<S, T> : Bijection<S, T>
+	public class BijectiveDictionary<S, T> : Bijection<S, T>, IEnumerable<KeyValuePair<S, T>>
 	{
+
 		protected readonly IDictionary<S, T> _mapping;
 		protected readonly IDictionary<T, S> _inverseMapping;
 		protected readonly IEqualityComparer<S> _sourceEquality;
@@ -42,6 +44,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public ICollection<S> InputSpace => _mapping.Keys;
 		public ICollection<T> OutputSpace => _inverseMapping.Keys;
 
+		public void Add(KeyValuePair<S, T> pair) => Add(pair.Key, pair.Value);
+		public void Add(S input, T output) => Expand(input, output);
 		public void Expand(S input, T output)
 		{
 			if (_mapping.TryGetValue(input, out var existingOutput) && !_destinationEquality.Equals(existingOutput, output))
@@ -52,5 +56,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_inverseMapping.Add(output, input);
 		}
 
+
+		public IEnumerator<KeyValuePair<S, T>> GetEnumerator() => _mapping.GetEnumerator();
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 	}
 }

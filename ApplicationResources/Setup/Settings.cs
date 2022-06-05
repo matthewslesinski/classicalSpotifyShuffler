@@ -59,13 +59,11 @@ namespace ApplicationResources.Setup
 		public void Add(Enum item) => Expand(item, item.ToString());
 		public bool Contains(Enum item) => InputSpace.Contains(item);
 		public void CopyTo(Enum[] array, int arrayIndex) => InputSpace.CopyTo(array, arrayIndex);
-		public IEnumerator<Enum> GetEnumerator() => InputSpace.GetEnumerator();
+		IEnumerator<Enum> IEnumerable<Enum>.GetEnumerator() => InputSpace.GetEnumerator();
 		IEnumerator<string> IEnumerable<string>.GetEnumerator() => OutputSpace.GetEnumerator();
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 		public bool ContainsKey(Enum key) => _mapping.ContainsKey(key);
 		public bool TryGetValue(Enum key, out string value) => _mapping.TryGetValue(key, out value);
-		IEnumerator<KeyValuePair<Enum, string>> IEnumerable<KeyValuePair<Enum, string>>.GetEnumerator() => _mapping.GetEnumerator();
 
 		public bool ContainsKey(string key) => _inverseMapping.ContainsKey(key);
 		public bool TryGetValue(string key, out Enum value) => _inverseMapping.TryGetValue(key, out value);

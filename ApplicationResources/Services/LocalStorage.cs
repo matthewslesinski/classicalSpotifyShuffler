@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +51,12 @@ namespace ApplicationResources.Services
 		public Task<string> GetAsync(string key, CancellationToken cancellationToken) => File.ReadAllTextAsync(key, cancellationToken);
 		public bool Save(string key, string data) { File.WriteAllText(key, data); return true; }
 		public async Task<bool> SaveAsync(string key, string data, CancellationToken cancellationToken) { await File.WriteAllTextAsync(key, data, cancellationToken); return true; }
+	}
+
+	public static class DataStoreExtensions
+	{
+		public static Task SaveAllLinesAsync(this IDataStoreAccessor dataStore, string key, IEnumerable<string> lines) =>
+			dataStore.SaveAsync(key, string.Join('\n', lines));
 	}
 }
 
