@@ -58,7 +58,7 @@ namespace ApplicationResources.ApplicationUtils
 							var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
 							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName))).WithoutContextCapture();
 						}
-						if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile).WithoutContextCapture())
+						if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile, cancellationToken).WithoutContextCapture())
 							await Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile)).WithoutContextCapture();
 					};
 					runner = settingsProviderRegister.FollowedByAsync(runner);
