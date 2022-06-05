@@ -31,7 +31,9 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 				Console.WriteLine($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
 				await postSetup().WithoutContextCapture();
 				await host.RunAsync();
-			}, startupArgs, () => GlobalDependencies.InitializeWith(host.Services)).WithoutContextCapture();
+			}, startupArgs with {
+				AdditionalXmlSettingsFiles = startupArgs.AdditionalXmlSettingsFiles.Append(BlazorApplicationResources.Utils.BlazorApplicationConstants.StandardSettingsFile)
+			}, () => GlobalDependencies.InitializeWith(host.Services)).WithoutContextCapture();
 		}
 	}
 }

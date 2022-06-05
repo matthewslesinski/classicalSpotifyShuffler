@@ -18,13 +18,19 @@
     <None Remove="BlazorApplicationUtils\" />
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly" />
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly.DevServer" />
+    <None Remove="Utils\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\" />
     <Folder Include="BlazorApplicationUtils\" />
+    <Folder Include="Utils\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
+    <None Include="..\SettingsTemplates\standardBlazorSettings.xml">
+      <Link>standardBlazorSettings.xml</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CustomResources\CustomResources.csproj">

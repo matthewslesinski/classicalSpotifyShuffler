@@ -107,7 +107,7 @@ namespace ApplicationResources.ApplicationUtils
 			Console.WriteLine("Terminating successfully");
 		}
 
-		public class StartupArgs
+		public struct StartupArgs
 		{
 			public string[] CommandLineArgs { get; }
 			public string XmlSettingsFileFlag { get; set; } = null;
