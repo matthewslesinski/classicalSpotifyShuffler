@@ -27,10 +27,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="$(SettingsTemplatesDir)\standardBlazorSettings.xml">
+    <Content Include="$(SettingsTemplatesDir)\standardBlazorSettings.xml">
       <Link>standardBlazorSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CustomResources\CustomResources.csproj">

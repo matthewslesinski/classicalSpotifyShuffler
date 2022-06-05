@@ -27,25 +27,27 @@
   <ItemGroup>
     <Folder Include="Utils\" />
     <Folder Include="Setup\" />
-    <Folder Include="Logging\" />
+    <Folder Include="Logging\" DependentUpon="NLog.config" />
     <Folder Include="ApplicationUtils\" />
     <Folder Include="ApplicationUtils\Parameters\" />
     <Folder Include="Services\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="NLog.config">
-      <Link>NLog.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\CustomResources\CustomResources.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\.editorconfig" />
-    <None Include="$(SettingsTemplatesDir)\standardSettings.xml">
-      <Link>standardSettings.xml</Link>
+    <Content Include="NLog.config">
+      <Link>NLog.config</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardSettings.xml">
+      <Link>standardSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig" />
   </ItemGroup>
 </Project>

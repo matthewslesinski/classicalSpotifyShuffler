@@ -36,22 +36,26 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
+    <Content Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(SettingsTemplatesDir)\lukesShuffleSettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\lukesShuffleSettings.xml">
       <Link>lukesShuffleSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(SettingsTemplatesDir)\allLikedTracksSettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\allLikedTracksSettings.xml">
       <Link>allLikedTracksSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="$(SettingsTemplatesDir)\standardSpotifySettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardSpotifySettings.xml">
       <Link>standardSpotifySettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />
