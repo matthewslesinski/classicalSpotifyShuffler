@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
-    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
+    <UseMonoRuntime>$(UseMonoForCLI)</UseMonoRuntime>
   </PropertyGroup>
   
   <ItemGroup>

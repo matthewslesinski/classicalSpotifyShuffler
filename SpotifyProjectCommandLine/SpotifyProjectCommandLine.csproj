@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <UseMonoRuntime>$(UseMono)</UseMonoRuntime>
+    <UseMonoRuntime>$(UseMonoForCLI)</UseMonoRuntime>
     <SelfContained>$(SelfContainedCLIPackage)</SelfContained>
     <RuntimeIdentifier>$(RuntimeIdentifierForCLI)</RuntimeIdentifier>
   </PropertyGroup>
