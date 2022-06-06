@@ -42,8 +42,8 @@ namespace SpotifyProject.Authentication
 			return obj is AuthorizationSource o
 				&& Equals(RedirectUri, o.RedirectUri)
 				&& Equals(ClientInfo, o.ClientInfo)
-				&& Scopes?.Count() == o.Scopes?.Count()
-				&& Scopes?.Intersect(o.Scopes).Count() == Scopes?.Count();
+				&& Scopes?.Count == o.Scopes?.Count
+				&& Scopes?.Intersect(o.Scopes).Count() == Scopes?.Count;
 		}
 
 		public override int GetHashCode()
