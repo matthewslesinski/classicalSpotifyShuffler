@@ -28,6 +28,7 @@ namespace SpotifyProjectCommandLine
 				AdditionalXmlSettingsFiles = new[] { GeneralConstants.StandardSpotifySettingsFile }
 			}, () => GlobalDependencies.Initialize(args)
 						.AddGlobalService<IDataStoreAccessor, FileAccessor>()
+						.AddGlobalService<IUserInterface, ConsoleUserInterface>()
 						.Build());
 		}
 

@@ -3,6 +3,7 @@ using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using ApplicationResources.Services;
 using ApplicationResources.Setup;
+using BlazorApplicationResources.Services;
 using Blazored.LocalStorage;
 using ClassicalSpotifyShuffler.Utils;
 using CustomResources.Utils.Extensions;
@@ -20,6 +21,7 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 			hostBuilder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(hostBuilder.HostEnvironment.BaseAddress) });
 			hostBuilder.Services.AddBlazoredLocalStorage();
 			hostBuilder.Services.AddSingleton<IDataStoreAccessor, LocalStorageAccessor>();
+			hostBuilder.Services.AddSingleton<IUserInterface, AlertWindowUserInterface>();
 
 			await hostSetup(hostBuilder).WithoutContextCapture();
 			var host = hostBuilder.Build();
@@ -30,6 +32,11 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 				LoggerTargetProvider.OnLog += (args) =>
 				{
 					if (args.Level >= consoleLogLevel) Console.WriteLine(args.BareMessage);
+				};
+
+				LoggerTargetProvider.OnLog += (args) =>
+				{
+					if (args.Level == LogLevel.Error) GlobalDependencies.Get<IUserInterface>().NotifyUserOfError(args.BareMessage);
 				};
 
 				Logger.Information("Starting");

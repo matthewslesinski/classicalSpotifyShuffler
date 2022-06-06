@@ -6,24 +6,15 @@ using ApplicationResources.Logging;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Extensions;
 
-namespace ApplicationResources.ApplicationUtils
+namespace ApplicationResources.Services
 {
-	public abstract class UserInterface
+	public interface IUserInterface
 	{
-		public static readonly UserInterface Default = new ConsoleUserInterface();
-		public static UserInterface Instance = Default;
+		Task<string> RequestResponseAsync(params string[] requestNotifications);
+		void NotifyUser(string alertMessage);
+		void NotifyUserOfError(string error);
 
-		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput).WithoutContextCapture();
-		public Task<string> RequestResponseAsync(string requestNotification)
-		{
-			NotifyUser(requestNotification);
-			return ReadNextUserInputAsync();
-		}
-		public abstract string ReadNextUserInput();
-		public abstract void NotifyUser(string notification);
-		public abstract void NotifyUserOfError(string error);
-
-		public virtual bool? ParseAffirmation(string response)
+		public bool? ParseConfirmation(string response)
 		{
 			bool IsAffirmative(string answer) => _affirmativeResponse.StartsWith(answer.ToLower());
 			bool IsNegative(string answer) => _negativeResponse.StartsWith(answer.ToLower());
@@ -34,16 +25,15 @@ namespace ApplicationResources.ApplicationUtils
 			return null;
 		}
 
-		public virtual bool ShouldProceed(string questionToAskUser)
+		public async Task<bool> ShouldProceed(string questionToAskUser)
 		{
-			NotifyUser(questionToAskUser);
-			string response;
-			while((response = ReadNextUserInput()) != null)
+			var response = await RequestResponseAsync(questionToAskUser).WithoutContextCapture();
+			while (response != null)
 			{
-				var affirmation = ParseAffirmation(response);
-				if (affirmation.HasValue)
-					return affirmation.Value;
-				NotifyUser($"The supplied response was not an option. Say either \"{_affirmativeResponse}\" or \"{_negativeResponse}\"");
+				var confirmation = ParseConfirmation(response);
+				if (confirmation.HasValue)
+					return confirmation.Value;
+				response = await RequestResponseAsync($"The supplied response was not an option. Say either \"{_affirmativeResponse}\" or \"{_negativeResponse}\"").WithoutContextCapture();
 			}
 			return false;
 		}
@@ -51,7 +41,19 @@ namespace ApplicationResources.ApplicationUtils
 
 		private const string _affirmativeResponse = "yes";
 		private const string _negativeResponse = "no";
+	}
 
+	public abstract class UserInterface : IUserInterface
+	{
+		public async virtual Task<string> ReadNextUserInputAsync() => await Task.Run(ReadNextUserInput).WithoutContextCapture();
+		public Task<string> RequestResponseAsync(params string[] requestNotifications)
+		{
+			requestNotifications.Each(NotifyUser);
+			return ReadNextUserInputAsync();
+		}
+		public abstract string ReadNextUserInput();
+		public abstract void NotifyUser(string notification);
+		public abstract void NotifyUserOfError(string error);
 	}
 
 	public class ConsoleUserInterface : UserInterface

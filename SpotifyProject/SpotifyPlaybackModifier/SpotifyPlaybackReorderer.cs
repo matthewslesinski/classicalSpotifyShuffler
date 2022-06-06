@@ -5,7 +5,7 @@ using SpotifyProject.Utils;
 using System;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
-using ApplicationResources.ApplicationUtils;
+using ApplicationResources.Services;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
 using System.Runtime.CompilerServices;
@@ -39,18 +39,17 @@ namespace SpotifyProject.SpotifyPlaybackModifier
                     return Task.FromResult(false);
 			}
 
-            UserInterface.Instance.NotifyUser("Please provide the indicator of the Spotify context to use");
-            var userInput = UserInterface.Instance.ReadNextUserInput();
+            var ui = this.AccessUserInterface();
+            var userInput = await ui.RequestResponseAsync("Please provide the indicator of the Spotify context to use").WithoutContextCapture();
             while (!await TryHandleUserInput(userInput).WithoutContextCapture())
 			{
-                UserInterface.Instance.NotifyUser("The provided input was not valid. Would you like to try again? If so, you can just provide new input now. " +
-					"Otherwise we may default to the current track's album, if that was a startup argument provided");
-                var response = UserInterface.Instance.ReadNextUserInput();
-                var parsedAffirmation = UserInterface.Instance.ParseAffirmation(response);
+                var response = await ui.RequestResponseAsync("The provided input was not valid. Would you like to try again? If so, you can just provide new input now. " +
+                    "Otherwise we may default to the current track's album, if that was a startup argument provided").WithoutContextCapture();
+                var parsedAffirmation = ui.ParseConfirmation(response);
                 if (parsedAffirmation.HasValue)
 				{
                     if (parsedAffirmation.Value)
-                        UserInterface.Instance.NotifyUser("Please provide a new Uri");
+                        response = await ui.RequestResponseAsync("Please provide a new Uri").WithoutContextCapture();
                     else
                     {
                         if (TaskParameters.Get<bool>(SpotifyParameters.DefaultToAlbumShuffle))

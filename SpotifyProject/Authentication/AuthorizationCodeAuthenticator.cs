@@ -90,9 +90,10 @@ namespace SpotifyProject.Authentication
 
 		protected override async Task<string> RequestLoginFromUser(Uri loginUri)
 		{
-			UserInterface.Instance.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
-			UserInterface.Instance.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
-			var authorizationCode = await UserInterface.Instance.ReadNextUserInputAsync().WithoutContextCapture();
+			var ui = this.AccessUserInterface();
+			ui.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
+			ui.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
+			var authorizationCode = await ui.RequestResponseAsync("Please input the authorizationCode: ").WithoutContextCapture();
 			return authorizationCode;
 		}
 	}

@@ -125,10 +125,12 @@ namespace ApplicationResources.Services
 	public interface IGlobalServiceUser
 	{
 		public IDataStoreAccessor DataStore => GlobalDependencies.Get<IDataStoreAccessor>();
+		public IUserInterface UserInterface => GlobalDependencies.Get<IUserInterface>();
 	}
 
 	public static class IGlobablServiceUserExtensions
 	{
 		public static IDataStoreAccessor AccessLocalDataStore(this IGlobalServiceUser dependent) => dependent.DataStore;
+		public static IUserInterface AccessUserInterface(this IGlobalServiceUser dependent) => dependent.UserInterface;
 	}
 }

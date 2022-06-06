@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
-using ApplicationResources.ApplicationUtils;
+using ApplicationResources.Services;
 using SpotifyProject.Configuration;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyAPI.Web;
@@ -36,7 +36,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 		{
 			var foundName = PlaylistName;
 			var name = string.IsNullOrWhiteSpace(foundName)
-				? UserInterface.Instance.RequestResponseAsync("Please provide a playlist name to save to")
+				? this.AccessUserInterface().RequestResponseAsync("Please provide a playlist name to save to")
 				: Task.FromResult(foundName);
 			var reorderedPlaylist = await SaveContextAsPlaylist(context, name).WithoutContextCapture();
 			if (_underlyingPlaybackSetter != null)

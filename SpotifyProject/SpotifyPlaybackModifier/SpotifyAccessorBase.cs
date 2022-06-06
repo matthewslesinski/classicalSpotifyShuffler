@@ -1,10 +1,11 @@
 ﻿using System;
+using ApplicationResources.Services;
 using SpotifyAPI.Web;
 using SpotifyProject.Utils;
 
 namespace SpotifyProject.SpotifyPlaybackModifier
 {
-	public class SpotifyAccessorBase : ISpotifyAccessor
+	public class SpotifyAccessorBase : ISpotifyAccessor, IGlobalServiceUser
 	{
 		public SpotifyAccessorBase(SpotifyConfiguration spotifyConfiguration)
 		{

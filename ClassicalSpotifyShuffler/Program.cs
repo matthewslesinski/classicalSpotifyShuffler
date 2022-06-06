@@ -15,7 +15,6 @@ await BlazorAppUtils.StartApp(
 	},
 	async () =>
 	{
-		LoggerTargetProvider.OnLog += (logArgs) => Console.WriteLine(logArgs.FullMessage);
 		var weatherForecast = await GlobalDependencies.Get<HttpClient>().GetStringAsync("sample-data/weather.json");
 		Logger.Information($"{weatherForecast}");
 	},
