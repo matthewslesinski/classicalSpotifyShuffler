@@ -48,7 +48,7 @@ namespace SpotifyProject.Authentication
 
 		public override int GetHashCode()
 		{
-			return (RedirectUri, ClientInfo, ScopeString).GetHashCode();
+			return HashCode.Combine(RedirectUri, ClientInfo, ScopeString);
 		}
 
 		private ISet<string> _scopes;
