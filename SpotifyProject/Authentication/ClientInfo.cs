@@ -18,7 +18,7 @@ namespace SpotifyProject.Authentication
 
 		public override int GetHashCode()
 		{
-			return (ClientId, ClientSecret).GetHashCode();
+			return HashCode.Combine(ClientId, ClientSecret);
 		}
 
 		public override string ToString()
