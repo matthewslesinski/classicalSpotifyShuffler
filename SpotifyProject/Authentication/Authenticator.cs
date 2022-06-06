@@ -15,6 +15,7 @@ using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Utils;
 using System.Collections.Generic;
 using ApplicationResources.Services;
+using CustomResources.Utils.Concepts;
 
 namespace SpotifyProject.Authentication
 {
@@ -48,7 +49,7 @@ namespace SpotifyProject.Authentication
             return clientInfo.FromJsonString<ClientInfo>();
         }
 
-        protected Task<(bool foundData, string data)> ReadStoredData(string storedDataPath) => this.AccessLocalDataStore().TryGetAsync(storedDataPath);
+        protected Task<LookupResult<string>> ReadStoredData(string storedDataPath) => this.AccessLocalDataStore().TryGetAsync(storedDataPath);
     }
 
     public static class Authenticators

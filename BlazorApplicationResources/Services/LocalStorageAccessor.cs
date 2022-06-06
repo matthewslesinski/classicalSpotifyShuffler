@@ -1,6 +1,7 @@
 ﻿using System;
 using ApplicationResources.Services;
 using Blazored.LocalStorage;
+using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,11 +39,11 @@ namespace ClassicalSpotifyShuffler.Utils
 			return true;
 		}
 
-		async Task<(bool foundData, string? data)> IDataStoreAccessor.TryGetAsync(string key, CancellationToken cancellationToken)
+		async Task<LookupResult<string?>> IDataStoreAccessor.TryGetAsync(string key, CancellationToken cancellationToken)
 		{
 			var getTask = GetAsync(key, cancellationToken).WithoutContextCapture();
 			var data = await getTask;
-			return (data != null, data);
+			return new(data != null, data);
 		}
 	}
 }

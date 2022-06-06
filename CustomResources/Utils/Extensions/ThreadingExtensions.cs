@@ -20,6 +20,35 @@ namespace CustomResources.Utils.Extensions
         public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<object, ArgsT> asyncEvent, object sender, ArgsT args) =>
             Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(sender, args)));
 
+        public static async Task Then(this Task task, Action followUp) { await task.WithoutContextCapture(); followUp(); }
+        public static async Task Then<T>(this Task<T> task, Action<T> followUp) { var result = await task.WithoutContextCapture(); followUp(result); }
+        public static async Task Then(this Task task, Func<Task> followUp) { await task.WithoutContextCapture(); await followUp().WithoutContextCapture(); }
+        public static async Task Then<T>(this Task<T> task, Func<T, Task> followUp) { var result = await task.WithoutContextCapture(); await followUp(result).WithoutContextCapture(); }
+        public static Task Then<E>(this Task task, Action followUp, Action<E> errorHandler) where E : Exception => WrapInErrorHandler(task.Then(followUp), errorHandler);
+        public static Task Then<T, E>(this Task<T> task, Action<T> followUp, Action<E> errorHandler) where E : Exception => WrapInErrorHandler(task.Then(followUp), errorHandler);
+        public static Task Then<E>(this Task task, Func<Task> followUp, Action<E> errorHandler) where E : Exception => WrapInErrorHandler(task.Then(followUp), errorHandler);
+        public static Task Then<T, E>(this Task<T> task, Func<T, Task> followUp, Action<E> errorHandler) where E : Exception => WrapInErrorHandler(task.Then(followUp), errorHandler);
+        public static async Task<R> Then<R>(this Task task, Func<R> followUp) { await task.WithoutContextCapture(); return followUp(); }
+        public static async Task<R> Then<T, R>(this Task<T> task, Func<T, R> followUp) { var result = await task.WithoutContextCapture(); return followUp(result); }
+        public static async Task<R> Then<R>(this Task task, Func<Task<R>> followUp) { await task.WithoutContextCapture(); return await followUp().WithoutContextCapture(); }
+        public static async Task<R> Then<T, R>(this Task<T> task, Func<T, Task<R>> followUp) { var result = await task.WithoutContextCapture(); return await followUp(result).WithoutContextCapture(); }
+
+        public static Task WrapInErrorHandler<E>(this Func<Task> taskSupplier, Action<E> handler) where E : Exception => WrapInErrorHandler(taskSupplier(), handler);
+        public static async Task WrapInErrorHandler<E>(this Task task, Action<E> handler) where E : Exception
+        {
+            try
+			{
+                await task.WithoutContextCapture();
+			}
+            catch (E e)
+			{
+                if (handler != null)
+                    handler(e);
+                else
+                    throw;
+			}
+		}
+
         public static ReadLockToken ReadToken(this ReaderWriterLockSlim rwLock) => new ReadLockToken(rwLock);
         public static UpgradeableReadLockToken UpgradeableToken(this ReaderWriterLockSlim rwLock) => new UpgradeableReadLockToken(rwLock);
         public static WriteLockToken WriteToken(this ReaderWriterLockSlim rwLock) => new WriteLockToken(rwLock);

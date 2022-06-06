@@ -210,7 +210,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
 		{
 			var didFindValue = _wrappedCollection.TryGetValue(_keyMapper.Invoke(key), out var foundValue);
-			value = _valueTranslationFunc(foundValue);
+			value = didFindValue ? _valueTranslationFunc(foundValue) : default;
 			return didFindValue;
 		}
 

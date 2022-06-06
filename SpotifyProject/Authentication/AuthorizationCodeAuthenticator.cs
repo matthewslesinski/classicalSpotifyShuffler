@@ -8,6 +8,7 @@ using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
 using ApplicationResources.Utils;
 using ApplicationResources.Services;
+using CustomResources.Utils.Concepts;
 
 namespace SpotifyProject.Authentication
 {
@@ -43,11 +44,11 @@ namespace SpotifyProject.Authentication
 				authenticationArguments = BuildAuthenticationArgumentsFromTokenResponse(await RequestInitialToken(authorizationSource).WithoutContextCapture());
 			}
 
-			var authenticator = new SpotifyAPI.Web.AuthorizationCodeAuthenticator(authorizationSource.ClientId, authorizationSource.ClientSecret, authenticationArguments.TokenResponse);
+			var authenticator = new AuthorizationCodeAuthenticator(authorizationSource.ClientId, authorizationSource.ClientSecret, authenticationArguments.TokenResponse);
 			if (_credentialsFilePath != null)
 				authenticator.TokenRefreshed += (sender, token) => WriteTokenToFile(BuildAuthenticationArgumentsFromTokenResponse(token));
 			if (_credentialsFilePath != null && askForLogin)
-				WriteTokenToFile(authenticationArguments);
+				_ = WriteTokenToFile(authenticationArguments).WrapInErrorHandler<Exception>(e => Logger.Error("An Exception occurred when writing credentials to {filePath}", _credentialsFilePath));
 			return authenticator;
 		}
 
@@ -65,22 +66,19 @@ namespace SpotifyProject.Authentication
 			return response;
 		}
 
-		private async Task<(bool foundToken, SpotifyAuthenticationArguments token)> ReadExistingAuthenticationArguments()
-		{
-			var (foundToken, json) = await ReadStoredData(_credentialsFilePath).WithoutContextCapture();
-			if (foundToken)
+		private Task<LookupResult<SpotifyAuthenticationArguments>> ReadExistingAuthenticationArguments() =>
+			ReadStoredData(_credentialsFilePath).Then(result => result.Transform(json =>
 			{
 				Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");
-				return (true, json.FromJsonString<SpotifyAuthenticationArguments>());
-			}
-			return (false, default);
-		}
+				return json.FromJsonString<SpotifyAuthenticationArguments>();
+			}));
+		
 
-		private void WriteTokenToFile(SpotifyAuthenticationArguments token)
+		private Task WriteTokenToFile(SpotifyAuthenticationArguments token)
 		{
 			Logger.Verbose($"Writing new Spotify access/refresh tokens to file {_credentialsFilePath}");
 			var json = token.ToJsonString();
-			this.AccessLocalDataStore().SaveAsync(_credentialsFilePath, json);
+			return this.AccessLocalDataStore().SaveAsync(_credentialsFilePath, json);
 		}
 	}
 

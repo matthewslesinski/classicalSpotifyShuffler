@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Extensions;
 
 namespace ApplicationResources.Services
 {
 	public interface IDataStoreAccessor
 	{
-		public Task<(bool foundData, string data)> TryGetAsync(string key) => TryGetAsync(key, default);
-		public async Task<(bool foundData, string data)> TryGetAsync(string key, CancellationToken cancellationToken) =>
+		public Task<LookupResult<string>> TryGetAsync(string key) => TryGetAsync(key, default);
+		public async Task<LookupResult<string>> TryGetAsync(string key, CancellationToken cancellationToken) =>
 			await ExistsAsync(key, cancellationToken).WithoutContextCapture()
-				? (true, await GetAsync(key, cancellationToken).WithoutContextCapture())
-				: (false, null);
+				? new(true, await GetAsync(key, cancellationToken).WithoutContextCapture())
+				: new(false, null);
 
 		public Task<bool> ExistsAsync(string key) => ExistsAsync(key, default);
 		Task<bool> ExistsAsync(string key, CancellationToken cancellationToken);

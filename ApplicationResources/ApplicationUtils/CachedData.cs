@@ -138,7 +138,7 @@ namespace ApplicationResources.ApplicationUtils
 				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
 			}
 
-			public Task<(bool exists, string foundContent)> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);
+			public Task<LookupResult<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);
 
 			public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content);
 
@@ -161,7 +161,7 @@ namespace ApplicationResources.ApplicationUtils
 
 			public Task SaveAsync(string content) { Add(content); return Task.CompletedTask; }
 
-			public Task<(bool exists, string foundContent)> TryReadAsync() => _underlyingAccessor.TryReadAsync();
+			public Task<LookupResult<string>> TryReadAsync() => _underlyingAccessor.TryReadAsync();
 
 			protected override DataWrapper CreateNewContainer() => new DataWrapper();
 
@@ -194,7 +194,7 @@ namespace ApplicationResources.ApplicationUtils
 
 	public interface IDataAccessor : IDisposable
 	{
-		Task<(bool exists, string foundContent)> TryReadAsync();
+		Task<LookupResult<string>> TryReadAsync();
 		Task SaveAsync(string content);
 	}
 }

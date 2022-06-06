@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.GeneralUtils;
 
@@ -154,6 +155,9 @@ namespace CustomResources.Utils.Extensions
 
 		public static bool SupportsNullValues(this Type type) => !type.IsValueType || (Nullable.GetUnderlyingType(type) != null);
 
+		public static LookupResult<R> Transform<T, R>(this LookupResult<T> lookupResult, Func<T, R> transformation) =>
+			lookupResult.DidFind ? new(true, transformation(lookupResult.FoundValue)) : new(false, default);
+		
 		public static ConfiguredTaskAwaitable WithoutContextCapture(this Task task) =>
 			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredTaskAwaitable<V> WithoutContextCapture<V>(this Task<V> task) =>
