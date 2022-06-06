@@ -47,7 +47,7 @@ namespace ApplicationResources.ApplicationUtils
 					var xmlSettingsFileOption = app.Option(startupArgs.XmlSettingsFileFlag, "The file name for settings stored in xml format", CommandOptionType.MultipleValue);
 					Func<CancellationToken, Task> settingsProviderRegister = async cancellationToken =>
 					{
-						var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+						var localData = GlobalDependencies.Get<IDataStoreAccessor>();
 						if (xmlSettingsFileOption.HasValue())
 						{
 							var existingFiles = await xmlSettingsFileOption.Values.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
@@ -80,7 +80,7 @@ namespace ApplicationResources.ApplicationUtils
 			var dependencyDisposable = dependencyInitializer?.Invoke();
 			try
 			{
-				var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+				var localData = GlobalDependencies.Get<IDataStoreAccessor>();
 				await TaskParameters.Initialize().WithoutContextCapture();
 				Settings.RegisterSettings<BasicSettings>();
 				startupArgs.SettingsTypes.Each(Settings.RegisterSettings);

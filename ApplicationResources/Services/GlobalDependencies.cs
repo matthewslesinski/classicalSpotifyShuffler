@@ -42,6 +42,8 @@ namespace ApplicationResources.Services
 			return serviceBuilder;
 		}
 
+		public static T Get<T>() => GlobalDependencyContainer.GetRequiredService<T>();
+
 		public static void ReleaseResource()
 		{
 			_globalDependencyContainerWrapper.Dispose();
@@ -122,7 +124,7 @@ namespace ApplicationResources.Services
 
 	public interface IGlobalServiceUser
 	{
-		public IDataStoreAccessor DataStore => GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+		public IDataStoreAccessor DataStore => GlobalDependencies.Get<IDataStoreAccessor>();
 	}
 
 	public static class IGlobablServiceUserExtensions

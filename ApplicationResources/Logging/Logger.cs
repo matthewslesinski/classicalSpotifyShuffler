@@ -82,9 +82,10 @@ namespace ApplicationResources.Logging
                 {
                     var logDirectoryParent = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
                     var filepath = Path.Combine(logDirectoryParent, configFileLocation);
-                    if (await GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>().ExistsAsync(filepath, cancellationToken).WithoutContextCapture())
+                    var dataStoreAccessor = GlobalDependencies.Get<IDataStoreAccessor>();
+                    if (await dataStoreAccessor.ExistsAsync(filepath, cancellationToken).WithoutContextCapture())
                     {
-                        var fileContents = await GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>().GetAsync(filepath, cancellationToken).WithoutContextCapture();
+                        var fileContents = await dataStoreAccessor.GetAsync(filepath, cancellationToken).WithoutContextCapture();
                         var reader = XmlReader.Create(new StringReader(fileContents));
                         NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(reader, filepath);
                     }

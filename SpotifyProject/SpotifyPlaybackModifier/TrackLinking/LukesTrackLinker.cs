@@ -37,7 +37,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.Log(logLevel, msg);
 
 		private static void RecordTrackInfo(string outputLocation, IEnumerable<TrackLinkingInfoInput> trackInfos) =>
-			GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>().SaveAllLinesAsync(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)));
+			GlobalDependencies.Get<IDataStoreAccessor>().SaveAllLinesAsync(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)));
 	}
 
 	internal static class NativeMethods

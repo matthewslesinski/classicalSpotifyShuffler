@@ -135,7 +135,7 @@ namespace ApplicationResources.ApplicationUtils
 			internal BasicDataAccessor(string dataKey, IDataStoreAccessor dataStoreAccessor = null)
 			{
 				_dataKey = dataKey;
-				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.Get<IDataStoreAccessor>();
 			}
 
 			public Task<LookupResult<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);

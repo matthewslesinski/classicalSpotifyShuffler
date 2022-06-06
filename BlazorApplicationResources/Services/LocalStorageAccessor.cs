@@ -9,8 +9,8 @@ namespace ClassicalSpotifyShuffler.Utils
 {
 	public class LocalStorageAccessor : IDataStoreAccessor
 	{
-		private static ILocalStorageService BrowserLocalStorage => GlobalDependencies.GlobalDependencyContainer.GetRequiredService<ILocalStorageService>();
-		private static HttpClient Server => GlobalDependencies.GlobalDependencyContainer.GetRequiredService<HttpClient>();
+		private static ILocalStorageService BrowserLocalStorage => GlobalDependencies.Get<ILocalStorageService>();
+		private static HttpClient Server => GlobalDependencies.Get<HttpClient>();
 		public LocalStorageAccessor()
 		{
 		}

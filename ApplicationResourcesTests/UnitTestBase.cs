@@ -47,7 +47,7 @@ namespace ApplicationResourcesTests
 
 		protected static async Task LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
 		{
-			var localData = GlobalDependencies.GlobalDependencyContainer.GetRequiredService<IDataStoreAccessor>();
+			var localData = GlobalDependencies.Get<IDataStoreAccessor>();
 			Func<IEnumerable<ISettingsProvider>, Task> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
 			var checkedSettingsFiles = (await settingsFiles
 				.SelectAsync<string, (string fileName, bool exists)>(async fileName => (fileName, await localData.ExistsAsync(fileName).WithoutContextCapture()))
