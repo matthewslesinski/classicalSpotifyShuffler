@@ -8,7 +8,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	/// in data structures.
 	/// </summary>
 	/// <typeparam name="T">The underlying type</typeparam>
-	public class Reference<T> : IWrapper<T> where T : notnull
+	public class Reference<T> : IWrapper<T>
 	{
 		private readonly T _value;
 		public Reference(T value)
@@ -29,7 +29,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public static implicit operator T(Reference<T> reference) => reference.Value;
 	}
 
-	public class MutableReference<T> : IWrapper<T> where T : notnull
+	public class MutableReference<T> : IWrapper<T>
 	{
 		private Reference<T> _value;
 		public MutableReference(T value)

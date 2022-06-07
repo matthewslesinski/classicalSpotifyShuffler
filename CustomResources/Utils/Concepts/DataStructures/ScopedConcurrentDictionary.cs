@@ -252,16 +252,16 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_dictSizeCounter = sizeCounter;
 		}
 
-		protected (bool hasValue, V value) _value = (false, default);
+		protected Reference<V> _value = null;
 
 		private V Value
 		{
-			set => _value = (true, value);
+			set => _value = new(value);
 		}
 
 		private void Delete()
 		{
-			_value = (false, default);
+			_value = null;
 		}
 
 		public bool TryAdd(V value, out V resultingValue)
@@ -278,12 +278,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			}
 		}
 
-		public bool TryGetValue(out V value)
-		{
-			var (hasValue, currValue) = _value;
-			value = currValue;
-			return hasValue;
-		}
+		public bool TryGetValue(out V value) => _value.TryGetValue(out value);
 
 		public bool TryRemove(out V oldValue)
 		{
@@ -348,30 +343,25 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			_dictSizeCounter = sizeCounter;
 		}
 
-		protected abstract (bool hasValue, V value) Value { get; set; }
+		protected abstract Reference<V> Value { get; set; }
 
 		public bool TryAdd(V value, out V resultingValue)
 		{
 			if (TryGetValue(out resultingValue))
 				return false;
-			Value = (true, value);
+			Value = new(value);
 			resultingValue = value;
 			_dictSizeCounter.Increment();
 			return true;
 		}
 
-		public bool TryGetValue(out V value)
-		{
-			var (hasValue, currValue) = Value;
-			value = currValue;
-			return hasValue;
-		}
+		public bool TryGetValue(out V value) => Value.TryGetValue(out value);
 
 		public bool TryRemove(out V oldValue)
 		{
 			if (!TryGetValue(out oldValue))
 				return false;
-			Value = (false, default);
+			Value = null;
 			_dictSizeCounter.Decrement();
 			return true;
 		}
@@ -382,11 +372,11 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				return false;
 			if (valueMeansRemoval)
 			{
-				Value = (false, default);
+				Value = null;
 				_dictSizeCounter.Decrement();
 			}
 			else
-				Value = (true, newValue);
+				Value = new(newValue);
 			return true;
 		}
 		void IScopedBucket<V>.EnterLock() { /* Nothing to do */ }
@@ -398,8 +388,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		internal ThreadLocalBucket(IScopedIntBucket sizeCounter) : base(sizeCounter) { }
 
-		private readonly ThreadLocal<(bool hasValue, V value)> _store = new ThreadLocal<(bool hasValue, V value)>(() => (false, default));
-		protected override (bool hasValue, V value) Value { get => _store.Value; set => _store.Value = value; }
+		private readonly ThreadLocal<Reference<V>> _store = new ThreadLocal<Reference<V>>(() => null);
+		protected override Reference<V> Value { get => _store.Value; set => _store.Value = value; }
 	}
 
 	internal class ThreadLocalIntBucket : IScopedIntBucket
@@ -416,8 +406,8 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		internal AsyncLocalBucket(IScopedIntBucket sizeCounter) : base(sizeCounter) { }
 
-		private readonly AsyncLocal<(bool hasValue, V value)> _store= new AsyncLocal<(bool hasValue, V value)>{ Value = (false, default) };
-		protected override (bool hasValue, V value) Value { get => _store.Value; set => _store.Value = value; }
+		private readonly AsyncLocal<Reference<V>> _store= new AsyncLocal<Reference<V>>{ Value = null };
+		protected override Reference<V> Value { get => _store.Value; set => _store.Value = value; }
 	}
 
 	internal class AsyncLocalIntBucket : IScopedIntBucket
