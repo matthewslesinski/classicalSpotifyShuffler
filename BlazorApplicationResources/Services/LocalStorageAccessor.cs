@@ -39,7 +39,7 @@ namespace ClassicalSpotifyShuffler.Utils
 			return true;
 		}
 
-		async Task<LookupResult<string?>> IDataStoreAccessor.TryGetAsync(string key, CancellationToken cancellationToken)
+		async Task<Result<string?>> IDataStoreAccessor.TryGetAsync(string key, CancellationToken cancellationToken)
 		{
 			var getTask = GetAsync(key, cancellationToken).WithoutContextCapture();
 			var data = await getTask;

@@ -77,7 +77,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 
 		private async Task RunAllOperationsToCompletion(string playlistId, IEnumerable<IPlaylistModification> operations)
 		{
-			async Task<bool> SendRequest(IPlaylistModification operation) => (await operation.TrySendRequest(this, playlistId).WithoutContextCapture()).ranSuccessfuly;
+			async Task<bool> SendRequest(IPlaylistModification operation) => (await operation.TrySendRequest(this, playlistId).WithoutContextCapture()).Success;
 			var uncompletedOperations = operations;
 			while (uncompletedOperations.Any())
 				uncompletedOperations = (await RunAllOperations(uncompletedOperations, SendRequest).WithoutContextCapture())
@@ -111,7 +111,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 			{
 				// Run each operation, and if it's successful, add its batch to the movedBatches set
 				var separatedResults = await RunAllOperations(operationsAndBatches,
-					async pair => (await pair.operation.TrySendRequest(this, playlistId, snapshotId).WithoutContextCapture()).ranSuccessfuly);
+					async pair => (await pair.operation.TrySendRequest(this, playlistId, snapshotId).WithoutContextCapture()).Success);
 
 				var movedBatches = separatedResults.TryGetValues(true, out var successfulOperations)
 					? successfulOperations.Select(pair => pair.movedBatch).ToHashSet()

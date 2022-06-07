@@ -66,7 +66,7 @@ namespace SpotifyProject.Authentication
 			return response;
 		}
 
-		private Task<LookupResult<SpotifyAuthenticationArguments>> ReadExistingAuthenticationArguments() =>
+		private Task<Result<SpotifyAuthenticationArguments>> ReadExistingAuthenticationArguments() =>
 			ReadStoredData(_credentialsFilePath).Then(result => result.Transform(json =>
 			{
 				Logger.Verbose($"Reading Spotify access token from file {_credentialsFilePath}");

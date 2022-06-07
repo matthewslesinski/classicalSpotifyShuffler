@@ -155,9 +155,16 @@ namespace CustomResources.Utils.Extensions
 
 		public static bool SupportsNullValues(this Type type) => !type.IsValueType || (Nullable.GetUnderlyingType(type) != null);
 
-		public static LookupResult<R> Transform<T, R>(this LookupResult<T> lookupResult, Func<T, R> transformation) =>
-			lookupResult.DidFind ? new(true, transformation(lookupResult.FoundValue)) : new(false, default);
-		
+		public static Result<R> Transform<T, R>(this Result<T> lookupResult, Func<T, R> transformation) =>
+			lookupResult.HasValue ? new(true, transformation(lookupResult.FoundValue)) : Result<R>.NotFound;
+
+		public static bool TryGetValue<T>(this Reference<T> reference, out T value)
+		{
+			var hasValue = reference != null;
+			value = hasValue ? reference : default;
+			return hasValue;
+		}
+
 		public static ConfiguredTaskAwaitable WithoutContextCapture(this Task task) =>
 			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredTaskAwaitable<V> WithoutContextCapture<V>(this Task<V> task) =>

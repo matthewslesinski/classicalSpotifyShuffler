@@ -13,6 +13,7 @@ using SpotifyAPI.Web;
 using SpotifyProject.Utils;
 using System.Net.Http;
 using System.IO;
+using CustomResources.Utils.Concepts;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 {
@@ -80,11 +81,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 	{
 		Task<string> SendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId = null);
 
-		async Task<(bool ranSuccessfuly, string resultingSnapshotId)> TrySendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId = null)
+		async Task<Result<string>> TrySendRequest(ISpotifyAccessor spotifyAccessor, string playlistId, string previousSnapshotId = null)
 		{
 			try
 			{
-				return (true, await SendRequest(spotifyAccessor, playlistId, previousSnapshotId));
+				return new(true, await SendRequest(spotifyAccessor, playlistId, previousSnapshotId));
 			}
 			catch (APIException e) when ((e.Response != null && SpotifyConstants.NonDeterministicStatusCodes.Contains(e.Response.StatusCode) && e.Response.StatusCode != System.Net.HttpStatusCode.ServiceUnavailable)
 											|| e.InnerException is HttpRequestException httpE && httpE.InnerException is IOException)
@@ -92,7 +93,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters
 				Logger.Error("An error occurred on the server's end while trying to perform the {modificationType} operation on a playlist. " +
 					"The exception has been caught and the operation may be retried. The operation occurred while editing playlist with id {playlistId}," +
 					"with provided snapshotId {snapshotId}: {exception}", GetType().Name, playlistId, previousSnapshotId, e);
-				return (false, null);
+				return Result<string>.NotFound;
 			}
 		}
 	}

@@ -49,7 +49,7 @@ namespace SpotifyProject.Authentication
             return clientInfo.FromJsonString<ClientInfo>();
         }
 
-        protected Task<LookupResult<string>> ReadStoredData(string storedDataPath) => this.AccessLocalDataStore().TryGetAsync(storedDataPath);
+        protected Task<Result<string>> ReadStoredData(string storedDataPath) => this.AccessLocalDataStore().TryGetAsync(storedDataPath);
     }
 
     public static class Authenticators
