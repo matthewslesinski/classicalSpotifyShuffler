@@ -26,7 +26,7 @@ namespace ApplicationResources.Setup
 
 		public override async Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default)
 		{
-			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
+			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async (cancellationToken) =>
 			{
 				var fileContents = await this.AccessLocalDataStore().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
 				var doc = XElement.Load(new StringReader(fileContents));
@@ -37,7 +37,7 @@ namespace ApplicationResources.Setup
 				var missingSettings = _requiredSettings.Where(_loadedValues.NotContainsKey);
 				if (missingSettings.Any())
 					throw new KeyNotFoundException($"In order to use {_fileName} for settings, it must specify a value for the following settings: {string.Join(", ", missingSettings)}");
-			}).WithoutContextCapture();
+			}, cancellationToken).WithoutContextCapture();
 			return LoadedSettings;
 		}
 

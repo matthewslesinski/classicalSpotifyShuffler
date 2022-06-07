@@ -19,7 +19,7 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 		public static Task Initialize()
 		{
-			return Util.LoadOnceBlockingAsync(_isReady, _lock, () => _parameterStore.AttachTo(Settings.UnderlyingSettingsStore));
+			return Util.LoadOnceBlockingAsync(_isReady, _lock, (cancellationToken) => _parameterStore.AttachTo(Settings.UnderlyingSettingsStore, cancellationToken));
 		}
 
 		public static T Get<T>(Enum parameter) => TryGet<T>(parameter, out var value) ? value : default;

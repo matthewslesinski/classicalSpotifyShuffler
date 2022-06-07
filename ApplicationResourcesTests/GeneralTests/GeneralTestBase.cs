@@ -18,7 +18,7 @@ namespace ApplicationResourcesTests.GeneralTests
 		[OneTimeSetUp]
 		public Task OneTimeSetUp__GeneralTestBase()
 		{
-			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
+			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				if (File.Exists(ApplicationConstants.StandardSettingsFile))
 					await Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile)).WithoutContextCapture();

@@ -76,7 +76,7 @@ namespace ApplicationResources.Logging
 
         public static Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            return Util.LoadOnceBlockingAsync(_isReady, _lock, async () =>
+            return Util.LoadOnceBlockingAsync(_isReady, _lock, async (cancellationToken) =>
             {
                 if (Settings.TryGet<string>(BasicSettings.LoggerConfigurationFile, out var configFileLocation))
                 {
@@ -92,7 +92,7 @@ namespace ApplicationResources.Logging
                     else
                         throw new ArgumentException($"The filepath for the NLog configuration does not exist {filepath}");
                 } 
-            });
+            }, cancellationToken);
         }
     }
 

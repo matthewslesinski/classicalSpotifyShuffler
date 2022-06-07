@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Concepts.DataStructures;
@@ -14,12 +15,12 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 		public ParameterStore() : base(MemoryScope.AsyncLocal)
 		{ }
 
-		public async Task AttachTo(SettingsStore defaultValueProvider)
+		public async Task AttachTo(SettingsStore defaultValueProvider, CancellationToken cancellationToken = default)
 		{
-			await RegisterProvider(defaultValueProvider).WithoutContextCapture();
+			await RegisterProvider(defaultValueProvider, cancellationToken: cancellationToken).WithoutContextCapture();
 			defaultValueProvider.OnLoad += OnProviderLoaded;
 			if (defaultValueProvider.IsLoaded)
-				await Load().WithoutContextCapture();
+				await Load(cancellationToken).WithoutContextCapture();
 		}
 
 		public static async Task<ParameterStore> DerivedFrom(SettingsStore defaultValueProvider)
@@ -36,12 +37,12 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 			base.OnNewSettingsAdded(newSettings, enumType);
 		}
 
-		private Task OnProviderLoaded(IEnumerable<Enum> loadedSettings)
+		private Task OnProviderLoaded(IEnumerable<Enum> loadedSettings, CancellationToken cancellationToken = default)
 		{
-			if (!this._startedLoading)
-				return Load();
+			if (!_startedLoading)
+				return Load(cancellationToken);
 			else if (IsLoaded)
-				return OnSettingsReloaded(loadedSettings);
+				return OnSettingsReloaded(loadedSettings, cancellationToken);
 			// Do nothing in the else case because this is being called in the middle of a load
 			return Task.CompletedTask;
 		}

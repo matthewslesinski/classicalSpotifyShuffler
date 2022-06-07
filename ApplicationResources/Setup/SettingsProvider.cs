@@ -122,7 +122,7 @@ namespace ApplicationResources.Setup
 
 		public override async Task<IEnumerable<Enum>> Load(CancellationToken cancellationToken = default)
 		{
-			var wasPerformed = await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
+			var wasPerformed = await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async (cancellationToken) =>
 			{
 				_startedLoading = true;
 				await _settingsProviders.AsAsyncEnumerable().EachIndependently(async provider =>
@@ -131,9 +131,9 @@ namespace ApplicationResources.Setup
 						await provider.Load(cancellationToken).WithoutContextCapture();
 				}).WithoutContextCapture();
 				ResolveAndSetSettings(AllSettings);
-			}).WithoutContextCapture();
+			}, cancellationToken).WithoutContextCapture();
 			if (OnLoad != null && wasPerformed)
-				await OnLoad.InvokeAsync(AllSettings).WithoutContextCapture();
+				await OnLoad.InvokeAsync(AllSettings, cancellationToken).WithoutContextCapture();
 			return AllSettings;
 		}
 
@@ -149,15 +149,15 @@ namespace ApplicationResources.Setup
 		public void RegisterSettings(IEnumerable<Type> enumTypes) => enumTypes.EachIndependently(enumType => RegisterSettings(Enum.GetValues(enumType).Cast<Enum>(), enumType));
 		public void RegisterSettings(IEnumerable<Enum> settings, Type enumType) => OnSettingsAdded(settings, enumType);
 
-		public Task RegisterHighestPriorityProvider(ISettingsProvider provider) => RegisterProvider(provider, 0);
-		public async Task RegisterProvider(ISettingsProvider provider, int position = -1)
+		public Task RegisterHighestPriorityProvider(ISettingsProvider provider, CancellationToken cancellationToken = default) => RegisterProvider(provider, 0, cancellationToken);
+		public async Task RegisterProvider(ISettingsProvider provider, int position = -1, CancellationToken cancellationToken = default)
 		{
-			if (provider.Scope != MemoryScope.Global && provider.Scope != this.Scope)
+			if (provider.Scope != MemoryScope.Global && provider.Scope != Scope)
 				throw new ArgumentException("Cannot attach to a different non-global scope");
 			if (provider.IsLoaded)
 				throw new ArgumentException($"Cannot accept an already loaded settings provider");
 			IEnumerable<Enum> newlyLoadedSettings = null;
-			using (await _lock.AcquireToken().WithoutContextCapture())
+			using (await _lock.AcquireToken(cancellationToken).WithoutContextCapture())
 			{
 				if (position < 0 || position >= _settingsProviders.Count)
 					_settingsProviders.Add(provider);
@@ -169,12 +169,12 @@ namespace ApplicationResources.Setup
 				if (IsLoaded)
 				{
 					if (!provider.IsLoaded)
-						newlyLoadedSettings = await provider.Load().WithoutContextCapture();
+						newlyLoadedSettings = await provider.Load(cancellationToken).WithoutContextCapture();
 					ResolveAndSetSettings(newlyLoadedSettings);
 				}
 			}
 			if (OnLoad != null && newlyLoadedSettings != null)
-				await OnLoad.InvokeAsync(provider.LoadedSettings).WithoutContextCapture();
+				await OnLoad.InvokeAsync(provider.LoadedSettings, cancellationToken).WithoutContextCapture();
 		}
 
 		#region Overrides
@@ -213,16 +213,16 @@ namespace ApplicationResources.Setup
 			SettingsAdded?.Invoke(newSettings, enumType);
 		}
 
-		protected async Task OnSettingsReloaded(IEnumerable<Enum> settingsToReload)
+		protected async Task OnSettingsReloaded(IEnumerable<Enum> settingsToReload, CancellationToken cancellationToken = default)
 		{
 			if (!IsLoaded)
 				throw new NotSupportedException("Cannot reload settings if they haven't been loaded");
-			using (await _lock.AcquireToken().WithoutContextCapture())
+			using (await _lock.AcquireToken(cancellationToken).WithoutContextCapture())
 			{
 				ResolveAndSetSettings(settingsToReload);
 			}
 			if (OnLoad != null)
-				await OnLoad.InvokeAsync(settingsToReload).WithoutContextCapture();
+				await OnLoad.InvokeAsync(settingsToReload, cancellationToken).WithoutContextCapture();
 		}
 
 		protected void EnsureSettingValueIsAllowed(Enum setting, object value)

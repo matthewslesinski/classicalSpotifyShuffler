@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using CustomResources.Utils.Concepts.DataStructures;
 using ApplicationResources.ApplicationUtils.Parameters;
+using System.Threading;
 
 namespace ApplicationResourcesTests
 {
@@ -26,7 +27,7 @@ namespace ApplicationResourcesTests
 		public static async Task OneTimeSetUp__UnitTestBase()
 		{
 			var settingsFiles = new[] { ApplicationConstants.StandardUnitTestSettingsFile, ApplicationConstants.StandardSettingsFile };
-			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async () =>
+			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				GlobalDependencies.Initialize().AddGlobalService<IDataStoreAccessor, FileAccessor>().Build();
 				await TaskParameters.Initialize().WithoutContextCapture();
@@ -48,12 +49,12 @@ namespace ApplicationResourcesTests
 		protected static async Task LoadSettingsFiles(bool giveHighestPriority, params string[] settingsFiles)
 		{
 			var localData = GlobalDependencies.Get<IDataStoreAccessor>();
-			Func<IEnumerable<ISettingsProvider>, Task> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
+			Func<IEnumerable<ISettingsProvider>, CancellationToken, Task> registerAction = giveHighestPriority ? Settings.RegisterHighestPriorityProviders : Settings.RegisterProviders;
 			var checkedSettingsFiles = (await settingsFiles
 				.SelectAsync<string, (string fileName, bool exists)>(async fileName => (fileName, await localData.ExistsAsync(fileName).WithoutContextCapture()))
 				.ToList().WithoutContextCapture()).ToLookup(tup => tup.exists, tup => tup.fileName);
 			if (checkedSettingsFiles.TryGetValues(true, out var existingFiles))
-				await registerAction(existingFiles.Select(filename => new XmlSettingsProvider(filename))).WithoutContextCapture();
+				await registerAction(existingFiles.Select(filename => new XmlSettingsProvider(filename)), default).WithoutContextCapture();
 			if (checkedSettingsFiles.TryGetValues(false, out var missingFiles))
 				missingFiles.EachIndependently(filename => throw new FileNotFoundException($"In order to run unit tests, you must provide general settings in a file located at {filename}"));
 		}

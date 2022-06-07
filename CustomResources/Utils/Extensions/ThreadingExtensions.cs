@@ -13,12 +13,12 @@ namespace CustomResources.Utils.Extensions
         public static Func<Task<R>> AndThen<T, R>(this Func<Task<T>> asyncFunc, Func<T, R> func) => TaskUtils.Compose(func, asyncFunc);
         public static R Wait<R>(this Task<R> task) { task.Wait(); return task.Result; }
 
-        public static Task InvokeAsync(this TaskUtils.AsyncEvent asyncEvent) =>
-            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription()));
-        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<ArgsT> asyncEvent, ArgsT args) =>
-            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(args)));
-        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<object, ArgsT> asyncEvent, object sender, ArgsT args) =>
-            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(sender, args)));
+        public static Task InvokeAsync(this TaskUtils.AsyncEvent asyncEvent, CancellationToken cancellationToken = default) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(cancellationToken)));
+        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<ArgsT> asyncEvent, ArgsT args, CancellationToken cancellationToken = default) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(args, cancellationToken)));
+        public static Task InvokeAsync<ArgsT>(this TaskUtils.AsyncEvent<object, ArgsT> asyncEvent, object sender, ArgsT args, CancellationToken cancellationToken = default) =>
+            Task.WhenAll(asyncEvent.GetAllCalls().Select(subscription => subscription(sender, args, cancellationToken)));
 
         public static async Task Then(this Task task, Action followUp) { await task.WithoutContextCapture(); followUp(); }
         public static async Task Then<T>(this Task<T> task, Action<T> followUp) { var result = await task.WithoutContextCapture(); followUp(result); }

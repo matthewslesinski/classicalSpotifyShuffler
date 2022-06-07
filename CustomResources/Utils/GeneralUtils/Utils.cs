@@ -126,13 +126,13 @@ namespace CustomResources.Utils.GeneralUtils
 				return completionSource.Task;
 		}
 
-		public static async Task<bool> LoadOnceBlockingAsync(MutableReference<bool> isLoaded, AsyncLockProvider @lock, Func<Task> loadAction)
+		public static async Task<bool> LoadOnceBlockingAsync(MutableReference<bool> isLoaded, AsyncLockProvider @lock, Func<CancellationToken, Task> loadAction, CancellationToken cancellationToken = default)
 		{
-			using (await @lock.AcquireToken().WithoutContextCapture())
+			using (await @lock.AcquireToken(cancellationToken).WithoutContextCapture())
 			{
 				if (!isLoaded)
 				{
-					await loadAction().WithoutContextCapture();
+					await loadAction(cancellationToken).WithoutContextCapture();
 					isLoaded.Value = true;
 					return true;
 				}
