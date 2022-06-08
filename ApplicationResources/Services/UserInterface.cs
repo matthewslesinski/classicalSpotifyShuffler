@@ -10,6 +10,7 @@ namespace ApplicationResources.Services
 {
 	public interface IUserInterface
 	{
+		bool IsCLI { get; }
 		Task<string> RequestResponseAsync(params string[] requestNotifications);
 		void NotifyUser(string alertMessage);
 		void NotifyUserOfError(string error);
@@ -51,6 +52,7 @@ namespace ApplicationResources.Services
 			requestNotifications.Each(NotifyUser);
 			return ReadNextUserInputAsync();
 		}
+		public abstract bool IsCLI { get; }
 		public abstract string ReadNextUserInput();
 		public abstract void NotifyUser(string notification);
 		public abstract void NotifyUserOfError(string error);
@@ -60,6 +62,8 @@ namespace ApplicationResources.Services
 	{
 		private readonly ConcurrentQueue<string> _presuppliedInput
 			= new ConcurrentQueue<string>(Settings.Get<IEnumerable<string>>(BasicSettings.SupplyUserInput) ?? Array.Empty<string>());
+
+		public override bool IsCLI => true;
 
 		public override string ReadNextUserInput()
 		{

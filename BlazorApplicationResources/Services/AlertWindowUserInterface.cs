@@ -8,7 +8,7 @@ namespace BlazorApplicationResources.Services
 {
 	public class AlertWindowUserInterface : IUserInterface
 	{
-		private IJSRuntime Javascript => GlobalDependencies.Get<IJSRuntime>();
+		private static IJSRuntime Javascript => GlobalDependencies.Get<IJSRuntime>();
 		public void NotifyUser(string alertMessage)
 		{
 			Logger.Information("Notifying user of message {alertMessage}", alertMessage);
@@ -33,5 +33,6 @@ namespace BlazorApplicationResources.Services
 			return await Javascript.InvokeAsync<bool>("confirm", questionToAskUser);
 		}
 
+		public bool IsCLI => false;
 	}
 }
