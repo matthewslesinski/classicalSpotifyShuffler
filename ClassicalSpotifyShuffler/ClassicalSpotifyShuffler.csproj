@@ -10,11 +10,11 @@
     <StaticWebAssetsMandatedDir>$(MSBuildProjectDirectory)/wwwroot/</StaticWebAssetsMandatedDir>
     <CustomCommands>
       <CustomCommands>
-         <Command>
+        <Command>
           <type>BeforeBuild</type>
           <command>rm -f ./wwwroot/spotifyToken.json</command>
           <workingdir>${ProjectDir}</workingdir>
-        </Command>
+         </Command>
          <Command>
           <type>BeforeBuild</type>
           <command>rm -f ./wwwroot/spotifyClientInfo.json</command>
