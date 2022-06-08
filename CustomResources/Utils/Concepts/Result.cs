@@ -3,6 +3,8 @@ namespace CustomResources.Utils.Concepts
 {
 	public readonly record struct Result<T>(bool Exists, T ResultValue)
 	{
+		public Result(T value) : this(true, value) { }
+
 		public bool HasValue => Exists;
 		public bool Success => Exists;
 		public bool DidFind => Exists;
@@ -14,5 +16,6 @@ namespace CustomResources.Utils.Concepts
 
 		public static readonly Result<T> NotFound = new(false, default);
 		public static Result<T> Failure => NotFound;
+		public static Result<T> None => NotFound;
 	}
 }
