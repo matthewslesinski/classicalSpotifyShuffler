@@ -51,15 +51,15 @@ namespace ApplicationResources.ApplicationUtils
 						if (xmlSettingsFileOption.HasValue())
 						{
 							var existingFiles = await xmlSettingsFileOption.Values.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
-							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName))).WithoutContextCapture();
+							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName)), cancellationToken).WithoutContextCapture();
 						}
 						if (startupArgs.AdditionalXmlSettingsFiles.Any())
 						{
 							var existingFiles = await startupArgs.AdditionalXmlSettingsFiles.WhereAsync(localData.ExistsAsync, cancellationToken).ToList(cancellationToken).WithoutContextCapture();
-							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName))).WithoutContextCapture();
+							await Settings.RegisterProviders(existingFiles.Select(fileName => new XmlSettingsProvider(fileName)), cancellationToken).WithoutContextCapture();
 						}
 						if (await localData.ExistsAsync(ApplicationConstants.StandardSettingsFile, cancellationToken).WithoutContextCapture())
-							await Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile)).WithoutContextCapture();
+							await Settings.RegisterProvider(new XmlSettingsProvider(ApplicationConstants.StandardSettingsFile), cancellationToken).WithoutContextCapture();
 					};
 					runner = settingsProviderRegister.FollowedByAsync(runner);
 				}
