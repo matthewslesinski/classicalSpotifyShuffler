@@ -4,19 +4,23 @@ using BlazorApplicationResources.BlazorApplicationUtils;
 using ApplicationResources.Services;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyUtils;
-using ApplicationResources.Logging;
+using SpotifyProject.Authentication;
+using System.Net;
+using ApplicationResources.Setup;
 
 await BlazorAppUtils.StartApp(
 	builder =>
 	{
 		builder.RootComponents.Add<App>("#app");
 		builder.RootComponents.Add<HeadOutlet>("head::after");
+		builder.Services.AddImplementationForMultipleGlobalServices<SpotifyCommandLineAccountAuthenticator>(typeof(ISpotifyAuthenticator), typeof(ISpotifyAccountAuthenticator));
+		builder.Services.AddSingleton<ISpotifyService>(services => new StandardSpotifyProvider(services.GetSpotifyAuthCodeAuthenticator()));
 		return Task.CompletedTask;
 	},
-	async () =>
+	() =>
 	{
-		var weatherForecast = await GlobalDependencies.Get<HttpClient>().GetStringAsync("sample-data/weather.json");
-		Logger.Information($"{weatherForecast}");
+		ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SpotifySettings.NumHTTPConnections);
+		return Task.CompletedTask;
 	},
 	new(args)
 	{

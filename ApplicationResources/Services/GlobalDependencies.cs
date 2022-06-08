@@ -60,6 +60,9 @@ namespace ApplicationResources.Services
 		{
 			IServiceBuilder AddGlobalService<ServiceT, ImplementationT>() where ServiceT : class where ImplementationT : class, ServiceT;
 			IServiceBuilder AddGlobalService<ServiceT>(ServiceT service) where ServiceT : class;
+			IServiceBuilder AddGlobalService<ServiceT>(Func<IServiceProvider, ServiceT> serviceConstructor) where ServiceT : class;
+			IServiceBuilder AddImplementationForMultipleGlobalServices(object service, params Type[] serviceTypes);
+			IServiceBuilder AddImplementationForMultipleGlobalServices<ImplementationT>(params Type[] serviceTypes) where ImplementationT : class, new();
 			IDisposable Build();
 		}
 
@@ -83,6 +86,24 @@ namespace ApplicationResources.Services
 			public IServiceBuilder AddGlobalService<ServiceT>(ServiceT service) where ServiceT : class
 			{
 				_registerActions.Add(services => services.AddSingleton(service));
+				return this;
+			}
+
+			public IServiceBuilder AddGlobalService<ServiceT>(Func<IServiceProvider, ServiceT> serviceConstructor) where ServiceT : class
+			{
+				_registerActions.Add(services => services.AddSingleton(serviceConstructor));
+				return this;
+			}
+
+			public IServiceBuilder AddImplementationForMultipleGlobalServices<ImplementationT>(params Type[] serviceTypes) where ImplementationT : class, new()
+			{
+				_registerActions.Add(services => services.AddImplementationForMultipleGlobalServices<ImplementationT>(serviceTypes));
+				return this;
+			}
+
+			public IServiceBuilder AddImplementationForMultipleGlobalServices(object service, params Type[] serviceTypes)
+			{
+				_registerActions.Add(services => services.AddImplementationForMultipleGlobalServices(service, serviceTypes));
 				return this;
 			}
 
@@ -124,12 +145,28 @@ namespace ApplicationResources.Services
 
 	public interface IGlobalServiceUser
 	{
-		public IDataStoreAccessor DataStore => GlobalDependencies.Get<IDataStoreAccessor>();
-		public IUserInterface UserInterface => GlobalDependencies.Get<IUserInterface>();
+		public IDataStoreAccessor DataStore => GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore();
+		public IUserInterface UserInterface => GlobalDependencies.GlobalDependencyContainer.GetUserInterface();
 	}
 
-	public static class IGlobablServiceUserExtensions
+	public static class IGlobalDependencyExtensions
 	{
+		public static void AddImplementationForMultipleGlobalServices<ImplementationT>(this IServiceCollection services, params Type[] serviceTypes) where ImplementationT : class, new() =>
+			AddImplementationForMultipleGlobalServices(services, new ImplementationT(), serviceTypes);
+
+		public static void AddImplementationForMultipleGlobalServices(this IServiceCollection services, object service, params Type[] serviceTypes)
+		{
+			serviceTypes.EachIndependently(serviceType =>
+			{
+				if (!serviceType.IsInstanceOfType(service))
+					throw new ArgumentException($"Cannot add an object of type {service?.GetType()?.Name} as a service of type {serviceType?.Name}");
+				services.AddSingleton(serviceType, service);
+			});
+		}
+
+		public static IDataStoreAccessor GetLocalDataStore(this IServiceProvider serviceProvider) => serviceProvider.GetRequiredService<IDataStoreAccessor>();
+		public static IUserInterface GetUserInterface(this IServiceProvider serviceProvider) => serviceProvider.GetRequiredService<IUserInterface>();
+
 		public static IDataStoreAccessor AccessLocalDataStore(this IGlobalServiceUser dependent) => dependent.DataStore;
 		public static IUserInterface AccessUserInterface(this IGlobalServiceUser dependent) => dependent.UserInterface;
 	}

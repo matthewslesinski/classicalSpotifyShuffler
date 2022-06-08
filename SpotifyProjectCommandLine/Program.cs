@@ -11,6 +11,7 @@ using SpotifyProject.SpotifyUtils;
 using System.IO;
 using System.Runtime.CompilerServices;
 using ApplicationResources.Services;
+using System.Net;
 
 [assembly: InternalsVisibleTo("SpotifyProjectTests")]
 
@@ -29,6 +30,8 @@ namespace SpotifyProjectCommandLine
 			}, () => GlobalDependencies.Initialize(args)
 						.AddGlobalService<IDataStoreAccessor, FileAccessor>()
 						.AddGlobalService<IUserInterface, ConsoleUserInterface>()
+						.AddImplementationForMultipleGlobalServices<SpotifyCommandLineAccountAuthenticator>(typeof(ISpotifyAccountAuthenticator), typeof(ISpotifyAuthenticator))
+						.AddGlobalService<ISpotifyService>(services => new StandardSpotifyProvider(services.GetSpotifyAuthCodeAuthenticator()))
 						.Build());
 		}
 
@@ -37,10 +40,12 @@ namespace SpotifyProjectCommandLine
 			try
 			{
 				Logger.Information("Starting Spotify Project");
+				ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SpotifySettings.NumHTTPConnections);
 				var authorizationSettingsPath = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile);
 				await Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsPath)).WithoutContextCapture();
-				var spotify = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator).WithoutContextCapture();
-				var reorderer = new SpotifyPlaybackReorderer(spotify);
+				await GlobalDependencies.GlobalDependencyContainer.GetSpotifyAuthenticator().Authenticate().WithoutContextCapture();
+				var spotifyProvider = GlobalDependencies.GlobalDependencyContainer.GetSpotifyProvider();
+				var reorderer = new SpotifyPlaybackReorderer(spotifyProvider.Client);
 				if (Settings.Get<bool>(SpotifySettings.AskUser))
 					await reorderer.ShuffleUserProvidedContext().WithoutContextCapture();
 				else

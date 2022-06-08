@@ -6,21 +6,6 @@ namespace SpotifyProject.Utils
 	/** Utility methods that require imports, for instance the Spotify API */
 	public static class SpotifyDependentUtils
 	{
-		public static bool IsIdenticalTo(this AuthorizationCodeTokenResponse tokenResponse, AuthorizationCodeTokenResponse otherResponse)
-		{
-			return Equals(tokenResponse, otherResponse) || (Equals(tokenResponse.AccessToken, otherResponse.AccessToken)
-				&& Equals(tokenResponse.RefreshToken, otherResponse.RefreshToken)
-				&& Equals(tokenResponse.CreatedAt, otherResponse.CreatedAt)
-				&& Equals(tokenResponse.ExpiresIn, otherResponse.ExpiresIn)
-				&& Equals(tokenResponse.TokenType, otherResponse.TokenType)
-				&& Equals(tokenResponse.Scope, otherResponse.Scope));
-		}
-
-		public static int Hash(this AuthorizationCodeTokenResponse tokenResponse)
-		{
-			return HashCode.Combine(tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.CreatedAt, tokenResponse.ExpiresIn, tokenResponse.TokenType, tokenResponse.Scope);
-		}
-
 		public static bool TryParseUriFromLink(string contextLink, out string contextUri)
 		{
 			contextUri = default;

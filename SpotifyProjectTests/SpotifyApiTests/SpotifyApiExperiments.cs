@@ -25,8 +25,10 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				.Apply())
 			{
 
-				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
-				var tempAccessor = new SpotifyAccessorBase(client);
+				var authenticator = new SpotifyTestAccountAuthenticator();
+				var spotifyProvider = new StandardSpotifyProvider(authenticator);
+				await authenticator.Authenticate().WithoutContextCapture();
+				var tempAccessor = new SpotifyAccessorBase(spotifyProvider.Client);
 				var albumId = SampleAlbumIds[SampleAlbums.BachKeyboardWorks];
 				async Task<(bool, TimeSpan?)> SendRequest()
 				{

@@ -54,8 +54,10 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");
-				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
-				_globalSpotifyAccessor = new SpotifyAccessorBase(client);
+				var authenticator = new SpotifyTestAccountAuthenticator();
+				var spotifyProvider = new StandardSpotifyProvider(authenticator);
+				await authenticator.Authenticate(CancellationToken.None).WithoutContextCapture();
+				_globalSpotifyAccessor = new SpotifyAccessorBase(spotifyProvider.Client);
 			});
 		}
 
