@@ -42,7 +42,14 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 				Logger.Information("Starting");
 				Logger.Information($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
 
-				await postSetup().WithoutContextCapture();
+				try
+				{
+					await postSetup().WithoutContextCapture();
+				}
+				catch (Exception e)
+				{
+					Logger.Error("An exception occurred during initialization: {e}", e);
+				}
 				await host.RunAsync();
 			}, startupArgs with {
 				AdditionalXmlSettingsFiles = startupArgs.AdditionalXmlSettingsFiles.Append(Utils.BlazorApplicationConstants.StandardSettingsFile)

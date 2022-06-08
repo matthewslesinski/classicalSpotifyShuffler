@@ -225,7 +225,14 @@ namespace SpotifyProject.SpotifyAdditions
 			else
 			{
 				_queue.Enqueue(requestNode, endTime);
-				_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				try
+				{
+					_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				}
+				catch (Exception e)
+				{
+					Logger.Error("An error occurred while recording statistics for spotify requests: {exception}", e);
+				}
 			}
 		}
 
