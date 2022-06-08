@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace CustomResources.Utils.Concepts.DataStructures
@@ -31,18 +32,35 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 	public class MutableReference<T> : IWrapper<T>
 	{
+		public delegate void OnChangeAction(T oldValue, T newValue);
+
 		private Reference<T> _value;
 		public MutableReference(T value)
 		{
 			_value = value;
 		}
 
+		public event OnChangeAction OnChange;
+
 		public T WrappedObject => _value;
 		public T Value { get => _value; set => Change(value); }
+		public T ValueContainer => _value;
 
-		public void Change(T newValue) => _value = newValue;
-		public T AtomicExchange(T newValue) => Interlocked.Exchange(ref _value, newValue);
-		public T AtomicCompareExchange(T newValue, T comparand) => Interlocked.CompareExchange(ref _value, newValue, comparand);
+		public T Change(T newValue)
+		{
+			var oldValue = _value;
+			_value = newValue;
+			OnChange?.Invoke(oldValue, newValue);
+			return oldValue;
+		}
+
+		public T AtomicExchange(T newValue)
+		{
+			var oldValue = Interlocked.Exchange(ref _value, newValue);
+			OnChange?.Invoke(oldValue, newValue);
+			return oldValue;
+		}
+		// It would be nice to have an easy way of calling Interlocked.CompareExchange, but it would not make sense to use it when T is a reference type
 
 		public override bool Equals(object obj) => obj is MutableReference<T> otherRef && Equals(_value, otherRef._value);
 
