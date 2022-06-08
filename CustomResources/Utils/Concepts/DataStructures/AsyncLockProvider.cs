@@ -47,6 +47,12 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			return true;
 		}
 
+		public bool TryEnterAloneImmediately()
+		{
+			TaskCompletionSource completionSource = null;
+			return TryEnterAloneImmediately(ref completionSource);
+		}
+
 		public bool TryEnterAloneImmediately(ref TaskCompletionSource newSourceToUse)
 		{
 			if (_alreadyEntered.Value)
@@ -75,6 +81,16 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public Task<IDisposable> AcquireToken(CancellationToken cancellationToken = default) => new AsyncLockToken(this).Initialized(cancellationToken);
 
+		public bool TryAcquireToken(out IDisposable acquiredToken)
+		{
+			if (TryEnterAloneImmediately())
+			{
+				acquiredToken = new AsyncLockToken(this);
+				return true;
+			}
+			acquiredToken = null;
+			return false;
+		}
 
 		private class AsyncLockToken : IDisposable
 		{
