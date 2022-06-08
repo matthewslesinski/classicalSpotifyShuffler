@@ -47,17 +47,31 @@ namespace ApplicationResources.Services
 	public class FileAccessor : ISynchronousDataAccessor
 	{
 		public bool Exists(string key) => File.Exists(key);
-		public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken) => Task.FromResult(Exists(key));
+		public Task<bool> ExistsAsync(string key, CancellationToken _) => Task.FromResult(Exists(key));
 		public string Get(string key) => File.ReadAllText(key);
 		public Task<string> GetAsync(string key, CancellationToken cancellationToken) => File.ReadAllTextAsync(key, cancellationToken);
-		public bool Save(string key, string data) { File.WriteAllText(key, data); return true; }
-		public async Task<bool> SaveAsync(string key, string data, CancellationToken cancellationToken) { await File.WriteAllTextAsync(key, data, cancellationToken); return true; }
+		public bool Save(string key, string data)
+		{
+			if (data == null)
+				File.Delete(key);
+			else
+				File.WriteAllText(key, data);
+			return true;
+		}
+		public async Task<bool> SaveAsync(string key, string data, CancellationToken cancellationToken)
+		{
+			if (data == null)
+				File.Delete(key);
+			else
+				await File.WriteAllTextAsync(key, data, cancellationToken).WithoutContextCapture();
+			return true;
+		}
 	}
 
 	public static class DataStoreExtensions
 	{
 		public static Task SaveAllLinesAsync(this IDataStoreAccessor dataStore, string key, IEnumerable<string> lines) =>
-			dataStore.SaveAsync(key, string.Join('\n', lines));
+			dataStore.SaveAsync(key, lines == null ? null : string.Join('\n', lines));
 	}
 }
 

@@ -35,7 +35,10 @@ namespace ClassicalSpotifyShuffler.Utils
 
 		public async Task<bool> SaveAsync(string key, string data, CancellationToken cancellationToken)
 		{
-			await BrowserLocalStorage.SetItemAsStringAsync(key, data, cancellationToken).AsTask().WithoutContextCapture();
+			if (data == null)
+				await BrowserLocalStorage.RemoveItemAsync(key, cancellationToken).AsTask().WithoutContextCapture();
+			else
+				await BrowserLocalStorage.SetItemAsStringAsync(key, data, cancellationToken).AsTask().WithoutContextCapture();
 			return true;
 		}
 
