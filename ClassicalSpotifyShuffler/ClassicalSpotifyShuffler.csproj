@@ -8,6 +8,25 @@
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <PublishReadyToRun>true</PublishReadyToRun>
     <StaticWebAssetsMandatedDir>$(MSBuildProjectDirectory)/wwwroot/</StaticWebAssetsMandatedDir>
+    <CustomCommands>
+      <CustomCommands>
+         <Command>
+          <type>BeforeBuild</type>
+          <command>rm -f ./wwwroot/spotifyToken.json</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+         <Command>
+          <type>BeforeBuild</type>
+          <command>rm -f ./wwwroot/spotifyClientInfo.json</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>cp -pvfRP $(SettingsTemplatesDir)/standardClassicalSpotifyShufflerSettings.xml ./wwwroot/standardRunSettings.xml</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
   </PropertyGroup>
 
   <ItemGroup>

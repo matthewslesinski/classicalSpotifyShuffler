@@ -25,6 +25,8 @@ namespace SpotifyProject.Authentication
         IAuthenticator CurrentAuthenticator { get; }
         bool IsLoggedIn { get; }
 
+        Task<Result<IAuthenticator>> TryImmediateLogIn(CancellationToken cancellationToken = default);
+
         public Task<Result<IAuthenticator>> LogIn(ClientInfo userInfo, CancellationToken cancellationToken = default)
         {
             var redirectUri = TaskParameters.Get<string>(SpotifyParameters.RedirectUri);
@@ -46,7 +48,8 @@ namespace SpotifyProject.Authentication
 		{
             Logger.Information("Starting Spotify authentication process");
             var projectRoot = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
-            var clientInfoFilePath = Path.Combine(projectRoot, TaskParameters.Get<string>(SpotifyParameters.ClientInfoPath));
+            var personalDataDirectory = Settings.Get<string>(SpotifySettings.PersonalDataDirectory);
+            var clientInfoFilePath = ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(projectRoot, personalDataDirectory, TaskParameters.Get<string>(SpotifyParameters.ClientInfoPath));
             var clientInfo = await ReadClientInfoPath(clientInfoFilePath).WithoutContextCapture();
             var authenticator = await spotifyAuthenticator.LogIn(clientInfo, cancellationToken);
             if (!authenticator.Success)
@@ -58,7 +61,7 @@ namespace SpotifyProject.Authentication
         private static async Task<ClientInfo> ReadClientInfoPath(string clientInfoPath)
         {
             Logger.Verbose($"Reading Client Id and Secret from {clientInfoPath}");
-            var (foundClientInfo, clientInfo) = await GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore().TryGetAsync(clientInfoPath).WithoutContextCapture();
+            var (foundClientInfo, clientInfo) = await GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore().TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture();
             if (!foundClientInfo)
                 throw new KeyNotFoundException("Cannot find the client ID and secret necessary for authenticating with the Spotify API");
             return clientInfo.FromJsonString<ClientInfo>();

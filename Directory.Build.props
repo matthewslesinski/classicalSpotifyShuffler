@@ -6,5 +6,9 @@
    <RuntimeIdentifierForCLI>osx-x64</RuntimeIdentifierForCLI>
    <SettingsTemplatesDir>../SettingsTemplates</SettingsTemplatesDir>
    <AdditionalBinaryDependenciesDir>../SpotifyAPIBinaries</AdditionalBinaryDependenciesDir>
+   <PersonalDataDirectoryName>PersonalData</PersonalDataDirectoryName>
+   <PersonalDataDirectory>../$(PersonalDataDirectoryName)</PersonalDataDirectory>
+   <IncludePersonalDataInBuild>false</IncludePersonalDataInBuild>
+   <IncludePersonalDataInBuild Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">true</IncludePersonalDataInBuild>
  </PropertyGroup>
 </Project>

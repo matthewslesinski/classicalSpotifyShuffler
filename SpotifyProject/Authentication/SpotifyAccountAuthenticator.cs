@@ -64,29 +64,40 @@ namespace SpotifyProject.Authentication
 			return Task.FromResult<IAuthenticator>(authenticator);
 		}
 
-		protected override Task<Result<SessionDefinition>> GetExistingSession(CancellationToken cancellationToken = default)
+		protected override async Task<Result<SessionDefinition>> GetExistingSession(CancellationToken cancellationToken = default)
 		{
 			var key = CurrentSessionKey;
 			if (key == null)
-				return Task.FromResult(Result<SessionDefinition>.NotFound);
-			return this.AccessLocalDataStore().TryGetAsync(key, cancellationToken).Then(result => result.Transform(json =>
+				return Result<SessionDefinition>.NotFound;
+			return await this.AccessLocalDataStore().TryGetAsync(key, CachePolicy.PreferActual, cancellationToken).Transform(json =>
 			{
 				Logger.Verbose($"Reading Spotify access token from {key}");
 				var sessionInfo = json.FromJsonString<SessionDefinition>();
 				sessionInfo.SaveKey = key;
 				return sessionInfo;
-			}));
+			}).WithoutContextCapture();
 		}
 
 		protected override Task PersistCurrentSession(SessionDefinition sessionInfo, CancellationToken cancellationToken = default)
 		{
-			var key = sessionInfo?.SaveKey ?? CurrentSessionKey;
-			if (key == null)
-				return Task.CompletedTask;
-			
-			Logger.Verbose($"Writing new Spotify access/refresh tokens to {key}");
-			var json = sessionInfo.ToJsonString();
-			return this.AccessLocalDataStore().SaveAsync(key, json, cancellationToken);
+			try
+			{
+				var key = sessionInfo?.SaveKey ?? CurrentSessionKey;
+				if (key == null)
+				{
+					Logger.Warning("Not persisting state because there is no save key");
+					return Task.CompletedTask;
+				}
+
+				Logger.Verbose($"Writing new Spotify access/refresh tokens to {key}");
+				var json = sessionInfo?.ToJsonString();
+				return this.AccessLocalDataStore().SaveAsync(key, json, CachePolicy.PreferActual, cancellationToken);
+			}
+			catch (Exception e)
+			{
+				Logger.Error("Failed to save session {sessionState} because of exception {exception}", sessionInfo, e);
+				throw;
+			}
 		}
 
 		protected override SessionDefinition BuildSessionInfo(AuthorizationSource userInfo, AuthorizationCodeTokensWrapper tokens) =>
@@ -109,9 +120,11 @@ namespace SpotifyProject.Authentication
 
 		protected bool _isLoggedIn;
 
-		private static string CurrentSessionKey => Settings.TryGet<string>(BasicSettings.ProjectRootDirectory, out var root) && TaskParameters.TryGet<string>(SpotifyParameters.TokenPath, out var tokenPath)
-			? Path.Combine(root, tokenPath)
-			: null;
+		public static string CurrentSessionKey => Settings.TryGet<string>(BasicSettings.ProjectRootDirectory, out var root)
+			&& Settings.TryGet<string>(SpotifySettings.PersonalDataDirectory, out var personalDataDir)
+			&& TaskParameters.TryGet<string>(SpotifyParameters.TokenPath, out var tokenPath)
+				? GeneralUtils.GetAbsoluteCombinedPath(root, personalDataDir, tokenPath)
+				: null;
 	}
 
 	public class SpotifyCommandLineAccountAuthenticator : SpotifyAccountAuthenticator

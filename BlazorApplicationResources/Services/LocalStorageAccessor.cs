@@ -1,4 +1,5 @@
 ﻿using System;
+using ApplicationResources.Logging;
 using ApplicationResources.Services;
 using Blazored.LocalStorage;
 using CustomResources.Utils.Concepts;
@@ -17,24 +18,21 @@ namespace ClassicalSpotifyShuffler.Utils
 
 		public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken)
 		{
-			var localStorageTask = BrowserLocalStorage.ContainKeyAsync(key, cancellationToken).WithoutContextCapture();
-			var serverTask = Server.GetStringAsync(key, cancellationToken).WithoutContextCapture();
-			return await localStorageTask || await serverTask != null;
+			var localStorageTask = BrowserContains(key, cancellationToken);
+			var serverTask = ServerContains(key, cancellationToken);
+			return await localStorageTask.WithoutContextCapture() || await serverTask.WithoutContextCapture();
 		}
 
-		public async Task<string?> GetAsync(string key, CancellationToken cancellationToken)
+		public Task<string?> GetAsync(string key, CachePolicy cachePolicy, CancellationToken cancellationToken)
 		{
-			// TODO Make this work better, and cache files in LocalStorage
-			var serverValue = await Server.GetStringAsync(key, cancellationToken).WithoutContextCapture();
-			if (serverValue != null)
-				return serverValue;
-			if (await BrowserLocalStorage.ContainKeyAsync(key, cancellationToken).WithoutContextCapture())
-				return await BrowserLocalStorage.GetItemAsStringAsync(key, cancellationToken).WithoutContextCapture();
-			return default;
+			return TryGetAsync(key, cachePolicy, cancellationToken).Then(result => result.DidFind ? result.FoundValue : null);
 		}
 
-		public async Task<bool> SaveAsync(string key, string data, CancellationToken cancellationToken)
+		public async Task<bool> SaveAsync(string key, string data, CachePolicy cachePolicy, CancellationToken cancellationToken)
 		{
+			if (cachePolicy == CachePolicy.DontCache)
+				return false;
+
 			if (data == null)
 				await BrowserLocalStorage.RemoveItemAsync(key, cancellationToken).AsTask().WithoutContextCapture();
 			else
@@ -42,11 +40,57 @@ namespace ClassicalSpotifyShuffler.Utils
 			return true;
 		}
 
-		async Task<Result<string?>> IDataStoreAccessor.TryGetAsync(string key, CancellationToken cancellationToken)
+		private static Task<bool> BrowserContains(string key, CancellationToken cancellationToken) =>
+			BrowserLocalStorage.ContainKeyAsync(key, cancellationToken).AsTask();
+
+		private static Task<bool> ServerContains(string key, CancellationToken cancellationToken) =>
+			Server.GetAsync(key, HttpCompletionOption.ResponseHeadersRead, cancellationToken).Then(result => result.IsSuccessStatusCode);
+
+		private static async Task<Result<string>> TryGetFromServer(string key, CancellationToken cancellationToken)
 		{
-			var getTask = GetAsync(key, cancellationToken).WithoutContextCapture();
-			var data = await getTask;
-			return new(data != null, data);
+			if (await ServerContains(key, cancellationToken).WithoutContextCapture())
+				return new(await Server.GetStringAsync(key, cancellationToken).WithoutContextCapture());
+			return Result<string>.NotFound;
+		}
+
+		private static async Task<Result<string>> TryGetFromBrowser(string key, CancellationToken cancellationToken)
+		{
+			if (await BrowserContains(key, cancellationToken).WithoutContextCapture())
+				return new(await BrowserLocalStorage.GetItemAsStringAsync(key, cancellationToken).WithoutContextCapture());
+			return Result<string>.NotFound;
+		}
+
+		Task<Result<string>> IDataStoreAccessor.TryGetAsync(string key, CachePolicy cachePolicy, CancellationToken cancellationToken) =>
+			TryGetAsync(key, cachePolicy, cancellationToken);
+
+		public async Task<Result<string>> TryGetAsync(string key, CachePolicy cachePolicy, CancellationToken cancellationToken = default)
+		{
+			if (cachePolicy != CachePolicy.AlwaysPreferCache)
+			{
+				var serverTask = TryGetFromServer(key, cancellationToken).WithoutContextCapture();
+				var browserTask = TryGetFromBrowser(key, cancellationToken).WithoutContextCapture();
+				var serverResult = await serverTask;
+				if (serverResult.DidFind)
+					return serverResult;
+				var browserResult = await browserTask;
+				if (browserResult.DidFind)
+					return browserResult;
+			}
+			else
+			{
+				var browserTask = TryGetFromBrowser(key, cancellationToken).WithoutContextCapture();
+				var browserResult = await browserTask;
+				if (browserResult.DidFind)
+					return browserResult;
+				var serverTask = TryGetFromServer(key, cancellationToken).WithoutContextCapture();
+				var serverResult = await serverTask;
+				if (serverResult.DidFind)
+				{
+					await SaveAsync(key, serverResult.FoundValue, cachePolicy, cancellationToken).WithoutContextCapture();
+					return serverResult;
+				}
+			}
+			return Result<string>.NotFound;
 		}
 	}
 }

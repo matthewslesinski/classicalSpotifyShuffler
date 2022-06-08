@@ -28,7 +28,7 @@ namespace ApplicationResources.Setup
 		{
 			await Util.LoadOnceBlockingAsync(_isLoaded, _lock, async (cancellationToken) =>
 			{
-				var fileContents = await this.AccessLocalDataStore().GetAsync(_fileName, cancellationToken).WithoutContextCapture();
+				var fileContents = await this.AccessLocalDataStore().GetAsync(_fileName, CachePolicy.PreferActual, cancellationToken).WithoutContextCapture();
 				var doc = XElement.Load(new StringReader(fileContents));
 				_loadedValues = doc.Descendants(_settingNodeName)
 					.Select(node => (node.Attribute(_settingNodeIdentifier).Value, node.Value))

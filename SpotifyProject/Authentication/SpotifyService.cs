@@ -5,19 +5,22 @@ using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Logging;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyAdditions;
+using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.Authentication
 {
     public interface ISpotifyService
     {
-        public SpotifyClient Client { get; }
-        public PrivateUser CachedUserInfo { get; }
+        SpotifyClient Client { get; }
+        PrivateUser CachedUserInfo { get; }
+        Task InitializeAsync(CancellationToken cancellationToken = default);
     }
 
     public abstract class SpotifyProviderBase : StandardDisposable, ISpotifyService
@@ -25,12 +28,21 @@ namespace SpotifyProject.Authentication
         protected SpotifyProviderBase(ISpotifyAuthenticator spotifyAuthenticator)
         {
             _spotifyAuthenticator = spotifyAuthenticator;
-            if (spotifyAuthenticator != null)
+        }
+
+        public Task InitializeAsync(CancellationToken cancellationToken = default)
+		{
+            if (_alreadyDisposed.AsBool())
+                throw new InvalidOperationException("Can't initialized when already disposed");
+            return Util.LoadOnceBlockingAsync(_isLoaded, _lock, async (cancellationToken) =>
             {
-                spotifyAuthenticator.OnLoggedIn += OnLoggedIn;
-                if (spotifyAuthenticator.IsLoggedIn)
-                    _ = OnLoggedIn(spotifyAuthenticator.CurrentAuthenticator, default);
-            }
+                if (_spotifyAuthenticator != null)
+                {
+                    _spotifyAuthenticator.OnLoggedIn += OnLoggedIn;
+                    if (_spotifyAuthenticator.IsLoggedIn)
+                        await OnLoggedIn(_spotifyAuthenticator.CurrentAuthenticator, cancellationToken).WithoutContextCapture();
+                }
+            }, cancellationToken);
         }
 
         protected SpotifyProviderBase(ISpotifyAccountAuthenticator spotifyAuthenticator) : this(spotifyAuthenticator.As<ISpotifyAuthenticator>())
@@ -59,10 +71,13 @@ namespace SpotifyProject.Authentication
         {
             try
             {
-                var config = BuildConfig().WithAuthenticator(authenticator);
-                Client = new SpotifyClient(config);
-                CachedUserInfo = await Client.UserProfile.Current().WithoutContextCapture();
-                Logger.Information("Logged into Spotify account with username: {username}", CachedUsername);
+                using (await _lock.AcquireToken(cancellationToken).WithoutContextCapture())
+                {
+                    var config = BuildConfig().WithAuthenticator(authenticator);
+                    Client = new SpotifyClient(config);
+                    CachedUserInfo = await Client.UserProfile.Current().WithoutContextCapture();
+                    Logger.Information("Logged into Spotify account with username: {username}", CachedUsername);
+                }
             }
             catch (Exception e)
             {
@@ -71,11 +86,13 @@ namespace SpotifyProject.Authentication
             }
         }
 
-        private Task OnLoggedOut(CancellationToken _)
+        private async Task OnLoggedOut(CancellationToken _)
         {
-            Client = null;
-            CachedUserInfo = null;
-            return Task.CompletedTask;
+            using (await _lock.AcquireToken(_).WithoutContextCapture())
+            {
+                Client = null;
+                CachedUserInfo = null;
+            }
         }
 
         public SpotifyClient Client { get; private set; }
@@ -87,6 +104,8 @@ namespace SpotifyProject.Authentication
 
         private ISpotifyAuthenticator _spotifyAuthenticator;
         private ISpotifyAccountAuthenticator _spotifyAccountAuthenticator;
+        private readonly MutableReference<bool> _isLoaded = new(false);
+        private readonly AsyncLockProvider _lock = new();
     }
 
     public class StandardSpotifyProvider : SpotifyProviderBase

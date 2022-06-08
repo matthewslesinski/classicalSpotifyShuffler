@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ApplicationResources.Logging;
 using ApplicationResources.Services;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
@@ -26,7 +27,7 @@ namespace ApplicationResources.ApplicationUtils
 		public event OnValueChangedListener OnValueChanged;
 
 		private readonly Bijection<string, T> _parser;
-		private readonly IDataAccessor _fileAccessor;
+		private readonly IDataAccessor _localDataAccessor;
 		private readonly CallbackTaskQueue<T> _persistQueue;
 		private readonly bool _useDefaultValue;
 		private readonly T _defaultValue;
@@ -39,7 +40,7 @@ namespace ApplicationResources.ApplicationUtils
 		{
 			_parser = parser;
 			_persistQueue = new((toPersist, _) => Persist(toPersist));
-			_fileAccessor = fileAccessType switch
+			_localDataAccessor = fileAccessType switch
 			{
 				FileAccessType.Basic => new BasicDataAccessor(fileName),
 				FileAccessType.Flushing => new FlushingDataAccessor(fileName),
@@ -113,19 +114,19 @@ namespace ApplicationResources.ApplicationUtils
 		protected override void DoDispose()
 		{
 			_persistQueue.Dispose();
-			_fileAccessor.Dispose();
+			_localDataAccessor.Dispose();
 		}
 
 		private async Task<T> Load()
 		{
-			var (exists, foundContent) = await _fileAccessor.TryReadAsync().WithoutContextCapture();
+			var (exists, foundContent) = await _localDataAccessor.TryReadAsync().WithoutContextCapture();
 			return exists ? _parser.Invoke(foundContent) : default;
 		}
 
 		private Task Persist(T value)
 		{
 			var persistString = _parser.InvokeInverse(value);
-			return _fileAccessor.SaveAsync(persistString);
+			return _localDataAccessor.SaveAsync(persistString);
 		}
 
 		private class BasicDataAccessor : IDataAccessor
@@ -138,9 +139,9 @@ namespace ApplicationResources.ApplicationUtils
 				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.Get<IDataStoreAccessor>();
 			}
 
-			public Task<Result<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey);
+			public Task<Result<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey, CachePolicy.AlwaysPreferCache);
 
-			public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content);
+			public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content, CachePolicy.AlwaysPreferCache);
 
 			public void Dispose()
 			{

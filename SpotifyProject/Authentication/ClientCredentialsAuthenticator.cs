@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Services;
+using ApplicationResources.Setup;
+using ApplicationResources.Utils;
 using CustomResources.Utils.Concepts;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using SpotifyAPI.Web;
+using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyAdditions;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
 
@@ -31,6 +35,21 @@ namespace SpotifyProject.Authentication
 
 		public bool IsLoggedIn => _isLoggedIn;
 		public Task<bool> GetIsLoggedIn(CancellationToken cancellationToken = default) => Task.FromResult(true);
+
+		public async Task<Result<IAuthenticator>> TryImmediateLogIn(CancellationToken cancellationToken = default)
+		{
+			var clientInfoKey = Settings.TryGet<string>(BasicSettings.ProjectRootDirectory, out var root)
+				&& Settings.TryGet<string>(SpotifySettings.PersonalDataDirectory, out var personalDataDir)
+				&& TaskParameters.TryGet<string>(SpotifyParameters.ClientInfoPath, out var clientInfoPath)
+					? GeneralUtils.GetAbsoluteCombinedPath(root, personalDataDir, clientInfoPath)
+					: null;
+			Result<ClientInfo> foundInfo;
+			if (clientInfoKey != null
+					&& (foundInfo = await GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore().TryGetAsync(clientInfoKey, CachePolicy.PreferActual, cancellationToken)
+					.Transform(json => json.FromJsonString<ClientInfo>()).WithoutContextCapture()).DidFind)
+				return await LogIn(foundInfo.ResultValue, cancellationToken).WithoutContextCapture();
+			return Result<IAuthenticator>.Failure;
+		}
 
 		public async Task<Result<IAuthenticator>> LogIn(IOAuthClientInfo authorizationSource, CancellationToken cancellationToken = default)
 		{

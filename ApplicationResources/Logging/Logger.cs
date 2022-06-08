@@ -85,7 +85,7 @@ namespace ApplicationResources.Logging
                     var dataStoreAccessor = GlobalDependencies.Get<IDataStoreAccessor>();
                     if (await dataStoreAccessor.ExistsAsync(filepath, cancellationToken).WithoutContextCapture())
                     {
-                        var fileContents = await dataStoreAccessor.GetAsync(filepath, cancellationToken).WithoutContextCapture();
+                        var fileContents = await dataStoreAccessor.GetAsync(filepath, CachePolicy.PreferActual, cancellationToken).WithoutContextCapture();
                         var reader = XmlReader.Create(new StringReader(fileContents));
                         NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration(reader, filepath);
                     }

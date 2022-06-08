@@ -11,4 +11,5 @@
   <Setting name="ArtistAlbumIncludeGroups">Album,Single</Setting>
   <Setting name="DefaultToAlbumShuffle">false</Setting>
   <Setting name="LogFileName">classicalShuffler</Setting>
+  <Setting name="PersonalDataDirectory">PersonalData</Setting>
 </Settings>

@@ -26,7 +26,7 @@ namespace SpotifyProjectCommandLine
 				XmlSettingsFileFlag = ApplicationConstants.XmlSettingsFileFlag,
 				SettingsTypes = new[] { typeof(SpotifySettings) },
 				ParameterTypes = new[] { typeof(SpotifyParameters) },
-				AdditionalXmlSettingsFiles = new[] { GeneralConstants.StandardSpotifySettingsFile }
+				AdditionalXmlSettingsFiles = new[] { GeneralConstants.StandardConfigurationSettingsFile, GeneralConstants.StandardRunSettingsFile, GeneralConstants.StandardSpotifySettingsFile }
 			}, () => GlobalDependencies.Initialize(args)
 						.AddGlobalService<IDataStoreAccessor, FileAccessor>()
 						.AddGlobalService<IUserInterface, ConsoleUserInterface>()
@@ -41,8 +41,13 @@ namespace SpotifyProjectCommandLine
 			{
 				Logger.Information("Starting Spotify Project");
 				ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SpotifySettings.NumHTTPConnections);
-				var authorizationSettingsPath = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile);
-				await Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsPath)).WithoutContextCapture();
+				var authorizationSettingsPath = ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(
+					Settings.Get<string>(BasicSettings.ProjectRootDirectory),
+					Settings.Get<string>(SpotifySettings.PersonalDataDirectory),
+					GeneralConstants.SuggestedAuthorizationSettingsFile);
+				if (await GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore().ExistsAsync(authorizationSettingsPath).WithoutContextCapture())
+					await Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsPath)).WithoutContextCapture();
+				await GlobalDependencies.GlobalDependencyContainer.GetSpotifyProvider().InitializeAsync().WithoutContextCapture();
 				await GlobalDependencies.GlobalDependencyContainer.GetSpotifyAuthenticator().Authenticate().WithoutContextCapture();
 				var spotifyProvider = GlobalDependencies.GlobalDependencyContainer.GetSpotifyProvider();
 				var reorderer = new SpotifyPlaybackReorderer(spotifyProvider.Client);

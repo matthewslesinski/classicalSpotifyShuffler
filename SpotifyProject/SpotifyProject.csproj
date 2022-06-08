@@ -56,6 +56,31 @@
       <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardDebugSettings.xml" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+      <Link>standardConfigurationSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardReleaseSettings.xml" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+      <Link>standardConfigurationSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/personalSettings.xml">
+      <Link>personalSettings.xml</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/spotifyClientInfo.json" Condition="$(IncludePersonalDataInBuild)">
+      <Link>spotifyClientInfo.json</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/spotifyToken.json" Condition="$(IncludePersonalDataInBuild)">
+      <Link>spotifyToken.json</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />

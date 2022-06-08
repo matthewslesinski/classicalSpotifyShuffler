@@ -29,14 +29,14 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		[OneTimeSetUp]
 		public static async Task OneTimeSetUp__SpotifyProjectTestBase()
 		{
-			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
+			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardConfigurationSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
 			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
 				TaskParameters.RegisterParameters<SpotifyParameters>();
 				await LoadSettingsFiles(true, settingsFiles).WithoutContextCapture();
 				await Settings.Load().WithoutContextCapture();
-				await LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)).WithoutContextCapture();
+				await LoadSettingsFiles(false, ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.PersonalDataDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)).WithoutContextCapture();
 			}).WithoutContextCapture();
 		}
 	}
@@ -56,6 +56,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				Logger.Information("Loading Spotify Configuration for tests");
 				var authenticator = new SpotifyTestAccountAuthenticator();
 				var spotifyProvider = new StandardSpotifyProvider(authenticator);
+				await spotifyProvider.InitializeAsync().WithoutContextCapture();
 				await authenticator.Authenticate(CancellationToken.None).WithoutContextCapture();
 				_globalSpotifyAccessor = new SpotifyAccessorBase(spotifyProvider.Client);
 			});

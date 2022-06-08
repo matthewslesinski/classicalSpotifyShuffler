@@ -15,15 +15,23 @@ namespace ApplicationResources.Services
 		where AuthTokensT : IOAuthTokens
 		where SessionInfoT : class, IOAuthInfo<AuthArgsT, AuthTokensT>
 	{
+		public async Task<Result<AuthResultT>> TryImmediateLogIn(CancellationToken cancellationToken = default)
+		{
+			var existingSessionResult = await GetExistingSession(cancellationToken).WithoutContextCapture();
+			if (!existingSessionResult.DidFind)
+				return Result<AuthResultT>.Failure;
+			return await LogIn(existingSessionResult.ResultValue.AuthSource, cancellationToken).WithoutContextCapture();
+		}
+
 		protected override async Task<Result<AuthResultT>> DoLogIn(AuthArgsT userInfo, CancellationToken cancellationToken = default)
 		{
-			var isOnlyActiveAttempt = _lock.TryAcquireToken(out var acquiredToken);
+			var isOnlyActiveAttempt = _lock.TryAcquireToken(out var acquiredLock);
 			if (!isOnlyActiveAttempt)
 			{
 				Logger.Warning("Attempting to log in while a current log in/out attempt is in progress");
 				return Result<AuthResultT>.Failure;
 			}
-			using (acquiredToken)
+			using (acquiredLock)
 			{
 				var (savedSessionExists, currentSession) = await GetExistingSession(cancellationToken).WithoutContextCapture();
 				var createNewSession = !savedSessionExists || !Equals(currentSession.AuthSource, userInfo);
@@ -43,13 +51,13 @@ namespace ApplicationResources.Services
 
 		protected override async Task<bool> DoLogOut(CancellationToken cancellationToken = default)
 		{
-			var isOnlyActiveAttempt = _lock.TryAcquireToken(out var acquiredToken);
+			var isOnlyActiveAttempt = _lock.TryAcquireToken(out var acquiredLock);
 			if (!isOnlyActiveAttempt)
 			{
 				Logger.Warning("Attempting to log in while a current log in/out attempt is in progress");
 				return false;
 			}
-			using (acquiredToken)
+			using (acquiredLock)
 			{
 				await PersistCurrentSession(null, cancellationToken).WithoutContextCapture();
 				return true;
