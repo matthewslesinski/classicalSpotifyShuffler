@@ -337,6 +337,12 @@ namespace SpotifyProject.SpotifyAdditions
 		}
 
 		protected override Bag CreateNewContainer() => new Bag();
+
+		protected override bool OnFlushFailed(Exception e)
+		{
+			Logger.Error("Failed to flush bag: {exception}", e);
+			return true;
+		}
 	}
 
 
@@ -363,6 +369,8 @@ namespace SpotifyProject.SpotifyAdditions
 
 		internal int ScheduledToBeCollected = false.AsInt();
 
+		public bool IsReadyToBeFlushed { get; private set; }
+
 		internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
 
 		internal void Add(QueueContent element)
@@ -378,16 +386,16 @@ namespace SpotifyProject.SpotifyAdditions
 				if (elementTicks > currTicks || Interlocked.CompareExchange(ref _minTicks, Math.Min(currTicks, elementTicks), currTicks) == currTicks)
 					break;
 			}
-
+			IsReadyToBeFlushed = true;
 			return;
 		}
-
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-		public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
 
 		public bool Update(QueueContent itemToFlush) { Add(itemToFlush); return true; }
 
 		public bool RequestFlush() => CustomResources.Utils.GeneralUtils.Utils.IsFirstRequest(ref ScheduledToBeCollected);
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
 	}
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker

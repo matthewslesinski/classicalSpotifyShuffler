@@ -30,12 +30,13 @@ namespace CustomResources.Utils.Concepts
 		protected abstract void DoDispose();
 	}
 
-	public abstract class TaskContainingDisposable : StandardDisposable
+	public abstract class TaskContainingDisposable<OutputT> : StandardDisposable
 	{
 		private readonly CancellationTokenSource _tokenSource;
 		private readonly CancellationTokenSource _combinedTokenSource;
 
-		protected Task _workerTask;
+		protected Task<OutputT> _workerTask;
+		protected bool IsRunning => _isRunning.AsBool();
 		private int _isRunning = false.AsInt();
 
 		public TaskContainingDisposable(CancellationToken externalCancellationToken = default)
@@ -44,17 +45,17 @@ namespace CustomResources.Utils.Concepts
 			_combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_tokenSource.Token, externalCancellationToken);
 		}
 
-		public void Run(Action worker) => Run(() => { worker(); return Task.CompletedTask; });
-		public void Run(Func<Task> worker)
+		public Task<Result<OutputT>>Run(Func<OutputT> worker) => Run(() => Task.FromResult(worker()));
+		public Task<Result<OutputT>> Run(Func<Task<OutputT>> worker)
 		{
 			if (_alreadyDisposed.AsBool())
 				throw new InvalidOperationException("Already disposed");
 
-			async Task Runner()
+			async Task<OutputT> Runner()
 			{
 				try
 				{
-					await worker();
+					return await worker().WithoutContextCapture();
 				}
 				finally
 				{
@@ -62,8 +63,12 @@ namespace CustomResources.Utils.Concepts
 				}
 			}
 
-			if (!Interlocked.CompareExchange(ref _isRunning, true.AsInt(), false.AsInt()).AsBool())
+			if (GeneralUtils.Utils.IsFirstRequest(ref _isRunning))
+			{
 				_workerTask = Task.Run(Runner, StopToken);
+				return _workerTask.Then(output => new Result<OutputT>(output));
+			}
+			return Task.FromResult(Result<OutputT>.Failure);
 		}
 
 		protected CancellationToken StopToken => _combinedTokenSource.Token;
@@ -73,6 +78,16 @@ namespace CustomResources.Utils.Concepts
 			_tokenSource.Cancel();
 		}
 	}
+
+	public abstract class TaskContainingDisposable : TaskContainingDisposable<object>
+	{
+		public TaskContainingDisposable(CancellationToken externalCancellationToken = default) : base(externalCancellationToken)
+		{ }
+
+		public Task<bool> Run(Action worker) => base.Run(() => { worker(); return null; }).Then(result => result.Success);
+		public Task<bool> Run(Func<Task> worker) => Run(async () => { await worker().WithoutContextCapture(); return null; }).Then(result => result.Success);
+	}
+
 
 	public class DisposableAction : StandardDisposable
 	{

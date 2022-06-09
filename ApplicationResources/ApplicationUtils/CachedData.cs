@@ -36,17 +36,21 @@ namespace ApplicationResources.ApplicationUtils
 		private TaskCompletionSource<bool> _loadingTaskSource = null;
 
 		public CachedData(string fileName, Bijection<string, T> parser, FileAccessType fileAccessType = FileAccessType.Flushing,
-			bool useDefaultValue = false, T defaultValue = default)
-		{
-			_parser = parser;
-			_persistQueue = new((toPersist, _) => Persist(toPersist));
-			_localDataAccessor = fileAccessType switch
+			bool useDefaultValue = false, T defaultValue = default) : this(fileName, parser, fileAccessType switch
 			{
 				FileAccessType.Basic => new BasicDataAccessor(fileName),
 				FileAccessType.Flushing => new FlushingDataAccessor(fileName),
 				FileAccessType.SlightlyLongFlushing => new FlushingDataAccessor(fileName, TimeSpan.FromSeconds(5)),
 				_ => throw new NotImplementedException(),
-			};
+			}, useDefaultValue, defaultValue)
+		{ }
+
+		public CachedData(string fileName, Bijection<string, T> parser, IDataAccessor localDataAccessor,
+			bool useDefaultValue = false, T defaultValue = default)
+		{
+			_parser = parser;
+			_persistQueue = new((toPersist, _) => Persist(toPersist));
+			_localDataAccessor = localDataAccessor;
 			Name = fileName;
 			_useDefaultValue = useDefaultValue;
 			_defaultValue = defaultValue;
@@ -129,67 +133,62 @@ namespace ApplicationResources.ApplicationUtils
 			return _localDataAccessor.SaveAsync(persistString);
 		}
 
-		private class BasicDataAccessor : IDataAccessor
-		{
-			private readonly string _dataKey;
-			private readonly IDataStoreAccessor _dataStoreAccessor;
-			internal BasicDataAccessor(string dataKey, IDataStoreAccessor dataStoreAccessor = null)
-			{
-				_dataKey = dataKey;
-				_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.Get<IDataStoreAccessor>();
-			}
-
-			public Task<Result<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey, CachePolicy.AlwaysPreferCache);
-
-			public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content, CachePolicy.AlwaysPreferCache);
-
-			public void Dispose()
-			{
-				// Do Nothing
-			}
-		}
-
-		private class FlushingDataAccessor : Flusher<string, DataWrapper>, IDataAccessor
-		{
-			private readonly IDataAccessor _underlyingAccessor;
-			internal FlushingDataAccessor(string dataKey, TimeSpan? flushWaitTime = null, IDataStoreAccessor dataStoreAccessor = null)
-				: this(new BasicDataAccessor(dataKey, dataStoreAccessor), flushWaitTime)
-			{ }
-			internal FlushingDataAccessor(IDataAccessor underlyingAccessor, TimeSpan? flushWaitTime = null) : base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
-			{
-				_underlyingAccessor = underlyingAccessor;
-			}
-
-			public Task SaveAsync(string content) { Add(content); return Task.CompletedTask; }
-
-			public Task<Result<string>> TryReadAsync() => _underlyingAccessor.TryReadAsync();
-
-			protected override DataWrapper CreateNewContainer() => new DataWrapper();
-
-			protected override Task<AdditionalFlushOptions> Flush(DataWrapper containerToFlush)
-			{
-				_underlyingAccessor.SaveAsync(containerToFlush.Contents);
-				return Task.FromResult(AdditionalFlushOptions.NoAdditionalFlushNeeded);
-			}
-		}
-
-		private class DataWrapper : IFlushableContainer<string>
-		{
-			private string _contents;
-			private Reference<bool> _isFlushScheduled = false;
-
-			internal string Contents => _contents;
-
-			public bool RequestFlush() => GeneralUtils.IsFirstRequest(ref _isFlushScheduled);
-
-			public bool Update(string itemToFlush) { Interlocked.Exchange(ref _contents, itemToFlush); return true; }
-		}
-
 		public enum FileAccessType
 		{
 			Basic,
 			Flushing,
 			SlightlyLongFlushing
+		}
+	}
+
+	public class BasicDataAccessor : IDataAccessor
+	{
+		private readonly string _dataKey;
+		private readonly IDataStoreAccessor _dataStoreAccessor;
+		public BasicDataAccessor(string dataKey, IDataStoreAccessor dataStoreAccessor = null)
+		{
+			_dataKey = dataKey;
+			_dataStoreAccessor = dataStoreAccessor ?? GlobalDependencies.Get<IDataStoreAccessor>();
+		}
+
+		public Task<Result<string>> TryReadAsync() => _dataStoreAccessor.TryGetAsync(_dataKey, CachePolicy.AlwaysPreferCache);
+
+		public Task SaveAsync(string content) => _dataStoreAccessor.SaveAsync(_dataKey, content, CachePolicy.AlwaysPreferCache);
+
+		public void Dispose()
+		{
+			// Do Nothing
+		}
+	}
+
+	public class FlushingDataAccessor : Flusher<string, ReplacingContainer<string>>, IDataAccessor
+	{
+		private readonly IDataAccessor _underlyingAccessor;
+		public FlushingDataAccessor(string dataKey, TimeSpan? flushWaitTime = null, IDataStoreAccessor dataStoreAccessor = null)
+			: this(new BasicDataAccessor(dataKey, dataStoreAccessor), flushWaitTime)
+		{ }
+		public FlushingDataAccessor(IDataAccessor underlyingAccessor, TimeSpan? flushWaitTime = null)
+			: base(flushWaitTime ?? TimeSpan.FromSeconds(1), true)
+		{
+			_underlyingAccessor = underlyingAccessor;
+		}
+
+		public Task SaveAsync(string content) { Add(content); return Task.CompletedTask; }
+
+		public Task<Result<string>> TryReadAsync() => _underlyingAccessor.TryReadAsync();
+
+		protected override ReplacingContainer<string> CreateNewContainer() => new ReplacingContainer<string>();
+
+		protected override async Task<AdditionalFlushOptions> Flush(ReplacingContainer<string> containerToFlush)
+		{
+			await _underlyingAccessor.SaveAsync(containerToFlush.Contents).WithoutContextCapture();
+			return AdditionalFlushOptions.NoAdditionalFlushNeeded;
+		}
+
+		protected override bool OnFlushFailed(Exception e)
+		{
+			Logger.Error("Failed to flush data: {exception}", e);
+			return false;
 		}
 	}
 
