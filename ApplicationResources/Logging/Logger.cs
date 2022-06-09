@@ -133,9 +133,16 @@ namespace ApplicationResources.Logging
 
     public static class LoggerTargetProvider
     {
+        public interface ILogTarget
+		{
+            void Log(LogActionArgs args);
+		}
+
         public record struct LogActionArgs(string FullMessage, string BareMessage, LogLevel Level, string LoggerName);
 
         public static event Action<LogActionArgs> OnLog;
+
+        public static void Register(ILogTarget target) => OnLog += target.Log;
 
         public static void LogAction(string fullMessage, string bareMessage, string levelString, string loggerName)
         {

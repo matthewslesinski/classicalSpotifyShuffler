@@ -39,7 +39,8 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 					if (args.Level == LogLevel.Error) GlobalDependencies.Get<IUserInterface>().NotifyUserOfError(args.BareMessage);
 				};
 
-				Logger.Information("Starting");
+				LoggerTargetProvider.Register(new LocalStorageLogger($"log.{DateTime.Now}.log"));
+
 				Logger.Information($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
 
 				try
@@ -50,6 +51,7 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 				{
 					Logger.Error("An exception occurred during initialization: {e}", e);
 				}
+				Logger.Information("Starting");
 				await host.RunAsync();
 			}, startupArgs with {
 				AdditionalXmlSettingsFiles = startupArgs.AdditionalXmlSettingsFiles.Append(Utils.BlazorApplicationConstants.StandardSettingsFile)
