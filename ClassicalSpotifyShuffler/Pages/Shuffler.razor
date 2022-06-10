@@ -95,7 +95,7 @@ else
             {
                 var didParse = SpotifyDependentUtils.TryParseSpotifyUri(currentlyPlaying.Context.Uri, out var type, out var id, out var allParts);
                 if (didParse)
-                    contexts.Add(new(type, currentlyPlaying.Context.Uri, "Currently Playing"));
+                    contexts.Add(new(type, currentlyPlaying.Context.Uri, "Currently Playing", DisplayName: "Currently playing album"));
             }
         }
         return contexts;
@@ -127,8 +127,8 @@ else
 
     private void Select(ContextDisplay context) => _selectedContext = context;
 
-    private record ContextDisplay(string? ContextType, string? ContextUri, string DisplayName, PlaybackContextType? SpecifiedType = null)
+    private record ContextDisplay(string? ContextType, string? ContextUri, string ContextName, PlaybackContextType? SpecifiedType = null, string DisplayName = null)
     {
-        public string ToDisplay() => $"{(ContextType != null ? ContextType + ": " : "")}{DisplayName}";
+        public string ToDisplay() => DisplayName ?? $"{(ContextType != null ? ContextType + ": " : "")}{ContextName}";
     }
 }
