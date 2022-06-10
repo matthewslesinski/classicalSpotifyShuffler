@@ -1,10 +1,31 @@
-﻿@page "/"
+﻿@inject ISpotifyService spotifyProvider
+@inject ISpotifyAccountAuthenticator spotifyAuthenticator
+@page "/shuffle"
 
-<PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+    <PageTitle>Shuffler</PageTitle>
 
-Welcome to your new app.
+    @if (!spotifyAuthenticator.IsLoggedIn)
+    {
+        <h3>You are not logged in to Spotify. Please log in before proceeding</h3>
+    }
+    else
+    {
+        <h1>Shuffle your playback</h1>
+        <button class="btn btn-primary" @onclick="ShufflePlayback">Shuffle</button>
+        if (_mostRecentResult.HasValue)
+        {
+            <div>Most recent finished result: @(_mostRecentResult.Value ? "Success" : "Fail")</div>
+        }
+    }
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+    @code {
 
+        private bool? _mostRecentResult = null;
+        private async Task ShufflePlayback()
+        {
+            var playbackReorderer = new SpotifyPlaybackReorderer(spotifyProvider.Client);
+            _mostRecentResult = await playbackReorderer.ShuffleCurrentPlayback();
+        }
+
+    }
