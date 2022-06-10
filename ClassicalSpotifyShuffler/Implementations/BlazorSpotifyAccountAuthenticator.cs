@@ -9,8 +9,7 @@ namespace ClassicalSpotifyShuffler.Implementations
 	public class BlazorSpotifyAccountAuthenticator : SpotifyAccountAuthenticator
 	{
 		public BlazorSpotifyAccountAuthenticator()
-		{
-		}
+		{ }
 
 		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
 		{

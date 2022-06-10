@@ -40,24 +40,9 @@ else
                 return;
             }
             var temporarySourceKey = Settings.Get<string>(SpotifySettings.TemporaryAuthorizationInfoKey);
-            var clientInfoFileKeyFound = TaskParameters.TryGet<string>(SpotifyParameters.ClientInfoPath, out var clientInfoPath);
-            ClientInfo clientInfo;
-            Result<string> clientInfoResult = Result<string>.NotFound;
-            if (clientInfoFileKeyFound && (clientInfoResult = await files.TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture()).DidFind)
-            {
-                clientInfo = clientInfoResult.ResultValue.FromJsonString<ClientInfo>();
-            }
-            else
-            {
-                var clientId = await ui.RequestResponseAsync("Please provide the client ID").WithoutContextCapture();
-                var clientSecret = await ui.RequestResponseAsync("Please provide the client secret").WithoutContextCapture();
-                clientInfo = new ClientInfo { ClientId = clientId, ClientSecret = clientSecret };
-            }
-            var redirectUriFound = TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out var redirectUri);
-            if (!redirectUriFound)
-                redirectUri = await ui.RequestResponseAsync("Please provide the redirect Uri").WithoutContextCapture();
+            var (informationWasRequested, clientInfo, redirectUri) = await GetLogInPrerequisites().WithoutContextCapture();
             var authSource = new AuthorizationSource { ClientInfo = clientInfo, RedirectUriString = redirectUri, Scopes = SpotifyConstants.AllAuthenticationScopes };
-            if (!clientInfoResult.DidFind)
+            if (informationWasRequested)
                 await files.SaveAsync(temporarySourceKey, authSource.ToJsonString(), CachePolicy.AlwaysPreferCache).WithoutContextCapture();
 
             await spotifyAuthenticator.LogIn(authSource);
@@ -87,42 +72,65 @@ else
     protected override async Task OnInitializedAsync()
     {
         if (!(await spotifyAuthenticator.TryImmediateLogIn().WithoutContextCapture()).Success)
-        {
-            var uriBuilder = new UriBuilder(navManager.Uri);
-            var q = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
-            var code = q["code"];
-            if (code != null)
-            {
-                var clientInfoFileKeyFound = TaskParameters.TryGet<string>(SpotifyParameters.ClientInfoPath, out var clientInfoPath);
-                var temporarySourceKey = Settings.Get<string>(SpotifySettings.TemporaryAuthorizationInfoKey);
-                Result<string> foundTemporarySource;
-                Result<string> clientInfoResult;
-                ClientInfo? clientInfo = null;
-                string? redirectUri = null;
-                if (clientInfoFileKeyFound && (clientInfoResult = await files.TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture()).DidFind
-                    && TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out redirectUri))
-                {
-                    clientInfo = clientInfoResult.ResultValue.FromJsonString<ClientInfo>();
-                }
-                else if ((foundTemporarySource = await files.TryGetAsync(temporarySourceKey, CachePolicy.AlwaysPreferCache).WithoutContextCapture()).DidFind)
-                {
-                    var source = foundTemporarySource.ResultValue.FromJsonString<AuthorizationSource>();
-                    clientInfo = source.ClientInfo;
-                    redirectUri = source.RedirectUriString;
-                    await files.SaveAsync(temporarySourceKey, null, CachePolicy.AlwaysPreferCache).WithoutContextCapture();
-                }
-                if (redirectUri != null && clientInfo != null)
-                {
-                    var authSource = new AuthorizationSource { ClientInfo = clientInfo, RedirectUriString = redirectUri, Scopes = SpotifyConstants.AllAuthenticationScopes };
-                    if ((await spotifyAuthenticator.LogIn(authSource).WithoutContextCapture()).Success)
-                        navManager.NavigateTo(navManager.GetUriWithQueryParameter("code", (string?) null), false);
-                }
-
-
-            }
-        }
+            await TryLogInFromCode().WithoutContextCapture();
 
         RefreshState();
+    }
+
+    private async Task<(bool informationWasRequested, ClientInfo clientInfo, string redirectUri)> GetLogInPrerequisites()
+    {
+        var clientInfoFileKeyFound = TaskParameters.TryGet<string>(SpotifyParameters.ClientInfoPath, out var clientInfoPath);
+        ClientInfo clientInfo;
+        Result<string> clientInfoResult = Result<string>.NotFound;
+        if (clientInfoFileKeyFound && (clientInfoResult = await files.TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture()).DidFind)
+        {
+            clientInfo = clientInfoResult.ResultValue.FromJsonString<ClientInfo>();
+        }
+        else
+        {
+            var clientId = await ui.RequestResponseAsync("Please provide the client ID").WithoutContextCapture();
+            var clientSecret = await ui.RequestResponseAsync("Please provide the client secret").WithoutContextCapture();
+            clientInfo = new ClientInfo { ClientId = clientId, ClientSecret = clientSecret };
+        }
+        var redirectUriFound = TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out var redirectUri);
+        if (!redirectUriFound)
+            redirectUri = await ui.RequestResponseAsync("Please provide the redirect Uri").WithoutContextCapture();
+        return (!clientInfoResult.DidFind || !redirectUriFound, clientInfo, redirectUri);
+    }
+
+    private async Task TryLogInFromCode()
+    {
+        var uriBuilder = new UriBuilder(navManager.Uri);
+        var q = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+        var code = q["code"];
+        if (code != null)
+        {
+            var clientInfoFileKeyFound = TaskParameters.TryGet<string>(SpotifyParameters.ClientInfoPath, out var clientInfoPath);
+            var temporarySourceKey = Settings.Get<string>(SpotifySettings.TemporaryAuthorizationInfoKey);
+            Result<string> foundTemporarySource = Result<string>.None;
+            Result<string> clientInfoResult;
+            ClientInfo? clientInfo = null;
+            string? redirectUri = null;
+            if (clientInfoFileKeyFound && (clientInfoResult = await files.TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture()).DidFind
+                && TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out redirectUri))
+            {
+                clientInfo = clientInfoResult.ResultValue.FromJsonString<ClientInfo>();
+            }
+            else if ((foundTemporarySource = await files.TryGetAsync(temporarySourceKey, CachePolicy.AlwaysPreferCache).WithoutContextCapture()).DidFind)
+            {
+                var source = foundTemporarySource.ResultValue.FromJsonString<AuthorizationSource>();
+                clientInfo = source.ClientInfo;
+                redirectUri = source.RedirectUriString;
+                await files.SaveAsync(temporarySourceKey, null, CachePolicy.AlwaysPreferCache).WithoutContextCapture();
+            }
+            var authSource = new AuthorizationSource { ClientInfo = clientInfo, RedirectUriString = redirectUri, Scopes = SpotifyConstants.AllAuthenticationScopes };
+            if (redirectUri != null && clientInfo != null && (await spotifyAuthenticator.LogIn(authSource).WithoutContextCapture()).Success)
+            {
+                if (clientInfoFileKeyFound && foundTemporarySource.DidFind)
+                    await files.SaveAsync(clientInfoPath, authSource.ClientInfo.ToJsonString(), CachePolicy.PreferActual).WithoutContextCapture();
+                navManager.NavigateTo(navManager.GetUriWithQueryParameter("code", (string?)null), false);
+            }
+        }
     }
 
     private void RefreshState()
@@ -130,6 +138,4 @@ else
         isLoggedIn = spotifyAuthenticator.IsLoggedIn;
         username = spotifyProvider.CachedUserInfo?.DisplayName;
     }
-
 }
-
