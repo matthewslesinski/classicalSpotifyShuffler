@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
@@ -67,6 +68,7 @@ namespace SpotifyProject.SpotifyAdditions
 			{
 				while (_requestTracker.CheckCautionLevel(out var waitAtLeast) == CautionLevel.Waiting)
 				{
+					Logger.Verbose("Waiting {timespan} to send request because caution level is {cautionLevel}", waitAtLeast, CautionLevel.Waiting);
 					await Task.Delay(waitAtLeast, cancellationToken);
 					if (_alreadyDisposed == 1)
 						throw new OperationCanceledException($"The request has been cancelled due to the HTTP client being disposed: {request}");
@@ -400,16 +402,16 @@ namespace SpotifyProject.SpotifyAdditions
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker
 	{
-		protected static readonly CalculatedStats _startingStats = new CalculatedStats(0, 0, 0, 0);
+		protected static readonly CalculatedStats _startingStats = new CalculatedStats(1, 0, 0, 0);
 		private readonly CachedData<CalculatedStats> _statsDataStore;
-		private readonly BlockingCollection<IRequestStatsTracker.StatsData> _statsUpdates;
+		private readonly Channel<IRequestStatsTracker.StatsData> _statsUpdates;
 
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
 			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, fileAccessType: CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing,
 				useDefaultValue: true, defaultValue: _startingStats);
-			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
+			_statsUpdates = Channel.CreateUnbounded<IRequestStatsTracker.StatsData>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true });
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);
 			Run(DoCalculations);
@@ -419,17 +421,17 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public abstract int NumOutForHold { get; }
 
-		public void Record(IRequestStatsTracker.StatsData statsUpdate) => _statsUpdates.Add(statsUpdate);
+		public void Record(IRequestStatsTracker.StatsData statsUpdate) => _statsUpdates.Writer.TryWrite(statsUpdate);
 
 		protected abstract CalculatedStats CalculateNewStats(CalculatedStats oldStats, DateTime startTime, DateTime endTime, RequestResult result, int numOut);
 
 		protected CalculatedStats CurrentStats { get => _statsDataStore.CachedValue ?? _startingStats; set => _statsDataStore.CachedValue = value; }
 
+
 		protected override void DoDispose()
 		{
-			_statsUpdates.CompleteAdding();
+			_statsUpdates.Writer.Complete();
 			base.DoDispose();
-			_statsUpdates.Dispose();
 			_statsDataStore.Dispose();
 		}
 
@@ -437,7 +439,7 @@ namespace SpotifyProject.SpotifyAdditions
 		{
 			if (!_statsDataStore.IsLoaded)
 				await _statsDataStore.Initialize().WithoutContextCapture();
-			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
+			await foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.Reader.ReadAllAsync(cancellationToken).WithoutContextCapture())
 			{
 				if (!_alreadyDisposed.AsBool())
 				{

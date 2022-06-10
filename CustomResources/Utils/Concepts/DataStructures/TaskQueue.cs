@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
 
@@ -8,7 +8,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public abstract class TaskQueue<InputT, OutputT> : TaskContainingDisposable
 	{
-		private readonly BlockingCollection<Node> _queue = new BlockingCollection<Node>();
+		private readonly Channel<Node> _queue = Channel.CreateUnbounded<Node>(new UnboundedChannelOptions() { AllowSynchronousContinuations = true, SingleReader = true });
 
 		private int _isRunning = true.AsInt();
 
@@ -22,32 +22,28 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			if (Interlocked.Exchange(ref _isRunning, false.AsInt()).AsBool())
 			{
-				_queue.CompleteAdding();
-				while (_queue.TryTake(out var node))
+				_queue.Writer.Complete();
+				while (_queue.Reader.TryRead(out var node))
 					node.TaskCompleter.SetCanceled();
 			}
 		}
 
-		protected override void DoDispose()
-		{
-			StopRunning();
-			_queue.Dispose();
-		}
+		protected override void DoDispose() => StopRunning();
 
 		public async Task<OutputT> Schedule(InputT input, CancellationToken cancellationToken = default)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
+			CheckWorkerState();
 			var taskCompleter = new TaskCompletionSource<OutputT>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var ec = ExecutionContext.Capture();
 			var node = new Node(input, taskCompleter, ec, cancellationToken);
-			if (!_queue.TryAdd(node))
-				await Task.Run(() => _queue.Add(node, cancellationToken), cancellationToken).WithoutContextCapture();
+			await _queue.Writer.WriteAsync(node, cancellationToken).WithoutContextCapture();
 			return await taskCompleter.Task.WithoutContextCapture();
 		}
 
 		private async Task Process()
 		{
-			foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(StopToken))
+			await foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.Reader.ReadAllAsync(StopToken).WithoutContextCapture())
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
@@ -88,6 +84,18 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected abstract Task<OutputT> HandleTask(InputT input, CancellationToken taskCancellationToken);
 
 		private record struct Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
+
+		private void CheckWorkerState()
+		{
+			if (!_workerTask.IsCompleted)
+				return;
+			if (_workerTask.IsFaulted)
+				throw new Exception($"{GetType().Name}: Cannot proceed because the worker task terminated due to an exception", _workerTask.Exception);
+			if (_alreadyDisposed.AsBool())
+				throw new OperationCanceledException($"{GetType().Name}: Cannot proceed because the queue has been completed");
+			else
+				throw new Exception($"{GetType().Name}: Cannot proceed because the queue has been incorrectly finished");		
+		}
 	}
 
 	public class CallbackTaskQueue<InputT, OutputT> : TaskQueue<InputT, OutputT>
