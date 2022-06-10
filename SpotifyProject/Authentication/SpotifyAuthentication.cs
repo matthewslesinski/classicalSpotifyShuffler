@@ -49,7 +49,7 @@ namespace SpotifyProject.Authentication
             Logger.Information("Starting Spotify authentication process");
             var projectRoot = Settings.Get<string>(BasicSettings.ProjectRootDirectory);
             var personalDataDirectory = Settings.Get<string>(SpotifySettings.PersonalDataDirectory);
-            var clientInfoFilePath = ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(projectRoot, personalDataDirectory, TaskParameters.Get<string>(SpotifyParameters.ClientInfoPath));
+            var clientInfoFilePath = GeneralUtils.GetAbsoluteCombinedPath(projectRoot, personalDataDirectory, TaskParameters.Get<string>(SpotifyParameters.ClientInfoPath));
             var clientInfo = await ReadClientInfoPath(clientInfoFilePath).WithoutContextCapture();
             var authenticator = await spotifyAuthenticator.LogIn(clientInfo, cancellationToken);
             if (!authenticator.Success)
