@@ -129,19 +129,19 @@ namespace SpotifyProject.Authentication
 
 	public class SpotifyCommandLineAccountAuthenticator : SpotifyAccountAuthenticator
 	{
-		protected override async Task<string> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		protected override async Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
 		{
 			var ui = this.AccessUserInterface();
 			ui.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
 			ui.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
 			var authorizationCode = await ui.RequestResponseAsync("Please input the authorizationCode: ").WithoutContextCapture();
-			return authorizationCode;
+			return (authorizationCode != null ? new(authorizationCode) : Result<string>.Failure);
 		}
 	}
 
 	public class SpotifyTestAccountAuthenticator : SpotifyAccountAuthenticator
 	{
-		protected override Task<string> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
 		{
 			throw new InvalidOperationException("To authenticate in tests, a saved session must be provided");
 		}

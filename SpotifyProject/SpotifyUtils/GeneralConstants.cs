@@ -10,5 +10,6 @@ namespace SpotifyProject.SpotifyUtils
 		public const string SuggestedAuthorizationSettingsFile = "personalSettings.xml";
 
 		public const string SuggestedAPIRateLimitStatsFile = "Data/RateLimitStats.txt";
+		public const string SuggestedTemporaryAuthInfoFile = "tempSpotifyToken.json";
 	}
 }

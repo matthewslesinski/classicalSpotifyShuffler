@@ -39,8 +39,10 @@ namespace ApplicationResources.Services
 				{
 					if (savedSessionExists)
 						await PersistCurrentSession(null, cancellationToken).WithoutContextCapture();
-					var tokens = await RequestNewTokens(userInfo).WithoutContextCapture();
-					currentSession = BuildSessionInfo(userInfo, tokens);
+					var tokensResult = await RequestNewTokens(userInfo).WithoutContextCapture();
+					if (!tokensResult.Success)
+						return Result<AuthResultT>.Failure;
+					currentSession = BuildSessionInfo(userInfo, tokensResult.ResultValue);
 				}
 				var authenticatedRepresentation = await GetAuthenticatedOutputFromTokens(currentSession, cancellationToken).WithoutContextCapture();
 				if (createNewSession)
@@ -64,16 +66,18 @@ namespace ApplicationResources.Services
 			}
 		}
 
-		private async Task<AuthTokensT> RequestNewTokens(AuthArgsT userInfo)
+		private async Task<Result<AuthTokensT>> RequestNewTokens(AuthArgsT userInfo)
 		{
 			var loginUri = DetermineLoginAddress(userInfo);
-			var authorizationCode = await RequestLoginFromUser(loginUri).WithoutContextCapture();
-			var response = await AcquireTokens(userInfo, authorizationCode).WithoutContextCapture();
-			return response;
+			var authorizationCodeResult = await RequestLoginFromUser(loginUri).WithoutContextCapture();
+			if (!authorizationCodeResult.Success)
+				return Result<AuthTokensT>.Failure;
+			var response = await AcquireTokens(userInfo, authorizationCodeResult.ResultValue).WithoutContextCapture();
+			return new(response);
 		}
 
 		protected abstract Uri DetermineLoginAddress(AuthArgsT userInfo);
-		protected abstract Task<string> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default);
+		protected abstract Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default);
 		protected abstract Task<AuthTokensT> AcquireTokens(AuthArgsT userInfo, string authCode, CancellationToken cancellationToken = default);
 		protected abstract SessionInfoT BuildSessionInfo(AuthArgsT userInfo, AuthTokensT tokens);
 		protected abstract Task<AuthResultT> GetAuthenticatedOutputFromTokens(SessionInfoT sessionInfo, CancellationToken cancellationToken = default);

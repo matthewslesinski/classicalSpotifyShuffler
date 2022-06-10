@@ -2,5 +2,5 @@
 <Settings>
   <Setting name="ClientInfoPath">spotifyClientInfo.json</Setting>
   <Setting name="TokenPath">spotifyToken.json</Setting>
-  <Setting name="RedirectUri">https://matthewslesinski.github.io/</Setting>
+  <Setting name="RedirectUri">https://localhost:7097/account</Setting>
 </Settings>

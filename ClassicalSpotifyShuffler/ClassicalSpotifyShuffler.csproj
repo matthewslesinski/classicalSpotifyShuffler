@@ -14,8 +14,8 @@
           <type>BeforeBuild</type>
           <command>rm -f ./wwwroot/spotifyToken.json</command>
           <workingdir>${ProjectDir}</workingdir>
-         </Command>
-         <Command>
+        </Command>
+        <Command>
           <type>BeforeBuild</type>
           <command>rm -f ./wwwroot/spotifyClientInfo.json</command>
           <workingdir>${ProjectDir}</workingdir>
@@ -33,9 +33,13 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Implementations\" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly.DevServer" />
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly" />
     <None Remove="SpotifyAPI.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <None Remove="Implementations\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
