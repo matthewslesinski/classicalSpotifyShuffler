@@ -171,6 +171,8 @@ namespace CustomResources.Utils.Extensions
 			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredTaskAwaitable<V> WithoutContextCapture<V>(this Task<V> task) =>
 			task.ConfigureAwait(continueOnCapturedContext: false);
+		public static ConfiguredValueTaskAwaitable WithoutContextCapture(this ValueTask task) =>
+			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredValueTaskAwaitable<V> WithoutContextCapture<V>(this ValueTask<V> task) =>
 			task.ConfigureAwait(continueOnCapturedContext: false);
 		public static ConfiguredCancelableAsyncEnumerable<T> WithoutContextCapture<T>(this IAsyncEnumerable<T> sequence) =>
