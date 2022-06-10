@@ -14,7 +14,6 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		public TaskQueue(CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
-			StopToken.Register(StopRunning);
 			Run(Process);
 		}
 
@@ -41,16 +40,17 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			return await taskCompleter.Task.WithoutContextCapture();
 		}
 
-		private async Task Process()
+		private async Task Process(CancellationToken generalCancellationToken = default)
 		{
-			await foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.Reader.ReadAllAsync(StopToken).WithoutContextCapture())
+			generalCancellationToken.Register(StopRunning);
+			await foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.Reader.ReadAllAsync(generalCancellationToken).WithoutContextCapture())
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
-				else if (StopToken.IsCancellationRequested)
-					taskCompleter.SetCanceled(StopToken);
-				else if (_alreadyDisposed == 1 || _isRunning == 0)
-					taskCompleter.SetCanceled();
+				else if (generalCancellationToken.IsCancellationRequested)
+					taskCompleter.SetCanceled(generalCancellationToken);
+				else if (_alreadyDisposed.AsBool() || !_isRunning.AsBool())
+					taskCompleter.SetCanceled(generalCancellationToken);
 				else
 				{
 					try

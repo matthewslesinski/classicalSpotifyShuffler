@@ -34,11 +34,11 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 			return new((sb, str) => sb.Append(str).AppendLine(), new StringBuilder(_latestString));
 		}
 
-		protected override async Task<AdditionalFlushOptions> Flush(CombiningContainer<string, StringBuilder> containerToFlush)
+		protected override async Task<AdditionalFlushOptions> Flush(CombiningContainer<string, StringBuilder> containerToFlush, CancellationToken cancellationToken = default)
 		{
 			var stringToRecord = containerToFlush.Contents.ToString();
 			_latestString = stringToRecord;
-			await _browserStorage.SaveAsync(_keyName, stringToRecord, CachePolicy.AlwaysPreferCache);
+			await _browserStorage.SaveAsync(_keyName, stringToRecord, CachePolicy.AlwaysPreferCache, cancellationToken);
 			return AdditionalFlushOptions.NoAdditionalFlushNeeded;
 		}
 

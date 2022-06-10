@@ -29,42 +29,42 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		}
 
 		// Returned bool should indicate if additional flushing is necessary
-		protected abstract Task<AdditionalFlushOptions> Flush(ContainerT containerToFlush);
+		protected abstract Task<AdditionalFlushOptions> Flush(ContainerT containerToFlush, CancellationToken cancellationToken = default);
 		protected abstract ContainerT CreateNewContainer();
 		protected abstract bool OnFlushFailed(Exception e);
 
-		public void Add(FlushableT item)
+		public void Add(FlushableT item, CancellationToken cancellationToken = default)
 		{
 			var currentContainer = _currentFlushableContainer;
 			currentContainer.Update(item);
-			_ = ScheduleFlush();
+			_ = ScheduleFlush(cancellationToken);
 		}
 
-		private async Task ScheduleFlush()
+		private async Task ScheduleFlush(CancellationToken cancellationToken = default)
 		{
 			if (_currentFlushableContainer.RequestFlush())
 			{
-				var result = await Run(ConductFlush).WithoutContextCapture();
+				var result = await Run(ConductFlush, cancellationToken).WithoutContextCapture();
 				if (result.Success && (result.ResultValue || _currentFlushableContainer.IsReadyToBeFlushed))
-					_ = ScheduleFlush();
+					_ = ScheduleFlush(cancellationToken);
 			}
 		}
 
-		private async Task<bool> ConductFlush()
+		private async Task<bool> ConductFlush(CancellationToken cancellationToken = default)
 		{
-			await Task.Delay(_flushWaitTime, StopToken).WithoutContextCapture();
+			await Task.Delay(_flushWaitTime, cancellationToken).WithoutContextCapture();
 
 			var newContainer = CreateNewContainer();
 			var oldContainer = Interlocked.Exchange(ref _currentFlushableContainer, newContainer);
 
-			return await DoFlush(oldContainer).WithoutContextCapture();
+			return await DoFlush(oldContainer, cancellationToken).WithoutContextCapture();
 		}
 
-		private async Task<bool> DoFlush(ContainerT container)
+		private async Task<bool> DoFlush(ContainerT container, CancellationToken cancellationToken)
 		{
 			try
 			{
-				var additionalFlushNeeded = await Flush(container).WithoutContextCapture();
+				var additionalFlushNeeded = await Flush(container, cancellationToken).WithoutContextCapture();
 				return ((int)additionalFlushNeeded).AsBool();
 			}
 			catch (Exception e) when (!(e is OperationCanceledException))
@@ -91,7 +91,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			var container = Interlocked.Exchange(ref _currentFlushableContainer, null);
 			// Only flush if one has already been scheduled, so requesting to flush should actually be false
 			if (!container.RequestFlush())
-				_ = DoFlush(container);
+				_ = DoFlush(container, CancellationToken.None);
 		}
 	}
 

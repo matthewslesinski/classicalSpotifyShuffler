@@ -321,7 +321,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
 
-		protected override Task<AdditionalFlushOptions> Flush(Bag containerToFlush)
+		protected override Task<AdditionalFlushOptions> Flush(Bag containerToFlush, CancellationToken _ = default)
 		{
 			var newBufferBag = containerToFlush;
 
@@ -435,7 +435,7 @@ namespace SpotifyProject.SpotifyAdditions
 			_statsDataStore.Dispose();
 		}
 
-		private async Task DoCalculations()
+		private async Task DoCalculations(CancellationToken cancellationToken = default)
 		{
 			if (!_statsDataStore.IsLoaded)
 				await _statsDataStore.Initialize().WithoutContextCapture();
