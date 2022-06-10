@@ -12,6 +12,8 @@ using SpotifyAPI.Web;
 using SpotifyAPI.Web.Http;
 using SpotifyProject.Configuration;
 using SpotifyProject.SpotifyAdditions;
+using SpotifyProject.SpotifyPlaybackModifier;
+using SpotifyProject.Utils;
 using Util = CustomResources.Utils.GeneralUtils.Utils;
 
 namespace SpotifyProject.Authentication
@@ -19,6 +21,7 @@ namespace SpotifyProject.Authentication
     public interface ISpotifyService
     {
         SpotifyClient Client { get; }
+        public SpotifyConfiguration SpotifyConfiguration => new SpotifyConfiguration { Spotify = Client, Market = SpotifyConstants.USMarket };
         PrivateUser CachedUserInfo { get; }
         Task InitializeAsync(CancellationToken cancellationToken = default);
     }

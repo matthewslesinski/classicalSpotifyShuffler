@@ -35,6 +35,22 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 			return allTracks;
 		}
 
+		public static async Task<List<FullAlbum>> GetAllSavedAlbums(this ISpotifyConfigurationContainer spotifyConfigurationContainer, int batchSize = 50)
+		{
+			var initialRequest = await spotifyConfigurationContainer.Spotify.Library.GetAlbums(new LibraryAlbumsRequest { Limit = batchSize, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture();
+			var allAlbumsTask = spotifyConfigurationContainer.Spotify.Paginate(initialRequest);
+			var allAlbums = await allAlbumsTask.Select(a => a.Album).ToListAsync().WithoutContextCapture();
+			return allAlbums;
+		}
+
+		public static async Task<List<SimplePlaylist>> GetAllSavedPlaylists(this ISpotifyConfigurationContainer spotifyConfigurationContainer, int batchSize = 50)
+		{
+			var initialRequest = await spotifyConfigurationContainer.Spotify.Playlists.CurrentUsers(new PlaylistCurrentUsersRequest { Limit = batchSize }).WithoutContextCapture();
+			var allPlaylistsTask = spotifyConfigurationContainer.Spotify.Paginate(initialRequest);
+			var allPlaylists = await allPlaylistsTask.ToListAsync().WithoutContextCapture();
+			return allPlaylists;
+		}
+
 		public static async Task<List<FullTrack>> GetAllRemainingPlaylistTracks(this ISpotifyConfigurationContainer spotifyConfigurationContainer, string playlistId, int batchSize = 100, int startFrom = 0)
 		{
 			var allItems = spotifyConfigurationContainer.Spotify.Paginate(await spotifyConfigurationContainer.Spotify.Playlists.GetItems(playlistId, new PlaylistGetItemsRequest { Limit = batchSize, Offset = startFrom, Market = spotifyConfigurationContainer.SpotifyConfiguration.Market }).WithoutContextCapture());

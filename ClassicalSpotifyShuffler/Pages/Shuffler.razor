@@ -1,31 +1,134 @@
 ﻿@inject ISpotifyService spotifyProvider
 @inject ISpotifyAccountAuthenticator spotifyAuthenticator
+@inject IUserInterface ui 
 @page "/shuffle"
 
 
-    <PageTitle>Shuffler</PageTitle>
+<PageTitle>Shuffler</PageTitle>
 
-    @if (!spotifyAuthenticator.IsLoggedIn)
+@if (!spotifyAuthenticator.IsLoggedIn)
+{
+    <h3>You are not logged in to Spotify. Please log in before proceeding</h3>
+}
+else
+{
+    <h1>Shuffle your playback</h1>
+    @foreach (var context in contextsToDisplay)
     {
-        <h3>You are not logged in to Spotify. Please log in before proceeding</h3>
+        @if (Equals(context.ContextUri, _selectedContext?.ContextUri) && Equals(context.ContextType, _selectedContext?.ContextType))
+        {
+            <div style="background:yellow">@context.ToDisplay()</div>
+        }
+        else
+        {
+            <div @onclick="() => _selectedContext = context">@context.ToDisplay()</div>
+        }
     }
-    else
+    <div style="height:500px; overflow-y:scroll" tabindex="-1">
+        <Virtualize Context="context" ItemsProvider="LoadAlbums" OverscanCount="10" ItemSize="25">
+            @if (Equals(context.ContextUri, _selectedContext?.ContextUri) && Equals(context.ContextType, _selectedContext?.ContextType))
+            {
+                <div style="background:yellow">@context.ToDisplay()</div>
+            }
+            else
+            {
+                <div @onclick="() => _selectedContext = context">@context.ToDisplay()</div>
+            }
+        </Virtualize>
+    </div>
+
+    @if (_selectedContext != null)
     {
-        <h1>Shuffle your playback</h1>
         <button class="btn btn-primary" @onclick="ShufflePlayback">Shuffle</button>
         if (_mostRecentResult.HasValue)
         {
             <div>Most recent finished result: @(_mostRecentResult.Value ? "Success" : "Fail")</div>
         }
     }
+}
 
-    @code {
+@code {
 
-        private bool? _mostRecentResult = null;
-        private async Task ShufflePlayback()
+    private bool? _mostRecentResult = null;
+    private List<ContextDisplay> contextsToDisplay = new();
+    private ContextDisplay? _selectedContext = null;
+    private Dictionary<int, ContextDisplay> allLoadedAlbums = new();
+    private int? totalAlbums = null;
+
+    private async Task ShufflePlayback()
+    {
+        if (_selectedContext == null)
         {
-            var playbackReorderer = new SpotifyPlaybackReorderer(spotifyProvider.Client);
-            _mostRecentResult = await playbackReorderer.ShuffleCurrentPlayback();
+            ui.NotifyUser("Cannot shuffle when nothing is selected");
+            return;
         }
-
+        var executor = new SpotifyCommandExecutor(spotifyProvider.Client);
+        _mostRecentResult = await (_selectedContext.SpecifiedType.HasValue
+            ? executor.ModifyContext(_selectedContext.SpecifiedType.Value, _selectedContext?.ContextUri)
+            : executor.ModifyContext(_selectedContext.ContextUri)).WithoutContextCapture();
     }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!spotifyAuthenticator.IsLoggedIn)
+            await spotifyAuthenticator.TryImmediateLogIn().WithoutContextCapture();
+        if (spotifyAuthenticator.IsLoggedIn)
+        {
+            var currentlyPlaying = await spotifyProvider.SpotifyConfiguration.GetCurrentlyPlaying().WithoutContextCapture();
+            contextsToDisplay.Add(new(null, null, "All Liked Tracks", PlaybackContextType.AllLikedTracks));
+            if (currentlyPlaying?.Item != null)
+            {
+                contextsToDisplay.AddRange(await GetCurrentlyPlayingContexts().WithoutContextCapture());
+            }
+        }
+    }
+
+    private async Task<IEnumerable<ContextDisplay>> GetCurrentlyPlayingContexts()
+    {
+        var contexts = new List<ContextDisplay>();
+        var currentlyPlaying = await spotifyProvider.SpotifyConfiguration.GetCurrentlyPlaying().WithoutContextCapture();
+        if (currentlyPlaying?.Item != null)
+        {
+            if (currentlyPlaying.Context != null)
+            {
+                var didParse = SpotifyDependentUtils.TryParseSpotifyUri(currentlyPlaying.Context.Uri, out var type, out var id, out var allParts);
+                if (didParse)
+                    contexts.Add(new(type, currentlyPlaying.Context.Uri, "Currently Playing"));
+            }
+        }
+        return contexts;
+    }
+
+    private async ValueTask<ItemsProviderResult<ContextDisplay>> LoadAlbums(ItemsProviderRequest request)
+    {
+        var indices = Enumerable.Range(request.StartIndex, request.Count);
+        var alreadyLoaded = indices.Where(i => allLoadedAlbums.ContainsKey(i));
+        var pairs = alreadyLoaded.Select(i => (i, allLoadedAlbums[i]));
+        var stillToLoad = indices.Where(i => !allLoadedAlbums.ContainsKey(i));
+        if (stillToLoad.Any())
+		{
+            
+            var response = await spotifyProvider.Client.Library.GetAlbums(new SpotifyAPI.Web.LibraryAlbumsRequest { Limit = request.Count, Offset = request.StartIndex, Market = spotifyProvider.SpotifyConfiguration.Market }).WithoutContextCapture();
+            if (response == null)
+                throw new Exception($"Failed to load albums for request: {request}");
+            if (totalAlbums == null)
+                totalAlbums = response.Total;
+            var list = response.Items.Select(a => a.Album).Select(a => new ContextDisplay(a.Type, a.Uri, a.Name)).ToList();
+            var foundPairs = stillToLoad.Select(i => i - request.StartIndex).Where(i => i < list.Count).Select(i => (i + request.StartIndex, list[i]));
+            foundPairs.Each(pair => allLoadedAlbums[pair.Item1] = pair.Item2);
+            pairs = pairs.Concat(foundPairs);
+		}
+        var allValues = pairs.ToDictionary(pair => pair.Item1, pair => pair.Item2);
+        
+        return new ItemsProviderResult<ContextDisplay>(indices.Where(allValues.ContainsKey).Select(i => allValues[i]), totalAlbums ?? 0);
+    }
+
+    private void Select(ContextDisplay context) => _selectedContext = context;
+
+    private record ContextDisplay(string? ContextType, string? ContextUri, string DisplayName, PlaybackContextType? SpecifiedType = null)
+    {
+        public string ToDisplay() => $"{(ContextType != null ? ContextType + ": " : "")}{DisplayName}";
+    }
+}
