@@ -34,11 +34,13 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Implementations\" />
+    <Folder Include="Common\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly.DevServer" />
     <None Remove="Microsoft.AspNetCore.Components.WebAssembly" />
     <None Remove="SpotifyAPI.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <None Remove="Common\"/>
     <None Remove="Implementations\" />
   </ItemGroup>
   <ItemGroup>
