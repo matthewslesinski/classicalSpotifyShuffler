@@ -11,6 +11,7 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
+using SpotifyProject.SpotifyUtils;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -114,6 +115,14 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				var newOrder = (await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlistId)).Select(context.GetMetadataForTrack);
 				Assert.IsTrue(trackOrder.IsSuperSequenceOf(newOrder, ITrackLinkingInfo.EqualityByUris));
 			}
+		}
+
+		[Test]
+		public async Task TestGetAllSavedAlbums()
+		{
+			var cache = new SavedAlbumsCache(SpotifyAccessor.SpotifyConfiguration);
+			await cache.GetAll().WithoutContextCapture();
+			Assert.NotZero(await cache.GetTotalCount().WithoutContextCapture());
 		}
 	}
 }
