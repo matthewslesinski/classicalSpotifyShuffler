@@ -7,6 +7,7 @@
   <Setting name="PaginatorName">ConcurrentPaginator</Setting>
   <Setting name="MaintainCurrentlyPlaying"></Setting>
   <Setting name="TrackQueueSizeLimit">750</Setting>
+  <Setting name="APIRateLimitMinOutForCaution">100</Setting>
   <Setting name="NumHTTPConnections">-1</Setting>
   <Setting name="ArtistAlbumIncludeGroups">Album,Single</Setting>
   <Setting name="DefaultToAlbumShuffle">false</Setting>

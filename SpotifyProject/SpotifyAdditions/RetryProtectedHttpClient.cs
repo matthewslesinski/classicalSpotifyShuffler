@@ -457,14 +457,17 @@ namespace SpotifyProject.SpotifyAdditions
 
 	internal class NaiveStatsTracker : BaseLinearStatsTracker
 	{
+		private int? _minOutForCaution = Settings.TryGet<int>(SpotifySettings.APIRateLimitMinOutForCaution, out var foundValue) ? foundValue : null;
+
 		public override int NumOutForCaution
 		{
 			get
 			{
 				var currentStats = CurrentStats;
-				return currentStats.NumHits <= 0
+				var calculatedValue = currentStats.NumHits <= 0
 					? currentStats.MaxOutWithoutHit
 					: (currentStats.AverageOutWhenHit >> 1) + (currentStats.MaxOutWithoutHit >> 2);
+				return _minOutForCaution.HasValue ? Math.Max(_minOutForCaution.Value, calculatedValue) : calculatedValue;
 			}
 		}
 
