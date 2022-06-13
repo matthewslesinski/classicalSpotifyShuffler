@@ -21,7 +21,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		SpotifyClient Spotify => SpotifyConfiguration.Spotify;
 	}
 
-	public static class SpotifyConfigurationExtension
+	public static class SpotifyConfigurationExtensions
 	{
 		public static Task<CurrentlyPlaying> GetCurrentlyPlaying(this ISpotifyConfigurationContainer spotifyConfigurationContainer) =>
 			spotifyConfigurationContainer.Spotify.Player.GetCurrentlyPlaying(new PlayerCurrentlyPlayingRequest { Market = spotifyConfigurationContainer.SpotifyConfiguration.Market });
