@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
@@ -55,27 +56,25 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				{
 					try
 					{
-						Task<OutputT> handler = null;
-						if (executionContext == null)
-							handler = HandleTask(input, taskCancellationToken);
-						else
+						await TaskUtils.RunAndNotify(taskCompleter, cancellationToken =>
 						{
-							ExecutionContext.Run(executionContext, _ =>
-							{
+							Task<OutputT> handler = null;
+							if (executionContext == null)
 								handler = HandleTask(input, taskCancellationToken);
-							}, null);
-						}
+							else
+							{
+								ExecutionContext.Run(executionContext, _ =>
+								{
+									handler = HandleTask(input, taskCancellationToken);
+								}, null);
+							}
 
-						var output = await handler.WithoutContextCapture();
-						taskCompleter.SetResult(output);
+							return handler;
+						}, taskCancellationToken).WithoutContextCapture();
 					}
-					catch (OperationCanceledException e) when (e.CancellationToken == taskCancellationToken)
+					catch (Exception)
 					{
-						taskCompleter.SetCanceled(taskCancellationToken);
-					}
-					catch (Exception e)
-					{
-						taskCompleter.SetException(e);
+						// Ignore, as it should be passed onto the inner task already
 					}
 				}
 			}
