@@ -96,8 +96,8 @@ else
         }
         var executor = new SpotifyCommandExecutor(spotifyProvider.Client);
         _mostRecentResult = await (_selectedContext.ContextType.HasValue && SpotifyDependentUtils.TryParseSpotifyUri(_selectedContext.UnderlyingUri, out _, out var id, out _ )
-            ? executor.ModifyContext(_selectedContext.ContextType.Value, id)
-            : executor.ModifyContext(_selectedContext.UnderlyingUri)).WithoutContextCapture();
+            ? executor.ModifyContext(_selectedContext.ContextType.Value, id, _pageTaskCancellation.Token)
+            : executor.ModifyContext(_selectedContext.UnderlyingUri, _pageTaskCancellation.Token)).WithoutContextCapture();
     }
 
     protected override async Task OnInitializedAsync()

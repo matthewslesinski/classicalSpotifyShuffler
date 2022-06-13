@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using SpotifyAPI.Web;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
+using System.Threading;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -23,16 +24,16 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		{
 		}
 
-		public static async Task<ExistingAlbumPlaybackContext> FromSimpleAlbum(SpotifyConfiguration spotifyConfiguration, string albumId)
+		public static async Task<ExistingAlbumPlaybackContext> FromSimpleAlbum(SpotifyConfiguration spotifyConfiguration, string albumId, CancellationToken cancellationToken = default)
 		{
-			var fullAlbum = await spotifyConfiguration.GetAlbum(albumId).WithoutContextCapture();
+			var fullAlbum = await spotifyConfiguration.GetAlbum(albumId, cancellationToken).WithoutContextCapture();
 			return new ExistingAlbumPlaybackContext(spotifyConfiguration, fullAlbum);
 		}
 
-		public async Task FullyLoad()
+		public async Task FullyLoad(CancellationToken cancellationToken = default)
 		{
 			Logger.Information($"Requesting all tracks for album with id {SpotifyContext.Id} and name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllAlbumTracks(SpotifyContext.Id).WithoutContextCapture();
+			var allTracks = await this.GetAllAlbumTracks(SpotifyContext.Id, cancellationToken: cancellationToken).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}

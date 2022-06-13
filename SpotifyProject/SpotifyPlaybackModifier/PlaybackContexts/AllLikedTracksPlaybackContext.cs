@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using CustomResources.Utils.Extensions;
 using ApplicationResources.Logging;
+using System.Threading;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -27,10 +28,10 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		{
 		}
 
-		public async Task FullyLoad()
+		public async Task FullyLoad(CancellationToken cancellationToken = default)
 		{
 			Logger.Information($"Requesting all saved tracks from Spotify");
-			var allTracks = await this.GetAllSavedTracks().WithoutContextCapture();
+			var allTracks = await this.GetAllSavedTracks(cancellationToken: cancellationToken).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}

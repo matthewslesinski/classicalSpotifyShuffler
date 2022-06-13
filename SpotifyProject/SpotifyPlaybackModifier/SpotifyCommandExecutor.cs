@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Logging;
@@ -21,8 +22,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 		{
 		}
 
-		public async Task<bool> ModifyContext(string contextUri) =>
-            TryParseContextTypeFromUri(contextUri, out var contextType, out var contextId) && await ModifyContext(contextType, contextId);
+		public async Task<bool> ModifyContext(string contextUri, CancellationToken cancellationToken = default) =>
+            TryParseContextTypeFromUri(contextUri, out var contextType, out var contextId) && await ModifyContext(contextType, contextId, cancellationToken);
 
 		private static bool TryParseContextTypeFromUri(string contextUri, out PlaybackContextType contextType, out string contextId)
         {
@@ -34,14 +35,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             return Enum.TryParse(typeString, true, out contextType);
         }
 
-        public async Task<bool> ModifyContext(PlaybackContextType contextType, string contextId)
+        public async Task<bool> ModifyContext(PlaybackContextType contextType, string contextId, CancellationToken cancellationToken = default)
         {
 			var result = contextType switch
 			{
-				PlaybackContextType.Album => await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(contextType, contextId).WithoutContextCapture(),
-				PlaybackContextType.Artist => await ModifyContext<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>(contextType, contextId).WithoutContextCapture(),
-                PlaybackContextType.Playlist => await ModifyContext<IOriginalPlaylistPlaybackContext, FullTrack>(contextType, contextId).WithoutContextCapture(),
-                PlaybackContextType.AllLikedTracks => await ModifyContext<IOriginalAllLikedTracksPlaybackContext, FullTrack>(contextType, null).WithoutContextCapture(),
+				PlaybackContextType.Album => await ModifyContext<IOriginalAlbumPlaybackContext, SimpleTrack>(contextType, contextId, cancellationToken).WithoutContextCapture(),
+				PlaybackContextType.Artist => await ModifyContext<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>(contextType, contextId, cancellationToken).WithoutContextCapture(),
+                PlaybackContextType.Playlist => await ModifyContext<IOriginalPlaylistPlaybackContext, FullTrack>(contextType, contextId, cancellationToken).WithoutContextCapture(),
+                PlaybackContextType.AllLikedTracks => await ModifyContext<IOriginalAllLikedTracksPlaybackContext, FullTrack>(contextType, null, cancellationToken).WithoutContextCapture(),
                 _ => throw new NotImplementedException($"Code should not be able to reach here. Please make sure the {nameof(PlaybackContextType)} type's value of " +
                                                        $"{contextType} is supported in {nameof(SpotifyPlaybackReorderer)}"),
 			};
@@ -50,19 +51,20 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             return result;
         }
 
-        private Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
+        private Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId, CancellationToken cancellationToken = default) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
 		{
             if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
             {
                 Logger.Warning($"There was no initial context constructor found for the context type {contextType}");
                 return Task.FromResult(false);
             }
-            Task<OriginalContextT> ProvideContextPromise() => initialContextConstructor(SpotifyConfiguration, contextId);
-            return ModifyContext<OriginalContextT, TrackT>(ProvideContextPromise, contextType, contextId);
+            Task<OriginalContextT> ProvideContextPromise() => initialContextConstructor(SpotifyConfiguration, contextId, cancellationToken);
+            return ModifyContext<OriginalContextT, TrackT>(ProvideContextPromise, contextType, contextId, cancellationToken);
 
         }
 
-        internal async Task<bool> ModifyContext<OriginalContextT, TrackT>(Func<Task<OriginalContextT>> contextPromiseProvider, PlaybackContextType contextType, string contextId)
+        internal async Task<bool> ModifyContext<OriginalContextT, TrackT>(Func<Task<OriginalContextT>> contextPromiseProvider, PlaybackContextType contextType,
+            string contextId, CancellationToken cancellationToken = default)
             where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
         {
             try
@@ -85,7 +87,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier
 
                 var initialContext = await contextPromise.WithoutContextCapture();
 
-                await modifier.Run(initialContext).WithoutContextCapture();
+                await modifier.Run(initialContext).WaitAsync(cancellationToken).WithoutContextCapture();
                 return true;
             }
             catch (Exception e)

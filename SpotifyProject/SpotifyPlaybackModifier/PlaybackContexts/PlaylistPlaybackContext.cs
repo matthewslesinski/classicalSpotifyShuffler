@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using ApplicationResources.Logging;
+using System.Threading;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
@@ -30,16 +31,16 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 		{
 		}
 
-		public static async Task<ExistingPlaylistPlaybackContext> FromSimplePlaylist(SpotifyConfiguration spotifyConfiguration, string playlistId)
+		public static async Task<ExistingPlaylistPlaybackContext> FromSimplePlaylist(SpotifyConfiguration spotifyConfiguration, string playlistId, CancellationToken cancellationToken = default)
 		{
-			var fullPlaylist = await spotifyConfiguration.Spotify.Playlists.Get(playlistId).WithoutContextCapture();
+			var fullPlaylist = await spotifyConfiguration.Spotify.Playlists.Get(playlistId).WaitAsync(cancellationToken).WithoutContextCapture();
 			return new ExistingPlaylistPlaybackContext(spotifyConfiguration, fullPlaylist);
 		}
 
-		public async Task FullyLoad()
+		public async Task FullyLoad(CancellationToken cancellationToken = default)
 		{
 			Logger.Information($"Loading tracks for playlist with Id {SpotifyContext.Id} and Name {SpotifyContext.Name}");
-			var allTracks = await this.GetAllRemainingPlaylistTracks(SpotifyContext.Id).WithoutContextCapture();
+			var allTracks = await this.GetAllRemainingPlaylistTracks(SpotifyContext.Id, cancellationToken: cancellationToken).WithoutContextCapture();
 			Logger.Information($"Loaded {allTracks.Count} tracks");
 			PlaybackOrder = allTracks;
 		}
