@@ -145,6 +145,14 @@ namespace CustomResources.Utils.Extensions
 
 		public static IEnumerable<T> AsIEnumerable<T>(this T item) => (SingleEnumerable<T>) item;
 
+		public static int Constrain(this int num, int lowerBound, int upperBound) => lowerBound <= upperBound
+			? (num < lowerBound
+				? lowerBound
+				: (num > upperBound
+					? upperBound
+					: num))
+			: Exceptions.Throw<int>(new ArgumentOutOfRangeException($"lower and upper bounds don't make sense, lower={lowerBound}, upper={upperBound}"));
+
 		public static IEnumerable<DelegateT> GetAllCalls<DelegateT>(this DelegateT multiDelegate) where DelegateT : Delegate =>
 			multiDelegate == null ? Array.Empty<DelegateT>() : multiDelegate.GetInvocationList().Cast<DelegateT>();
 
@@ -159,6 +167,17 @@ namespace CustomResources.Utils.Extensions
 			result.HasValue ? new(true, transformation(result.FoundValue)) : Result<R>.NotFound;
 		public static Task<Result<R>> Transform<T, R>(this Task<Result<T>> resultTask, Func<T, R> transformation) =>
 			resultTask.Then(result => result.Transform(transformation));
+
+		public static bool TryGet<T>(this T? nullable, out T value) where T : struct
+		{
+			if (nullable.HasValue)
+			{
+				value = nullable.Value;
+				return true;
+			}
+			value = default;
+			return false;
+		}
 
 		public static bool TryGetValue<T>(this Reference<T> reference, out T value)
 		{
