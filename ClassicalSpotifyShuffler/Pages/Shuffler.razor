@@ -70,7 +70,21 @@ else
 
     @if (_selectedContext != null)
     {
-        <button class="btn btn-primary" @onclick="ShufflePlayback">Shuffle</button>
+        <div><input type="checkbox" checked="@_shouldChangePlayback" @onclick="() => _shouldChangePlayback = !_shouldChangePlayback"/>Should Change Playback?</div>
+        @if (_shouldChangePlayback)
+		{
+            <div><input type="checkbox" checked="@_shouldMaintainCurrentlyPlaying" @onclick="() => _shouldMaintainCurrentlyPlaying = !_shouldMaintainCurrentlyPlaying"/>Should Maintain Currently Playing Track?</div>
+		}
+
+        <div><input type="checkbox" checked="@_shouldSaveAsPlaylist" @onclick="() => _shouldSaveAsPlaylist = !_shouldSaveAsPlaylist"/>Should Save As Playlist?</div>
+        @if (_shouldSaveAsPlaylist)
+		{
+            <input type="text" @bind="_saveAsPlaylistName"/>
+		}
+        @if ((_shouldChangePlayback || _shouldSaveAsPlaylist) && (!_shouldSaveAsPlaylist || !string.IsNullOrWhiteSpace(_saveAsPlaylistName)))
+		{
+            <button class="btn btn-primary" @onclick="ShufflePlayback">Shuffle</button>
+		}
         if (_mostRecentResult.HasValue)
         {
             <div>Most recent finished result: @(_mostRecentResult.Value ? "Success" : "Fail")</div>
@@ -86,6 +100,10 @@ else
     private SavedAlbumsCache _albums = new SavedAlbumsCache(loadType: LoadType.PartiallyOnInitialization);
     private SavedPlaylistsCache _playlists = new SavedPlaylistsCache(loadType: LoadType.PartiallyOnInitialization);
     private readonly CancellationTokenSource _pageTaskCancellation = new CancellationTokenSource();
+    private bool _shouldChangePlayback = true;
+    private bool _shouldMaintainCurrentlyPlaying = true;
+    private bool _shouldSaveAsPlaylist = false;
+    private string? _saveAsPlaylistName = null;
 
     private async Task ShufflePlayback()
     {
@@ -95,9 +113,24 @@ else
             return;
         }
         var executor = new SpotifyCommandExecutor(spotifyProvider.Client);
+        var parameterBuilder = TaskParameters.GetBuilder();
+        if (_shouldChangePlayback)
+            parameterBuilder = parameterBuilder.With(SpotifyParameters.MaintainCurrentlyPlaying, _shouldMaintainCurrentlyPlaying);
+        if (_shouldSaveAsPlaylist && !string.IsNullOrWhiteSpace(_saveAsPlaylistName))
+            parameterBuilder = parameterBuilder.With(SpotifyParameters.SaveAsPlaylistName, _saveAsPlaylistName);
+
+        string playbackSetterName;
+        if (_shouldChangePlayback)
+            playbackSetterName = _shouldSaveAsPlaylist ? nameof(SpotifyUpdaters<FullTrack>.EfficientPlaylistPlaybackSetter) : nameof(SpotifyUpdaters<FullTrack>.QueuePlaybackSetter);
+        else
+            playbackSetterName = _shouldSaveAsPlaylist ? nameof(SpotifyUpdaters<FullTrack>.EfficientPlaylistSetterWithoutPlayback) : Exceptions.Throw<string>(new ArgumentException("Must have some type of playback setter selected"));
+
+        using (parameterBuilder.Apply())
+        { 
         _mostRecentResult = await (_selectedContext.ContextType.HasValue && SpotifyDependentUtils.TryParseSpotifyUri(_selectedContext.UnderlyingUri, out _, out var id, out _ )
-            ? executor.ModifyContext(_selectedContext.ContextType.Value, id, _pageTaskCancellation.Token)
-            : executor.ModifyContext(_selectedContext.UnderlyingUri, _pageTaskCancellation.Token)).WithoutContextCapture();
+            ? executor.ModifyContext(_selectedContext.ContextType.Value, id, playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token)
+            : executor.ModifyContext(_selectedContext.UnderlyingUri, playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token)).WithoutContextCapture();
+        }
     }
 
     protected override async Task OnInitializedAsync()
