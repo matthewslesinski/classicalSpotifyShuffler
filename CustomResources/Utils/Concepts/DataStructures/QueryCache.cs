@@ -68,8 +68,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public Task HardRefresh(CancellationToken cancellationToken = default)
 		{
 			var taskCompletionSourceToReplaceWith = _knownTotal.HasValue ? NewTaskCompletionSourceWithKnownArraySize(_knownTotal.Value) : null;
-			_initialLoadCompletionSource.Change(null);
-
+			_initialLoadCompletionSource.Change(taskCompletionSourceToReplaceWith);
 			return Task.CompletedTask;
 		}
 
@@ -98,7 +97,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		protected abstract int GetTotalFromResponse(ResponseT response);
 		protected abstract IList<T> GetValuesFromResponse(ResponseT response);
 
-		protected Task<Node[]> GetOrCreateNodesArray(CancellationToken cancellationToken = default, int? start = null, int? count = null)
+		protected Task<Node[]> GetOrCreateNodesArray(CancellationToken cancellationToken, int? start = null, int? count = null)
 		{
 			if (start.TryGet(out var startValue) && startValue < 0)
 				throw new ArgumentOutOfRangeException($"start: {start} was less than 0");
@@ -146,7 +145,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			return newSource;
 		}
 
-		protected class Node
+		protected internal class Node
 		{
 			internal Task<IList<T>> ContentTask;
 			internal int IndexInArray;

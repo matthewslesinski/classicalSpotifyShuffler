@@ -21,6 +21,8 @@ namespace CustomResources.Utils.Extensions
 		public static bool NotContains<T>(this IReadOnlySet<T> collection, T item) => !collection.Contains(item);
 		public static bool NotContainsKey<K, V>(this IReadOnlyDictionary<K, V> dict, K key) => !dict.ContainsKey(key);
 
+		public static bool Toggle<T>(this ISet<T> set, T element) => set.Add(element) || !set.Remove(element);
+
 		public static bool TryGetCeiling<K, V>(this SortedList<K, V> list, K queryItem, out K ceiling) => TryGetNeighbor(list, queryItem, true, true, out ceiling);
 		public static bool TryGetFloor<K, V>(this SortedList<K, V> list, K queryItem, out K floor) => TryGetNeighbor(list, queryItem, false, true, out floor);
 		public static bool TryGetNext<K, V>(this SortedList<K, V> list, K queryItem, out K next) => TryGetNeighbor(list, queryItem, true, false, out next);

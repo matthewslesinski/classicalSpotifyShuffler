@@ -82,7 +82,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 
 		protected enum SamplePlaylists
 		{
-			ImportedFromYoutube
+			ImportedFromYoutube,
+			Brahms
 		}
 
 		protected static IReadOnlyDictionary<SampleAlbums, string> SampleAlbumUris => _sampleAlbumUris;
@@ -117,6 +118,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		private static readonly Dictionary<SamplePlaylists, string> _samplePlaylistUris = new Dictionary<SamplePlaylists, string>
 		{
 			{ SamplePlaylists.ImportedFromYoutube, "spotify:playlist:3EINXMmb4xyH0jLx8ZHgiC" },
+			{ SamplePlaylists.Brahms, "spotify:playlist:1UntiT6SRaIY0nMa5LZ8an" },
 		};
 
 		protected static IReadOnlyDictionary<SamplePlaylists, string> SamplePlaylistIds => _samplePlaylistUris

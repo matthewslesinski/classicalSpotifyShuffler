@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils.Parameters;
@@ -51,7 +52,14 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             return result;
         }
 
-        private Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId, string transformationName = null, string playbackSetterName = null, CancellationToken cancellationToken = default) where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
+        public Task<bool> ModifyCustomContext(IEnumerable<IPlayableTrackLinkingInfo> tracks, string transformationName = null, string playbackSetterName = null, CancellationToken cancellationToken = default)
+		{
+            Task<ICustomPlaybackContext> ProvideContextPromise() => Task.FromResult<ICustomPlaybackContext>(new CustomPlaybackContext(SpotifyConfiguration, tracks));
+            return ModifyContext<ICustomPlaybackContext, IPlayableTrackLinkingInfo>(ProvideContextPromise, PlaybackContextType.CustomQueue, null, transformationName, playbackSetterName, cancellationToken);
+		}
+
+        private Task<bool> ModifyContext<OriginalContextT, TrackT>(PlaybackContextType contextType, string contextId, string transformationName = null, string playbackSetterName = null, CancellationToken cancellationToken = default)
+            where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
 		{
             if (!PlaybackContextConstructors.TryGetExistingContextConstructorForType<OriginalContextT, TrackT>(contextType, out var initialContextConstructor))
             {
@@ -60,12 +68,11 @@ namespace SpotifyProject.SpotifyPlaybackModifier
             }
             Task<OriginalContextT> ProvideContextPromise() => initialContextConstructor(SpotifyConfiguration, contextId, cancellationToken);
             return ModifyContext<OriginalContextT, TrackT>(ProvideContextPromise, contextType, contextId, transformationName, playbackSetterName, cancellationToken);
-
         }
 
         internal async Task<bool> ModifyContext<OriginalContextT, TrackT>(Func<Task<OriginalContextT>> contextPromiseProvider, PlaybackContextType contextType, string contextId,
             string transformationName = null, string playbackSetterName = null, CancellationToken cancellationToken = default)
-            where OriginalContextT : IOriginalPlaybackContext, ISpotifyPlaybackContext<TrackT>
+            where OriginalContextT : ISpotifyPlaybackContext<TrackT>
         {
             try
             {

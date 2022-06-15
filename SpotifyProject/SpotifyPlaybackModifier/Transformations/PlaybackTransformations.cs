@@ -22,7 +22,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 				{ PlaybackContextType.Artist, new PlaybackTransformations<IOriginalArtistPlaybackContext, SimpleTrackAndAlbumWrapper>((initialContext, tracks) =>
 					ReorderedArtistPlaybackContext<IOriginalArtistPlaybackContext>.FromContextAndTracks(initialContext, tracks)) },
 				{ PlaybackContextType.AllLikedTracks, new PlaybackTransformations<IOriginalAllLikedTracksPlaybackContext, FullTrack>((initialContext, tracks) =>
-					ReorderedAllLikedTracksPlaybackContext<IOriginalAllLikedTracksPlaybackContext>.FromContextAndTracks(initialContext, tracks)) }
+					ReorderedAllLikedTracksPlaybackContext<IOriginalAllLikedTracksPlaybackContext>.FromContextAndTracks(initialContext, tracks)) },
+				{ PlaybackContextType.CustomQueue, new PlaybackTransformations<ICustomPlaybackContext, IPlayableTrackLinkingInfo>((initialContext, tracks) =>
+					ReorderedCustomPlaybackContext<ICustomPlaybackContext>.FromContextAndTracks(initialContext, tracks)) }
 			};
 
 

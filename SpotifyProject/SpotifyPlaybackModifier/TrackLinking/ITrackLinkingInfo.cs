@@ -102,8 +102,8 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		IPlayableTrackLinkingInfo PlayableVersion { get; }
 	}
 
-	public interface ITrackLinkingInfoWrapper<OriginalTrackT, InfoT> : IPlayableTrackLinkingInfo<InfoT>
-		where InfoT : ITrackLinkingInfo<OriginalTrackT>, IPlayableTrackLinkingInfo
+	public interface ITrackLinkingInfoWrapper<InfoT> : IPlayableTrackLinkingInfo<InfoT>
+		where InfoT : IPlayableTrackLinkingInfo
 	{
 		string ITrackLinkingInfo.Name => OriginalTrack.Name;
 		string ITrackLinkingInfo.Uri => OriginalTrack.Uri;

@@ -5,7 +5,7 @@ using static SpotifyProject.Utils.SpotifyConstants;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts
 {
-	public interface IArtistPlaybackContext : IStaticPlaybackContext<FullArtist, SimpleTrackAndAlbumWrapper>, IProcessedTrackPlaybackContext<SimpleTrack, SimpleTrackAndAlbumWrapper>
+	public interface IArtistPlaybackContext : IStaticPlaybackContext<FullArtist, SimpleTrackAndAlbumWrapper>, IProcessedTrackPlaybackContext<SimpleTrackAndAlbumWrapper>
 	{
 		PlaybackContextType ISpotifyPlaybackContext.ContextType => PlaybackContextType.Artist;
 		bool ISpotifyPlaybackContext.TryGetSpotifyId(out string contextId)

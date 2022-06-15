@@ -2,6 +2,7 @@
 using CustomResources.Utils.Concepts.DataStructures;
 using SpotifyAPI.Web;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
+using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.SpotifyUtils;
 
 namespace ClassicalSpotifyShuffler.Common
@@ -14,12 +15,12 @@ namespace ClassicalSpotifyShuffler.Common
 		PlaybackContextType? ContextType { get; }
 	}
 
-	public interface IContextDisplay<ContainedTrackT> : ISpotifyItemDisplay
+	public interface IContextDisplay : ISpotifyItemDisplay
 	{
-		IQueryCache<ContainedTrackT> ContainedTracks { get; }
+		IQueryCache<IPlayableTrackLinkingInfo> ContainedTracks { get; }
 	}
 
-	public class AlbumContextDisplay : IContextDisplay<SimpleTrack>
+	public class AlbumContextDisplay : IContextDisplay
 	{
 		public AlbumContextDisplay(SavedAlbum album) : this(album.Album)
 		{ }
@@ -30,7 +31,7 @@ namespace ClassicalSpotifyShuffler.Common
 			ContextType = PlaybackContextType.Album;
 			UnderlyingUri = album.Uri;
 			Caption = string.Join(", ", album.Artists.Select(artist => artist.Name));
-			ContainedTracks = new AlbumTracksCache(album.Id, loadType: LoadType.Lazy, firstPage: album.Tracks);
+			ContainedTracks = new AlbumTracksCache(album, loadType: LoadType.Lazy, firstPage: album.Tracks);
 		}
 
 		public AlbumContextDisplay(SimpleAlbum album)
@@ -39,17 +40,29 @@ namespace ClassicalSpotifyShuffler.Common
 			ContextType = PlaybackContextType.Album;
 			UnderlyingUri = album.Uri;
 			Caption = string.Join(", ", album.Artists.Select(artist => artist.Name));
-			ContainedTracks = new AlbumTracksCache(album.Id, loadType: LoadType.Lazy);
+			ContainedTracks = new AlbumTracksCache(album, loadType: LoadType.Lazy);
 		}
 
 		public string Title { get; }
 		public string? UnderlyingUri { get; }
 		public string Caption { get; }
 		public PlaybackContextType? ContextType { get; }
-		public IQueryCache<SimpleTrack> ContainedTracks { get; }
+		public IQueryCache<IPlayableTrackLinkingInfo> ContainedTracks { get; }
+
+		public override bool Equals(object? obj)
+		{
+			return obj is AlbumContextDisplay display &&
+				   UnderlyingUri == display.UnderlyingUri &&
+				   ContextType == display.ContextType;
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(UnderlyingUri, ContextType);
+		}
 	}
 
-	public class PlaylistContextDisplay : IContextDisplay<FullTrack>
+	public class PlaylistContextDisplay : IContextDisplay
 	{
 		public PlaylistContextDisplay(SimplePlaylist playlist)
 		{
@@ -64,10 +77,22 @@ namespace ClassicalSpotifyShuffler.Common
 		public string? UnderlyingUri { get; }
 		public string Caption { get; }
 		public PlaybackContextType? ContextType { get; }
-		public IQueryCache<FullTrack> ContainedTracks { get; }
+		public IQueryCache<IPlayableTrackLinkingInfo> ContainedTracks { get; }
+
+		public override bool Equals(object? obj)
+		{
+			return obj is PlaylistContextDisplay display &&
+				   UnderlyingUri == display.UnderlyingUri &&
+				   ContextType == display.ContextType;
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(UnderlyingUri, ContextType);
+		}
 	}
 
-	public class AllLikedTracksContextDisplay : IContextDisplay<FullTrack>
+	public class AllLikedTracksContextDisplay : IContextDisplay
 	{
 		public AllLikedTracksContextDisplay()
 		{
@@ -87,24 +112,48 @@ namespace ClassicalSpotifyShuffler.Common
 			}
 		} 
 		public PlaybackContextType? ContextType { get; }
-		public IQueryCache<FullTrack> ContainedTracks { get; }
+		public IQueryCache<IPlayableTrackLinkingInfo> ContainedTracks { get; }
+
+		public override bool Equals(object? obj)
+		{
+			return obj is AllLikedTracksContextDisplay display &&
+				   ContextType == display.ContextType;
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(ContextType);
+		}
 	}
 
 	public class TrackDisplay : ISpotifyItemDisplay
 	{
-		public TrackDisplay(FullTrack track)
+		public TrackDisplay(IPlayableTrackLinkingInfo track, int trackNumber)
 		{
 			Title = track.Name;
 			UnderlyingUri = track.Uri;
-			Caption = string.Join(", ", track.Artists.Select(artist => artist.Name));
+			Caption = string.Join(", ", track.ArtistNames);
 			ContextType = null;
+			TrackNumber = trackNumber;
 		}
 
 		public string Title { get; }
-		public string? UnderlyingUri { get; }
+		public string UnderlyingUri { get; }
 		public string Caption { get; }
 		public PlaybackContextType? ContextType { get; }
+		public int TrackNumber { get; }
+
+		public override bool Equals(object? obj)
+		{
+			return obj is TrackDisplay display &&
+				   UnderlyingUri == display.UnderlyingUri;
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(UnderlyingUri);
+		}
 	}
 
-	public record MiscContextDisplay(string Title, string? UnderlyingUri, string Caption, PlaybackContextType? ContextType) : ISpotifyItemDisplay;
+	public record MiscContextDisplay(string Title, string? UnderlyingUri, string Caption, PlaybackContextType? ContextType, IQueryCache<IPlayableTrackLinkingInfo> ContainedTracks) : IContextDisplay;
 }
