@@ -15,6 +15,7 @@ await BlazorAppUtils.StartApp(
 	{
 		builder.RootComponents.Add<App>("#app");
 		builder.RootComponents.Add<HeadOutlet>("head::after");
+		builder.Services.AddBlazorContextMenu();
 		builder.Services.AddImplementationForMultipleGlobalServices<BlazorSpotifyAccountAuthenticator>(typeof(ISpotifyAuthenticator), typeof(ISpotifyAccountAuthenticator));
 		builder.Services.AddSingleton<ISpotifyService>(services => new StandardSpotifyProvider(services.GetSpotifyAuthCodeAuthenticator()));
 		return Task.CompletedTask;
