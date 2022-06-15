@@ -14,77 +14,117 @@
 else
 {
     <h1>Shuffle your playback</h1>
-    <div style="width: 400px; overflow-x: scroll; border: inset; border-radius: 10px" tabindex="-1">
-        @foreach (var context in contextsToDisplay)
-        {
-            @if (Equals(context.UnderlyingUri, _selectedContext?.UnderlyingUri) && Equals(context.ContextType, _selectedContext?.ContextType))
-            {
-                <div style="background:yellow">@ToDisplayTitle(context)</div>
-            }
-            else
-            {
-                <div @onclick="() => _selectedContext = context">@ToDisplayTitle(context)</div>
-            }
-        }
-    </div>
-    <h5>Albums</h5>
-    <div style="height: 500px; width: 400px; overflow-y: scroll; overflow-x: scroll; border: inset; border-radius: 10px" tabindex="-1">
-        <Virtualize Context="context" ItemsProvider="(request) => LoadItems<SavedAlbum, AlbumContextDisplay>(_albums, (album) => new AlbumContextDisplay(album), request)"
-                    OverscanCount="50" ItemSize="50">
-            @if (Equals(context.UnderlyingUri, _selectedContext?.UnderlyingUri) && Equals(context.ContextType, _selectedContext?.ContextType))
-            {
-                <div style="background:yellow; white-space:nowrap">
-                    <div>@ToDisplayTitle(context)</div>
-                    <font size="-1">@context.Caption</font>
+    <div>
+        <div style="display: inline-block">
+            <div style="width: 400px; max-width: 70%; overflow-x: scroll; border: inset; border-radius: 10px; resize: both" tabindex="-1">
+                @foreach (var context in contextsToDisplay)
+                {
+                    @if (_selectedContexts.TryGetValue(context, out var contextSelectionData) && contextSelectionData.IsSelected)
+                    {
+                        <div style="background:yellow" @onclick="() => Select(context)">@ToDisplayTitle(context)</div>
+                    }
+                    else
+                    {
+                        <div @onclick="() => Select(context)">@ToDisplayTitle(context)</div>
+                    }
+                }
+            </div>
+            <h5>Albums</h5>
+            <div style="height: 500px; width: 400px; max-width: 70%; overflow-y: scroll; overflow-x: scroll; border: inset; border-radius: 10px; resize: both " tabindex="-1">
+                <Virtualize Context="context" ItemsProvider="(request) => LoadItems<SavedAlbum, AlbumContextDisplay>(_albums, (album, _) => new AlbumContextDisplay(album), request)"
+                            OverscanCount="50" ItemSize="50">
+                    @if (_selectedContexts.TryGetValue(context, out var contextSelectionData) && contextSelectionData.IsSelected)
+                    {
+                        <div style="background:yellow; white-space:nowrap" @onclick="() => Select(context)">
+                            <div>@ToDisplayTitle(context)</div>
+                            <font size="-1">@context.Caption</font>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="white-space: nowrap" @onclick="() => Select(context)">
+                            <div>@ToDisplayTitle(context)</div>
+                            <font size="-1">@context.Caption</font>
+                        </div>
+                    }
+                </Virtualize>
+            </div>
+            <h5>Playlists</h5>
+            <div style="height: 500px; width: 400px; max-width: 70%; overflow-y: scroll; overflow-x: scroll; border: inset; border-radius: 10px; resize: both " tabindex="-1">
+                <Virtualize Context="context" ItemsProvider="(request) => LoadItems<SimplePlaylist, PlaylistContextDisplay>(_playlists, (playlist, _) => new PlaylistContextDisplay(playlist), request)"
+                            OverscanCount="50">
+                    @if (_selectedContexts.TryGetValue(context, out var contextSelectionData) && contextSelectionData.IsSelected)
+                    {
+                        <div style="background:yellow; white-space:nowrap" @onclick="() => Select(context)">
+                            <div>@ToDisplayTitle(context)</div>
+                            <font size="-1">@context.Caption</font>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="white-space: nowrap" @onclick="() => Select(context)">
+                            <div>@ToDisplayTitle(context)</div>
+                            <font size="-1">@context.Caption</font>
+                        </div>
+                    }
+                </Virtualize>
+            </div>
+        </div>
+        @if (_selectedContext != null)
+		{
+            <div style="display: inline-block; vertical-align:top">
+                <h5>Tracks</h5>
+                <div style="max-height: 1100px; width: 400px; max-width: 70%; overflow-y: scroll; overflow-x: scroll; border: inset; border-radius: 10px; resize: both" tabindex="-1">
+                    <Virtualize Context="context" ItemsProvider="(request) => LoadItems<IPlayableTrackLinkingInfo, TrackDisplay>(_selectedContext.ContainedTracks, (track, index) => new TrackDisplay(track, index), request)"
+                                OverscanCount="50" @ref="TrackList">
+                        @if (_selectedContexts.TryGetValue(_selectedContext, out var contextSelectionData) && contextSelectionData.IsSelected && !contextSelectionData.UnSelectedTracks.Contains(context.UnderlyingUri))
+                        {
+                            <div style="background:yellow; white-space:nowrap" @onclick="() => SelectTrack(context, _selectedContext)">
+                                <div style="display: inline-block"><font size="5">@context.TrackNumber</font></div>
+                                <div style="display: inline-block">
+                                    <div>@ToDisplayTitle(context)</div>
+                                    <font size="-1">@context.Caption</font>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="white-space: nowrap" @onclick="() => SelectTrack(context, _selectedContext)">
+                                <div style="display: inline-block"><font size="5">@context.TrackNumber</font></div>
+                                <div style="display: inline-block">
+                                    <div>@ToDisplayTitle(context)</div>
+                                    <font size="-1">@context.Caption</font>
+                                </div>
+                            </div>
+                        }
+                    </Virtualize>
                 </div>
-            }
-            else
-            {
-                <div style="white-space: nowrap" @onclick="() => _selectedContext = context">
-                    <div>@ToDisplayTitle(context)</div>
-                    <font size="-1">@context.Caption</font>
-                </div>
-            }
-        </Virtualize>
-    </div>
-    <h5>Playlists</h5>
-    <div style="height: 500px; width: 400px; overflow-y: scroll; overflow-x: scroll; border: inset; border-radius: 10px" tabindex="-1">
-        <Virtualize Context="context" ItemsProvider="(request) => LoadItems<SimplePlaylist, PlaylistContextDisplay>(_playlists, (playlist) => new PlaylistContextDisplay(playlist), request)"
-                    OverscanCount="50">
-            @if (Equals(context.UnderlyingUri, _selectedContext?.UnderlyingUri) && Equals(context.ContextType, _selectedContext?.ContextType))
-            {
-                <div style="background:yellow; white-space:nowrap">
-                    <div>@ToDisplayTitle(context)</div>
-                    <font size="-1">@context.Caption</font>
-                </div>
-            }
-            else
-            {
-                <div style="white-space: nowrap" @onclick="() => _selectedContext = context">
-                    <div>@ToDisplayTitle(context)</div>
-                    <font size="-1">@context.Caption</font>
-                </div>
-            }
-        </Virtualize>
+            </div>
+		}
+        
     </div>
 
-    @if (_selectedContext != null)
+    @if (_selectedContexts.Any())
     {
-        <div><input type="checkbox" checked="@_shouldChangePlayback" @onclick="() => _shouldChangePlayback = !_shouldChangePlayback"/>Should Change Playback?</div>
+        @if (_selectedContexts.Count > 1)
+		{
+            <div><input type="checkbox" checked="@_allowDuplicateTracks" @onclick="() => _allowDuplicateTracks = !_allowDuplicateTracks" />Should duplicates of the same track be allowed?</div>
+		}
+        <div><input type="checkbox" checked="@_shouldChangePlayback" @onclick="() => _shouldChangePlayback = !_shouldChangePlayback" />Should change playback?</div>
         @if (_shouldChangePlayback)
-		{
-            <div><input type="checkbox" checked="@_shouldMaintainCurrentlyPlaying" @onclick="() => _shouldMaintainCurrentlyPlaying = !_shouldMaintainCurrentlyPlaying"/>Should Maintain Currently Playing Track?</div>
-		}
+        {
+            <div><input type="checkbox" checked="@_shouldMaintainCurrentlyPlaying" @onclick="() => _shouldMaintainCurrentlyPlaying = !_shouldMaintainCurrentlyPlaying" />Should maintain currently playing track?</div>
+        }
 
-        <div><input type="checkbox" checked="@_shouldSaveAsPlaylist" @onclick="() => _shouldSaveAsPlaylist = !_shouldSaveAsPlaylist"/>Should Save As Playlist?</div>
+        <div><input type="checkbox" checked="@_shouldSaveAsPlaylist" @onclick="() => _shouldSaveAsPlaylist = !_shouldSaveAsPlaylist" />Should save as playlist?</div>
         @if (_shouldSaveAsPlaylist)
-		{
-            <input type="text" @bind="_saveAsPlaylistName"/>
-		}
+        {
+            <input type="text" @bind="_saveAsPlaylistName" />
+        }
         @if ((_shouldChangePlayback || _shouldSaveAsPlaylist) && (!_shouldSaveAsPlaylist || !string.IsNullOrWhiteSpace(_saveAsPlaylistName)))
-		{
+        {
             <button class="btn btn-primary" @onclick="ShufflePlayback">Shuffle</button>
-		}
+        }
         if (_mostRecentResult.HasValue)
         {
             <div>Most recent finished result: @(_mostRecentResult.Value ? "Success" : "Fail")</div>
@@ -95,23 +135,27 @@ else
 @code {
 
     private bool? _mostRecentResult = null;
-    private List<ISpotifyItemDisplay> contextsToDisplay = new();
-    private ISpotifyItemDisplay? _selectedContext = null;
+    private List<IContextDisplay> contextsToDisplay = new();
+    private IDictionary<IContextDisplay, ContextSelectionData> _selectedContexts = new Dictionary<IContextDisplay, ContextSelectionData>();
+    private IContextDisplay? _selectedContext = null;
     private SavedAlbumsCache _albums = new SavedAlbumsCache(loadType: LoadType.PartiallyOnInitialization);
     private SavedPlaylistsCache _playlists = new SavedPlaylistsCache(loadType: LoadType.PartiallyOnInitialization);
     private readonly CancellationTokenSource _pageTaskCancellation = new CancellationTokenSource();
+    private bool _allowDuplicateTracks = false;
     private bool _shouldChangePlayback = true;
     private bool _shouldMaintainCurrentlyPlaying = true;
     private bool _shouldSaveAsPlaylist = false;
     private string? _saveAsPlaylistName = null;
+    private Virtualize<TrackDisplay> TrackList;
 
     private async Task ShufflePlayback()
     {
-        if (_selectedContext == null)
+        if (!_selectedContexts.Any())
         {
             ui.NotifyUser("Cannot shuffle when nothing is selected");
             return;
         }
+        _mostRecentResult = null;
         var executor = new SpotifyCommandExecutor(spotifyProvider.Client);
         var parameterBuilder = TaskParameters.GetBuilder();
         if (_shouldChangePlayback)
@@ -126,10 +170,30 @@ else
             playbackSetterName = _shouldSaveAsPlaylist ? nameof(SpotifyUpdaters<FullTrack>.EfficientPlaylistSetterWithoutPlayback) : Exceptions.Throw<string>(new ArgumentException("Must have some type of playback setter selected"));
 
         using (parameterBuilder.Apply())
-        { 
-        _mostRecentResult = await (_selectedContext.ContextType.HasValue && SpotifyDependentUtils.TryParseSpotifyUri(_selectedContext.UnderlyingUri, out _, out var id, out _ )
-            ? executor.ModifyContext(_selectedContext.ContextType.Value, id, playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token)
-            : executor.ModifyContext(_selectedContext.UnderlyingUri, playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token)).WithoutContextCapture();
+        {
+            try {
+                var selectedContexts = _selectedContexts.Where(contextSelectionData => contextSelectionData.Value.IsSelected);
+                if (selectedContexts.Count() > 1 || (selectedContexts.TryGetSingle(out var singleSelectedContext) && singleSelectedContext.Value.UnSelectedTracks.Any()))
+                {
+                    var trackTasks = _selectedContexts.Select(kvp => kvp.Key.ContainedTracks.GetAll(_pageTaskCancellation.Token)
+                        .Then(tracks => tracks.Where(track => !kvp.Value.UnSelectedTracks.Contains(track.Uri))));
+                    var loadedContexts = await Task.WhenAll(trackTasks).WaitAsync(_pageTaskCancellation.Token).WithoutContextCapture();
+                    var tracks = loadedContexts.SelectMany(contextTracks => contextTracks);
+                    if (!_allowDuplicateTracks)
+                        tracks = tracks.Distinct(new KeyBasedEqualityComparer<IPlayableTrackLinkingInfo, string>(track => track.Uri));
+                    _mostRecentResult = await executor.ModifyCustomContext(tracks, playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token).WithoutContextCapture();
+                }
+                else if (selectedContexts.TryGetSingle(out singleSelectedContext) && singleSelectedContext.Key.ContextType.HasValue && SpotifyDependentUtils.TryParseSpotifyUri(singleSelectedContext.Key.UnderlyingUri, out _, out var id, out _))
+                    _mostRecentResult = await executor.ModifyContext(singleSelectedContext.Key.ContextType.Value, id,
+                        playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token).WithoutContextCapture();
+                else if (selectedContexts.TryGetSingle(out singleSelectedContext) && singleSelectedContext.Key != null)
+                    _mostRecentResult = await executor.ModifyContext(singleSelectedContext.Key.UnderlyingUri,
+                        playbackSetterName: playbackSetterName, cancellationToken: _pageTaskCancellation.Token).WithoutContextCapture();
+            }
+            catch (Exception e)
+            {
+                Logger.Error("An exception occurred while trying to modify playback/playlist: {exception}", e);
+            }
         }
     }
 
@@ -148,10 +212,10 @@ else
         }
     }
 
-    private async Task<IEnumerable<ISpotifyItemDisplay>> GetCurrentlyPlayingContexts(CurrentlyPlaying? currentlyPlaying = null)
+    private async Task<IEnumerable<IContextDisplay>> GetCurrentlyPlayingContexts(CurrentlyPlaying? currentlyPlaying = null)
     {
         currentlyPlaying ??= await spotifyProvider.SpotifyConfiguration.GetCurrentlyPlaying().WithoutContextCapture();
-        var contexts = new List<ISpotifyItemDisplay>();
+        var contexts = new List<IContextDisplay>();
         if (currentlyPlaying?.Item != null)
         {
             if (currentlyPlaying.Context != null)
@@ -159,25 +223,56 @@ else
                 var didParse = SpotifyDependentUtils.TryParseSpotifyUri(currentlyPlaying.Context.Uri, out var type, out var id, out var allParts);
                 if (didParse)
                 {
-                    var typeEnum = Enum.TryParse<PlaybackContextType>(type, true, out var result) ? result : (PlaybackContextType?)null;
-                    contexts.Add(new MiscContextDisplay("Current Playback", currentlyPlaying.Context.Uri, $"{(typeEnum.HasValue ? $"Current context type: {typeEnum}" : "")}", typeEnum));
+                    var isPlayableContextType = Enum.TryParse<PlaybackContextType>(type, true, out var typeEnum);
+                    Func<CancellationToken, Task<IQueryCache<IPlayableTrackLinkingInfo>>> cacheRetriever = default;
+                    var hasTracks = isPlayableContextType && SpotifyRequestCaches.TryGetCacheForTracksOfContextType(spotifyProvider.SpotifyConfiguration, typeEnum, id, LoadType.Lazy, out cacheRetriever);
+                    if (hasTracks)
+                    {
+                        var (contextTitle, contextUri, contextCaption) = ("Current Playback", currentlyPlaying.Context.Uri, $"{(isPlayableContextType ? $"Current context type: {typeEnum}" : "")}");
+                        var tracks = await cacheRetriever(_pageTaskCancellation.Token).WithoutContextCapture();
+                        contexts.Add(new MiscContextDisplay(contextTitle, contextUri, contextCaption, typeEnum, tracks));
+
+                    }
                 }
             }
         }
         return contexts;
     }
 
-    private async ValueTask<ItemsProviderResult<ContextT>> LoadItems<ItemT, ContextT>(IQueryCache<ItemT> cache, Func<ItemT, ContextT> displayCreator, ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<ContextT>> LoadItems<ItemT, ContextT>(IQueryCache<ItemT> cache, Func<ItemT, int, ContextT> displayCreator, ItemsProviderRequest request)
         where ContextT : ISpotifyItemDisplay
     {
         var items = await cache.GetSubsequence(request.StartIndex, request.Count, _pageTaskCancellation.Token).WithoutContextCapture();
         var totalCount = await cache.GetTotalCount(_pageTaskCancellation.Token).WithoutContextCapture();
-        return new ItemsProviderResult<ContextT>(items.Select(displayCreator), totalCount);
+        return new ItemsProviderResult<ContextT>(items.Select((item, index) => displayCreator(item, index + request.StartIndex)), totalCount);
     }
 
     private static string ToDisplayTitle(ISpotifyItemDisplay item) => $"{(item.ContextType.HasValue ? item.ContextType.Value + ": " : "")}{item.Title}";
 
-    private void Select(ISpotifyItemDisplay context) => _selectedContext = context;
+    private async Task Select(IContextDisplay context)
+    {
+        var contextSelectionData = _selectedContexts.AddIfNotPresent(context, () => new ContextSelectionData(new HashSet<string>(), false));
+        contextSelectionData.IsSelected = !contextSelectionData.IsSelected;
+        if (contextSelectionData.IsSelected)
+        {
+            _selectedContext = context;
+            if (TrackList != null)
+                await TrackList.RefreshDataAsync().WithoutContextCapture();
+        }
+        else
+            _selectedContext = null;
+    }
+
+    private void SelectTrack(TrackDisplay trackContext, IContextDisplay containingContext)
+    {
+        var contextSelectionData = _selectedContexts.AddIfNotPresent(containingContext, () => new ContextSelectionData(new HashSet<string>(), false));
+        contextSelectionData.UnSelectedTracks.Toggle(trackContext.UnderlyingUri);
+    }
 
     public void Dispose() => _pageTaskCancellation.Cancel();
+
+    private record ContextSelectionData(ISet<string> UnSelectedTracks, bool IsSelected)
+    {
+        internal bool IsSelected { get; set; } = IsSelected;
+    }
 }
