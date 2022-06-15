@@ -108,7 +108,7 @@ namespace ClassicalSpotifyShuffler.Common
 			get
 			{
 				var task = ContainedTracks.GetTotalCount();
-				return $"{(task.IsCompletedSuccessfully ? task.Result : "unknown number of")} tracks";
+				return $"{(task.IsCompletedSuccessfully ? task.Result : "Still counting the number of")} tracks";
 			}
 		} 
 		public PlaybackContextType? ContextType { get; }
