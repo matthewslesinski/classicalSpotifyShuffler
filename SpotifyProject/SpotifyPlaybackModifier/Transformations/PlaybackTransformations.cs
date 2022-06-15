@@ -80,8 +80,9 @@ namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT>(contextConstructor, ComparerUtils.ComparingBy<ITrackLinkingInfo>(track => track.Uri));
 
 			SimpleShuffleByWork = new SimpleWorkShuffle<ContextT,
-				IReorderedPlaybackContext<TrackT, ContextT>, TrackT, (string workName, string albumName, string albumUri)>(
-				contextConstructor, new NaiveTrackLinker<ContextT, TrackT>(new[] { "op", "k", "bwv", "woo", "d", "bb", "hwv", "s", "sz", "l" }, new[] { "/", ":", "-" }));
+				IReorderedPlaybackContext<TrackT, ContextT>, TrackT, WorkNameKey>(
+				contextConstructor, new TrackNumberAndWorkNameNaiveLinker<ContextT, TrackT>(
+					new NaiveTrackLinker<ContextT, TrackT>(new[] { "op", "k", "bwv", "woo", "d", "bb", "hwv", "s", "sz", "l" }, new[] { "/", ":", "-" })));
 
 			LukesShuffle = new SimpleWorkShuffle<ContextT,
 				IReorderedPlaybackContext<TrackT, ContextT>, TrackT, int>(

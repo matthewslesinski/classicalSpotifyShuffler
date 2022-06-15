@@ -6,14 +6,14 @@ using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.Transformations
 {
-	public class SimpleWork<TrackT> : ITrackGrouping<(string name, string albumName, string albumUri), TrackT>
+	public class SimpleWork<TrackT> : ITrackGrouping<WorkNameKey, TrackT>
 	{
 		public string Name { get; }
 		public string AlbumName { get; }
 		public string AlbumUri { get; }
 		public IEnumerable<TrackT> Tracks => _trackLinkingInfos.Select(trackMetaData => trackMetaData.OriginalTrack);
 		private readonly IEnumerable<ITrackLinkingInfo<TrackT>> _trackLinkingInfos;
-		public (string name, string albumName, string albumUri) Key => (Name, AlbumName, AlbumUri);
+		public WorkNameKey Key => new (Name, AlbumName, AlbumUri);
 
 		public SimpleWork(string name, string albumName, string albumUri, IEnumerable<ITrackLinkingInfo<TrackT>> tracks)
 		{
