@@ -70,6 +70,15 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			BachKeyboardWorks,
 			HilaryHahnIn27Pieces,
 			BachCantatas,
+			BrahmsSextets,
+			EnlishMusicForStrings,
+			MustTheDevilHaveAllTheGoodTunes,
+			KabalevskyCelloConcertos,
+			SibeliusAndNielsenViolinConcertos,
+			ProkofievSinfoniaConcertanteAndTchaikovskyRococo,
+			VeressTrioAndBartokPianoQuintet,
+			CarolineShawOrange,
+			NielsenCompleteSymphonies,
 		}
 
 		protected enum SampleArtists
@@ -94,6 +103,15 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			{ SampleAlbums.BrahmsSymphonies, "spotify:album:0kJBUtCkSBYRyc8Jiyyecz" },
 			{ SampleAlbums.BachKeyboardWorks, "spotify:album:1FfjKB0aGdGU52uQOuTA6I" },
 			{ SampleAlbums.HilaryHahnIn27Pieces, "spotify:album:7GiMQKT1Twq3MOVAGQekF7" },
+			{ SampleAlbums.BrahmsSextets, "spotify:album:4Kh7gIrJVphkM0XH1NCBK5" },
+			{ SampleAlbums.EnlishMusicForStrings, "spotify:album:61B2Rro2y5Wz8zHofmdpLO" },
+			{ SampleAlbums.KabalevskyCelloConcertos, "spotify:album:1PnevN3lMU2pX0T6Dekx2a" },
+			{ SampleAlbums.SibeliusAndNielsenViolinConcertos, "spotify:album:1DEQiy1FMxQltnFRMFyWC3" },
+			{ SampleAlbums.NielsenCompleteSymphonies, "spotify:album:1dOO94iC2dBaBYMUKx7k4K" },
+			{ SampleAlbums.MustTheDevilHaveAllTheGoodTunes, "spotify:album:6CymPaJZK7ZTz79sbCrqnb" },
+			{ SampleAlbums.ProkofievSinfoniaConcertanteAndTchaikovskyRococo, "spotify:album:3kKbCgSzqhIaYaIJDQHncg" },
+			{ SampleAlbums.VeressTrioAndBartokPianoQuintet, "spotify:album:2jl8aMvxO692tb8Jzkcrvm" },
+			{ SampleAlbums.CarolineShawOrange, "spotify:album:5d0tz2baP5WGhMzZvONcgU" },
 			{ SampleAlbums.BachCantatas, "spotify:album:46kDQc1UFEKI51yvavxdMm" }
 		};
 

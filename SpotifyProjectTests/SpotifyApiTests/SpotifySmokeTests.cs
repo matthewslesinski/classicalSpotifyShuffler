@@ -118,17 +118,9 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		}
 
 		[Test]
-		public async Task TestGetAllSavedAlbums()
+		public async Task TestMultipleContexts()
 		{
-			var cache = new SavedAlbumsCache(SpotifyAccessor.SpotifyConfiguration);
-			await cache.GetAll().WithoutContextCapture();
-			Assert.NotZero(await cache.GetTotalCount().WithoutContextCapture());
-		}
-
-		[Test]
-		public async Task TestCustomPlaybackQueue()
-		{
-			var playlistName = GetPlaylistNameForTest(nameof(TestCustomPlaybackQueue));
+			var playlistName = GetPlaylistNameForTest(nameof(TestMultipleContexts));
 			var paramBuilder = TaskParameters.GetBuilder()
 				.With(SpotifyParameters.TransformationName, nameof(IPlaybackTransformationsStore<IOriginalAllLikedTracksPlaybackContext, FullTrack>.SameOrder))
 				.With(SpotifyParameters.PlaybackSetterName, nameof(SpotifyUpdaters<FullTrack>.EfficientPlaylistSetterWithoutPlayback))
@@ -138,18 +130,18 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			using (paramBuilder.Apply())
 			{
 				var commandExecutor = new SpotifyCommandExecutor(SpotifyAccessor.Spotify);
-				var albumId1 = SampleAlbumIds[SampleAlbums.HilaryHahnIn27Pieces];
-				var albumId2 = SampleAlbumIds[SampleAlbums.BrahmsSymphonies];
-				var playlistId1 = SamplePlaylistIds[SamplePlaylists.Brahms];
-				var album1 = await SpotifyAccessor.SpotifyConfiguration.GetAlbum(albumId1).WithoutContextCapture();
-				var album2 = await SpotifyAccessor.SpotifyConfiguration.GetAlbum(albumId2).WithoutContextCapture();
-				var tracks1Task = SpotifyAccessor.SpotifyConfiguration.GetAllAlbumTracks(albumId1);
-				var tracks2Task = SpotifyAccessor.SpotifyConfiguration.GetAllAlbumTracks(albumId2);
-				var tracks3Task = SpotifyAccessor.SpotifyConfiguration.GetAllRemainingPlaylistTracks(playlistId1);
-				var tracks1 = (await tracks1Task.WithoutContextCapture()).Select<SimpleTrack, IPlayableTrackLinkingInfo>(track => new SimpleTrackAndAlbumWrapper(track, album1));
-				var tracks2 = (await tracks2Task.WithoutContextCapture()).Select(track => new SimpleTrackAndAlbumWrapper(track, album2));
-				var tracks3 = (await tracks3Task.WithoutContextCapture()).Select(track => new FullTrackWrapper(track));
-				var tracks = tracks1.Concat(tracks2).Concat(tracks3);
+				var albumsToUse = Enum.GetValues<SampleAlbums>();
+				var playlistsToUse = new[] { SamplePlaylists.Brahms };
+				var albumIds = albumsToUse.Select(album => SampleAlbumIds[album]);
+				var playlistIds = playlistsToUse.Select(playlist => SamplePlaylistIds[playlist]);
+				var albumTasks = albumIds.Select(albumId => (SpotifyAccessor.SpotifyConfiguration.GetAllAlbumTracks(albumId), SpotifyAccessor.SpotifyConfiguration.GetAlbum(albumId)));
+				var playlistTrackTrasks = playlistIds.Select(playlistId => SpotifyAccessor.SpotifyConfiguration.GetAllRemainingPlaylistTracks(playlistId));
+				await Task.WhenAll(albumTasks.Select(pair => pair.Item1)).WithoutContextCapture();
+				await Task.WhenAll(albumTasks.Select(pair => pair.Item2)).WithoutContextCapture();
+				var playlistTracks = await Task.WhenAll(playlistTrackTrasks).WithoutContextCapture();
+				var tracks = albumTasks.SelectMany(pair => pair.Item1.Result.Select(track => new SimpleTrackAndAlbumWrapper(track, pair.Item2.Result)))
+					.Concat<IPlayableTrackLinkingInfo>(playlistTracks.SelectMany(tracks => tracks).Select(track => new FullTrackWrapper(track)));
+
 				var success = await commandExecutor.ModifyCustomContext(tracks).WithoutContextCapture();
 				Assert.IsTrue(success);
 				var playlistObj = await SpotifyAccessor.AddOrGetPlaylistByName(playlistName).WithoutContextCapture();
@@ -158,6 +150,14 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				var intendedOrder = tracks.Select(track => track.Uri);
 				CollectionAssert.AreEqual(intendedOrder, newOrder);
 			}
+		}
+
+		[Test]
+		public async Task TestGetAllSavedAlbums()
+		{
+			var cache = new SavedAlbumsCache(SpotifyAccessor.SpotifyConfiguration);
+			await cache.GetAll().WithoutContextCapture();
+			Assert.NotZero(await cache.GetTotalCount().WithoutContextCapture());
 		}
 	}
 }
