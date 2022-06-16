@@ -39,7 +39,7 @@ namespace BlazorApplicationResources.BlazorApplicationUtils
 					if (args.Level == LogLevel.Error) GlobalDependencies.Get<IUserInterface>().NotifyUserOfError(args.BareMessage);
 				};
 
-				if (Settings.TryGet<string>(BasicSettings.LogFileName, out var logFileName))
+				if (Settings.TryGet<string>(BasicSettings.LogFileName, out var logFileName) && !string.IsNullOrWhiteSpace(logFileName))
 					LoggerTargetProvider.Register(new LocalStorageLogger($"{logFileName}.{DateTime.Now}.log"));
 
 				Logger.Information($"Base address is {hostBuilder.HostEnvironment.BaseAddress}");
