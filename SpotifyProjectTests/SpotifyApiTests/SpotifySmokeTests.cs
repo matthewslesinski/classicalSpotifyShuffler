@@ -11,6 +11,7 @@ using SpotifyProject.SpotifyPlaybackModifier.PlaybackContexts;
 using SpotifyProject.SpotifyPlaybackModifier.PlaybackSetters;
 using SpotifyProject.SpotifyPlaybackModifier.TrackLinking;
 using SpotifyProject.SpotifyPlaybackModifier.Transformations;
+using SpotifyProject.SpotifyUtils;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
@@ -111,9 +112,52 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				await SpotifyAccessor.ReplacePlaylistItems(playlistId);
 				var success = await commandExecutor.ModifyContext<IOriginalAllLikedTracksPlaybackContext, FullTrack>(() => Task.FromResult(context), PlaybackContextType.AllLikedTracks, null).WithoutContextCapture();
 				Assert.IsTrue(success);
-				var newOrder = (await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlistId)).Select(context.GetMetadataForTrack);
+				var newOrder = (await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlistId).WithoutContextCapture()).Select(context.GetMetadataForTrack);
 				Assert.IsTrue(trackOrder.IsSuperSequenceOf(newOrder, ITrackLinkingInfo.EqualityByUris));
 			}
+		}
+
+		[Test]
+		public async Task TestMultipleContexts()
+		{
+			var playlistName = GetPlaylistNameForTest(nameof(TestMultipleContexts));
+			var paramBuilder = TaskParameters.GetBuilder()
+				.With(SpotifyParameters.TransformationName, nameof(IPlaybackTransformationsStore<IOriginalAllLikedTracksPlaybackContext, FullTrack>.SameOrder))
+				.With(SpotifyParameters.PlaybackSetterName, nameof(SpotifyUpdaters<FullTrack>.EfficientPlaylistSetterWithoutPlayback))
+				.With(SpotifyParameters.NumberOfRetriesForServerError, 1)
+				.With(SpotifyParameters.SaveAsPlaylistName, playlistName)
+				.With(SpotifyParameters.SerializeOperations, false);
+			using (paramBuilder.Apply())
+			{
+				var commandExecutor = new SpotifyCommandExecutor(SpotifyAccessor.Spotify);
+				var albumsToUse = Enum.GetValues<SampleAlbums>();
+				var playlistsToUse = new[] { SamplePlaylists.Brahms };
+				var albumIds = albumsToUse.Select(album => SampleAlbumIds[album]);
+				var playlistIds = playlistsToUse.Select(playlist => SamplePlaylistIds[playlist]);
+				var albumTasks = albumIds.Select(albumId => (SpotifyAccessor.SpotifyConfiguration.GetAllAlbumTracks(albumId), SpotifyAccessor.SpotifyConfiguration.GetAlbum(albumId)));
+				var playlistTrackTrasks = playlistIds.Select(playlistId => SpotifyAccessor.SpotifyConfiguration.GetAllRemainingPlaylistTracks(playlistId));
+				await Task.WhenAll(albumTasks.Select(pair => pair.Item1)).WithoutContextCapture();
+				await Task.WhenAll(albumTasks.Select(pair => pair.Item2)).WithoutContextCapture();
+				var playlistTracks = await Task.WhenAll(playlistTrackTrasks).WithoutContextCapture();
+				var tracks = albumTasks.SelectMany(pair => pair.Item1.Result.Select(track => new SimpleTrackAndAlbumWrapper(track, pair.Item2.Result)))
+					.Concat<IPlayableTrackLinkingInfo>(playlistTracks.SelectMany(tracks => tracks).Select(track => new FullTrackWrapper(track)));
+
+				var success = await commandExecutor.ModifyCustomContext(tracks).WithoutContextCapture();
+				Assert.IsTrue(success);
+				var playlistObj = await SpotifyAccessor.AddOrGetPlaylistByName(playlistName).WithoutContextCapture();
+				var playlistId = playlistObj.Id;
+				var newOrder = (await SpotifyAccessor.GetAllRemainingPlaylistTracks(playlistId).WithoutContextCapture()).Select(track => track.Uri);
+				var intendedOrder = tracks.Select(track => track.Uri);
+				CollectionAssert.AreEqual(intendedOrder, newOrder);
+			}
+		}
+
+		[Test]
+		public async Task TestGetAllSavedAlbums()
+		{
+			var cache = new SavedAlbumsCache(SpotifyAccessor.SpotifyConfiguration);
+			await cache.GetAll().WithoutContextCapture();
+			Assert.NotZero(await cache.GetTotalCount().WithoutContextCapture());
 		}
 	}
 }

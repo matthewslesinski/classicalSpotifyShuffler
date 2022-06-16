@@ -1,0 +1,149 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <StaticWebAssetsMandatedDir>$(MSBuildProjectDirectory)/wwwroot/</StaticWebAssetsMandatedDir>
+    <CustomCommands>
+      <CustomCommands>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>rm -f ./wwwroot/spotifyToken.json</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>rm -f ./wwwroot/spotifyClientInfo.json</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+        <Command>
+          <type>BeforeBuild</type>
+          <command>cp -pvfRP $(SettingsTemplatesDir)/standardClassicalSpotifyShufflerSettings.xml ./wwwroot/standardRunSettings.xml</command>
+          <workingdir>${ProjectDir}</workingdir>
+        </Command>
+      </CustomCommands>
+    </CustomCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Implementations\" />
+    <Folder Include="Common\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Microsoft.AspNetCore.Components.WebAssembly.DevServer" />
+    <None Remove="Microsoft.AspNetCore.Components.WebAssembly" />
+    <None Remove="SpotifyAPI.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <None Remove="Common\" />
+    <None Remove="Implementations\" />
+    <None Remove="Blazor.ContextMenu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SpotifyProject\SpotifyProject.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\CustomResources\CustomResources.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\BlazorApplicationResources\BlazorApplicationResources.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.5" />
+    <PackageReference Include="Blazor.ContextMenu" Version="1.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="SpotifyAPI.Web">
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="SpotifyAPI.Web.Auth">
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.Auth.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!--
+  The following targets are a hacky but solid way of guaranteeing that parent projects' extra files (e.g. for settings and NLog.config) are copied over to
+  this project's wwwroot folder in the project (the actual original wwwroot folder, not just in the bin's built one) before the wwwroot folder is built and
+  the static web assets are resolved when building the manifest. Blazor's build process creates a manifest that only allows files to be sent to the client
+  if they're in a wwwroot folder (in this project, and possibly in parent projects). But parent projects might have important files without putting them
+  in a wwwroot folder, so this is needed to ensure they are included.
+
+  The way this works is by having the CopySourceFilesToWWWRoot target specified to run before ResolveProjectStaticWebAssets. And it makes sure that
+  _GetCopyToOutputDirectoryItemsFromTransitiveProjectReferences runs (normally it would run later in the build process, and this just moves it up in the order.
+  This target needs to be the one used because GetCopyToOutputDirectoryItems seems to be specified somewhere to go after resolving static web assets).
+  Then, it can use the results, containing the files found in parent projects, to copy them over to wwwroot.
+
+  For reference on what I think are the files that specify the normal build process, go to these links:
+  https://github.com/dotnet/msbuild/blob/main/src/Tasks/Microsoft.Common.CurrentVersion.targets and
+  https://github.com/dotnet/sdk/blob/main/src/RazorSdk/Targets/Microsoft.NET.Sdk.Razor.StaticWebAssets.targets
+  -->
+
+  <Target Name="GetTransitiveStaticWebAssets">
+    <CallTarget Targets="_GetCopyToOutputDirectoryItemsFromTransitiveProjectReferences">
+      <Output TaskParameter="TargetOutputs" ItemName="FoundItems" />
+    </CallTarget>
+    <ItemGroup>
+      <FoundItemsToCopyAlways               KeepDuplicates=" '$(_GCTODIKeepDuplicates)' != 'false' " KeepMetadata="$(_GCTODIKeepMetadata)" Include="@(FoundItems->'%(FullPath)')" Condition="'%(FoundItems.CopyToOutputDirectory)'=='Always'"/>
+      <FoundItemsToCopyPreserveNewest       KeepDuplicates=" '$(_GCTODIKeepDuplicates)' != 'false' " KeepMetadata="$(_GCTODIKeepMetadata)" Include="@(FoundItems->'%(FullPath)')" Condition="'%(FoundItems.CopyToOutputDirectory)'=='PreserveNewest'"/>
+    </ItemGroup>
+  </Target>
+
+  <Target
+      Name="CopySourceFilesToWWWRootPreserveNewest"
+      Condition=" '@(FoundItemsToCopyPreserveNewest)' != '' "
+      Inputs="@(FoundItemsToCopyPreserveNewest)"
+      Outputs="@(FoundItemsToCopyPreserveNewest->'$(StaticWebAssetsMandatedDir)%(TargetPath)')">
+    <Copy
+        SourceFiles = "@(FoundItemsToCopyPreserveNewest)"
+        DestinationFiles = "@(FoundItemsToCopyPreserveNewest->'$(StaticWebAssetsMandatedDir)%(TargetPath)')"
+        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+        Retries="$(CopyRetryCount)"
+        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+        UseHardlinksIfPossible="$(CreateHardLinksForAdditionalFilesIfPossible)"
+        UseSymboliclinksIfPossible="$(CreateSymbolicLinksForAdditionalFilesIfPossible)">
+
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+
+    </Copy>
+  </Target>
+
+  <Target Name="CopySourceFilesToWWWRootAlways"
+          Condition=" '@(FoundItemsToCopyAlways)' != '' ">
+    <Copy
+        SourceFiles = "@(FoundItemsToCopyAlways)"
+        DestinationFiles = "@(FoundItemsToCopyAlways->'$(StaticWebAssetsMandatedDir)%(TargetPath)')"
+        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+        Retries="$(CopyRetryCount)"
+        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+        UseHardlinksIfPossible="$(CreateHardLinksForAdditionalFilesIfPossible)"
+        UseSymboliclinksIfPossible="$(CreateSymbolicLinksForAdditionalFilesIfPossible)">
+
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+
+    </Copy>
+  </Target>
+
+  <Target Name="CopySourceFilesToWWWRoot"
+          BeforeTargets="ResolveProjectStaticWebAssets"
+          AfterTargets="CoreCompile"
+          DependsOnTargets="GetTransitiveStaticWebAssets;
+                            CopySourceFilesToWWWRootPreserveNewest;
+                            CopySourceFilesToWWWRootAlways"/>
+
+</Project>

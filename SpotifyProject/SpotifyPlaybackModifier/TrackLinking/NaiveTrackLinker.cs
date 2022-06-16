@@ -15,7 +15,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 
 		public NaiveTrackLinker(string[] opusIndicators, string[] dividers = null, ITrackNameTokenizer tokenizer = null)
 		{
-			_dividers = dividers == null ? Array.Empty<string>() : dividers;
+			_dividers = dividers ?? Array.Empty<string>();
 			_opusIndicators = opusIndicators;
 			_tokenizer = tokenizer ?? new SimpleTrackTokenizer(dividers.Select(divider => Convert.ToChar(divider)));
 		}
@@ -33,7 +33,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 					for (int i = 0; i < matches.Length - 1; i++)
 					{
 						if (Equals(matches[i].token, opusSymbol) && int.TryParse(matches[i + 1].token, out var movementNumber))
-							return trackName.Substring(0, matches[i + 1].index + matches[i + 1].token.Length);
+							return trackName[..(matches[i + 1].index + matches[i + 1].token.Length)];
 					}
 				}
 			}
@@ -42,7 +42,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			{
 				var dividerAppearances = matches.Skip(2).Where(match => Equals(match.token, divider)).ToList();
 				if (dividerAppearances.Count == 1)
-					return trackName.Substring(0, dividerAppearances.Last().index + 1);
+					return trackName[..(dividerAppearances.Last().index + 1)];
 				if (dividerAppearances.Count > 1)
 				{
 					for (int i = 2; i < matches.Length - 1; i++)
@@ -50,7 +50,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 						if (matches[i].token.Contains(divider)
 							&& (int.TryParse(matches[i + 1].token, out var movementNumber)
 								|| (Util.IsRomanNumeral(matches[i + 1].token, out var romanNumeral) && (movementNumber = romanNumeral.NumericValue) > 0)))
-							return trackName.Substring(0, matches[i].index + 1);
+							return trackName[..(matches[i].index + 1)];
 					}
 				}
 

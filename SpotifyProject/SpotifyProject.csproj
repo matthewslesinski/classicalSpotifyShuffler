@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>$(TargetFrameworkForProject)</TargetFramework>
+    <UseMonoRuntime>$(UseMonoForCLI)</UseMonoRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -12,7 +12,7 @@
     <NoStdLib>true</NoStdLib>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Linq.Async" Version="5.0.0" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Authentication\" />
@@ -36,22 +36,51 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.editorconfig" />
-    <None Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
+    <Content Include="..\..\work-identifier\bin\libworkIdentifier.dylib">
       <Link>libworkIdentifier.dylib</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\SettingsTemplates\lukesShuffleSettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\lukesShuffleSettings.xml">
       <Link>lukesShuffleSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\SettingsTemplates\allLikedTracksSettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\allLikedTracksSettings.xml">
       <Link>allLikedTracksSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\SettingsTemplates\standardSpotifySettings.xml">
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardSpotifySettings.xml">
       <Link>standardSpotifySettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardDebugSettings.xml" Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+      <Link>standardConfigurationSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(SettingsTemplatesDir)\standardReleaseSettings.xml" Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+      <Link>standardConfigurationSettings.xml</Link>
+      <PublishState>Prerequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/personalSettings.xml">
+      <Link>personalSettings.xml</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/spotifyClientInfo.json" Condition="$(IncludePersonalDataInBuild)">
+      <Link>spotifyClientInfo.json</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(PersonalDataDirectory)/spotifyToken.json" Condition="$(IncludePersonalDataInBuild)">
+      <Link>spotifyToken.json</Link>
+      <PublishState>Prequisite</PublishState>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ApplicationResources\ApplicationResources.csproj" />
@@ -59,10 +88,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="SpotifyAPI.Web.Auth">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.Auth.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.Auth.dll</HintPath>
     </Reference>
     <Reference Include="SpotifyAPI.Web">
-      <HintPath>..\..\..\..\Github\SpotifyApiFork\SpotifyAPI-NET\SpotifyAPIBinaries\SpotifyAPI.Web.dll</HintPath>
+      <HintPath>$(AdditionalBinaryDependenciesDir)\SpotifyAPI.Web.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

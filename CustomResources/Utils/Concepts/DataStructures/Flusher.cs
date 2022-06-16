@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
-	public abstract class Flusher<FlushableT, ContainerT> : TaskContainingDisposable where ContainerT : class, IFlushableContainer<FlushableT>
+	public abstract class Flusher<FlushableT, ContainerT> : TaskContainingDisposable<bool> where ContainerT : class, IFlushableContainer<FlushableT>
 	{
 		private readonly bool _flushOnDestroy;
 		private readonly TimeSpan _flushWaitTime;
@@ -21,34 +22,58 @@ namespace CustomResources.Utils.Concepts.DataStructures
 				AppDomain.CurrentDomain.ProcessExit += DoFlushOnClose;
 		}
 
+		protected enum AdditionalFlushOptions
+		{
+			NeedsAdditionalFlush = 1,
+			NoAdditionalFlushNeeded = 0
+		}
 
 		// Returned bool should indicate if additional flushing is necessary
-		protected abstract bool Flush(ContainerT containerToFlush);
+		protected abstract Task<AdditionalFlushOptions> Flush(ContainerT containerToFlush, CancellationToken cancellationToken = default);
 		protected abstract ContainerT CreateNewContainer();
+		protected abstract bool OnFlushFailed(Exception e);
 
-		public void Add(FlushableT item)
+		public void Add(FlushableT item, CancellationToken cancellationToken = default)
 		{
 			var currentContainer = _currentFlushableContainer;
 			currentContainer.Update(item);
-			ScheduleFlush();
+			_ = ScheduleFlush(cancellationToken);
 		}
 
-		private void ScheduleFlush()
+		private async Task ScheduleFlush(CancellationToken cancellationToken = default)
 		{
 			if (_currentFlushableContainer.RequestFlush())
-				Run(ConductFlush);
+			{
+				var result = await Run(ConductFlush, cancellationToken).WithoutContextCapture();
+				if (result.Success && (result.ResultValue || _currentFlushableContainer.IsReadyToBeFlushed))
+					_ = ScheduleFlush(cancellationToken);
+			}
 		}
 
-		private async Task ConductFlush()
+		private async Task<bool> ConductFlush(CancellationToken cancellationToken = default)
 		{
-			await Task.Delay(_flushWaitTime, StopToken).WithoutContextCapture();
+			await Task.Delay(_flushWaitTime, cancellationToken).WithoutContextCapture();
 
 			var newContainer = CreateNewContainer();
 			var oldContainer = Interlocked.Exchange(ref _currentFlushableContainer, newContainer);
 
-			var additionalFlushNeeded = Flush(oldContainer);
-			if (additionalFlushNeeded)
-				ScheduleFlush();
+			return await DoFlush(oldContainer, cancellationToken).WithoutContextCapture();
+		}
+
+		private async Task<bool> DoFlush(ContainerT container, CancellationToken cancellationToken)
+		{
+			try
+			{
+				var additionalFlushNeeded = await Flush(container, cancellationToken).WithoutContextCapture();
+				return ((int)additionalFlushNeeded).AsBool();
+			}
+			catch (Exception e) when (!(e is OperationCanceledException))
+			{
+				if (OnFlushFailed(e))
+					throw;
+				else
+					return false;
+			}
 		}
 
 		protected override void DoDispose()
@@ -66,7 +91,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 			var container = Interlocked.Exchange(ref _currentFlushableContainer, null);
 			// Only flush if one has already been scheduled, so requesting to flush should actually be false
 			if (!container.RequestFlush())
-				Flush(container);
+				_ = DoFlush(container, CancellationToken.None);
 		}
 	}
 
@@ -74,5 +99,39 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	{
 		bool Update(FlushableT itemToFlush);
 		bool RequestFlush();
+		bool IsReadyToBeFlushed { get; }
+	}
+
+	public class CombiningContainer<FlushableT, OutputT> : IFlushableContainer<FlushableT>
+	{
+		private OutputT _output;
+		private Reference<bool> _isFlushScheduled = false;
+		private Func<OutputT, FlushableT, OutputT> _combiner;
+
+		public CombiningContainer(Func<OutputT, FlushableT, OutputT> combiner, OutputT seed = default)
+		{
+			_output = seed;
+			_combiner = combiner;
+		}
+
+		public bool IsReadyToBeFlushed { get; private set; }
+
+		public OutputT Contents => _output;
+
+		public bool RequestFlush() => GeneralUtils.Utils.IsFirstRequest(ref _isFlushScheduled);
+
+		public bool Update(FlushableT itemToFlush)
+		{
+			_output = Combine(_output, itemToFlush);
+			IsReadyToBeFlushed = true;
+			return true;
+		}
+
+		protected OutputT Combine(OutputT existing, FlushableT incoming) => _combiner(existing, incoming);
+	}
+
+	public class ReplacingContainer<FlushableT> : CombiningContainer<FlushableT, FlushableT>
+	{
+		public ReplacingContainer() : base((existing, incoming) => incoming) { }
 	}
 }

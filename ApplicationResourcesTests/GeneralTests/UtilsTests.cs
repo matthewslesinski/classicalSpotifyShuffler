@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils.Parameters;
 using ApplicationResources.Setup;
+using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 using NUnit.Framework;
 
@@ -12,14 +13,13 @@ namespace ApplicationResourcesTests.GeneralTests
 	public class UtilsTests : GeneralTestBase
 	{
 
-
 		[Test]
-		public void TestSettingsOverrides()
+		public async Task TestSettingsOverrides()
 		{
 			var testSetting = BasicSettings.RandomSeed;
 			var settingsStore = new SettingsStore();
 			settingsStore.RegisterSettings(typeof(BasicSettings));
-			settingsStore.Load();
+			await settingsStore.Load().WithoutContextCapture();
 			Assert.IsFalse(settingsStore.TryGetValue(testSetting, out var _));
 			using (settingsStore.AddOverrides((testSetting, 1), (testSetting, 2)))
 			{
@@ -38,10 +38,10 @@ namespace ApplicationResourcesTests.GeneralTests
 			const string override3 = "override3";
 
 			var testSettingStore = new SettingsStore();
-			var testParameterStore = new ParameterStore(testSettingStore);
+			var testParameterStore = await ParameterStore.DerivedFrom(testSettingStore).WithoutContextCapture();
 			testParameterStore.RegisterSettings(typeof(TestParameters));
 			using var defaults = testSettingStore.AddOverrides((TestParameters.TestParameter1, default1), (TestParameters.TestParameter2, default2));
-			testParameterStore.Load();
+			await testParameterStore.Load().WithoutContextCapture();
 
 			void CheckDefaults()
 			{

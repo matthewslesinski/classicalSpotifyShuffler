@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using ApplicationResources.Services;
 
 namespace SpotifyProject.Authentication
 {
@@ -10,7 +11,7 @@ namespace SpotifyProject.Authentication
 	 * In other words, a given access/refresh token is only applicable to one AuthorizationSource, and if any of the values for a new
 	 * AuthorizationSource are different, a new access/refresh token is required. This class should be expected to be serialized
 	 */
-	public class AuthorizationSource
+	public class AuthorizationSource : IAuthCodeArgs, IOAuthClientInfo
 	{
 		public Uri RedirectUri { get; set; }
 		public ClientInfo ClientInfo { get; set; }
@@ -42,13 +43,13 @@ namespace SpotifyProject.Authentication
 			return obj is AuthorizationSource o
 				&& Equals(RedirectUri, o.RedirectUri)
 				&& Equals(ClientInfo, o.ClientInfo)
-				&& Scopes?.Count() == o.Scopes?.Count()
-				&& Scopes?.Intersect(o.Scopes).Count() == Scopes?.Count();
+				&& Scopes?.Count == o.Scopes?.Count
+				&& Scopes?.Intersect(o.Scopes).Count() == Scopes?.Count;
 		}
 
 		public override int GetHashCode()
 		{
-			return (RedirectUri, ClientInfo, ScopeString).GetHashCode();
+			return HashCode.Combine(RedirectUri, ClientInfo, ScopeString);
 		}
 
 		private ISet<string> _scopes;

@@ -361,3 +361,5 @@ MigrationBackup/
 
 Data/RateLimitStats.txt
 Data/RateLimitStatsOld.txt
+ClassicalSpotifyShuffler/wwwroot/spotifyClientInfo.json
+ClassicalSpotifyShuffler/wwwroot/spotifyToken.json

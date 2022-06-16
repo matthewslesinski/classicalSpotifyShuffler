@@ -1,88 +1,80 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using CustomResources.Utils.Extensions;
+using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
 {
 	public abstract class TaskQueue<InputT, OutputT> : TaskContainingDisposable
 	{
-		private readonly BlockingCollection<Node> _queue = new BlockingCollection<Node>();
+		private readonly Channel<Node> _queue = Channel.CreateUnbounded<Node>(new UnboundedChannelOptions() { AllowSynchronousContinuations = true, SingleReader = true });
 
-		private int _isRunning = 1;
+		private int _isRunning = true.AsInt();
 
 		public TaskQueue(CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
-			StopToken.Register(StopRunning);
 			Run(Process);
 		}
 
 		public void StopRunning()
 		{
-			if (Interlocked.Exchange(ref _isRunning, 0) == 1)
+			if (Interlocked.Exchange(ref _isRunning, false.AsInt()).AsBool())
 			{
-				_queue.CompleteAdding();
-				while (_queue.TryTake(out var node))
+				_queue.Writer.Complete();
+				while (_queue.Reader.TryRead(out var node))
 					node.TaskCompleter.SetCanceled();
 			}
 		}
 
-		protected override void DoDispose()
-		{
-			StopRunning();
-			_queue.Dispose();
-		}
+		protected override void DoDispose() => StopRunning();
 
 		public async Task<OutputT> Schedule(InputT input, CancellationToken cancellationToken = default)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
+			CheckWorkerState();
 			var taskCompleter = new TaskCompletionSource<OutputT>(TaskCreationOptions.RunContinuationsAsynchronously);
 			var ec = ExecutionContext.Capture();
 			var node = new Node(input, taskCompleter, ec, cancellationToken);
-			if (!_queue.TryAdd(node))
-			{
-				await Task.Yield();
-				_queue.Add(node, cancellationToken);
-			}
-			return await taskCompleter.Task;
+			await _queue.Writer.WriteAsync(node, cancellationToken).WithoutContextCapture();
+			return await taskCompleter.Task.WithoutContextCapture();
 		}
 
-		private async Task Process()
+		private async Task Process(CancellationToken generalCancellationToken = default)
 		{
-			foreach(var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.GetConsumingEnumerable(StopToken))
+			generalCancellationToken.Register(StopRunning);
+			await foreach (var (input, taskCompleter, executionContext, taskCancellationToken) in _queue.Reader.ReadAllAsync(generalCancellationToken).WithoutContextCapture())
 			{
 				if (taskCancellationToken.IsCancellationRequested)
 					taskCompleter.SetCanceled(taskCancellationToken);
-				else if (StopToken.IsCancellationRequested)
-					taskCompleter.SetCanceled(StopToken);
-				else if (_alreadyDisposed == 1 || _isRunning == 0)
-					taskCompleter.SetCanceled();
+				else if (generalCancellationToken.IsCancellationRequested)
+					taskCompleter.SetCanceled(generalCancellationToken);
+				else if (_alreadyDisposed.AsBool() || !_isRunning.AsBool())
+					taskCompleter.SetCanceled(generalCancellationToken);
 				else
 				{
 					try
 					{
-						Task<OutputT> handler = null;
-						if (executionContext == null)
-							handler = HandleTask(input, taskCancellationToken);
-						else
+						await TaskUtils.RunAndNotify(taskCompleter, cancellationToken =>
 						{
-							ExecutionContext.Run(executionContext, _ =>
-							{
+							Task<OutputT> handler = null;
+							if (executionContext == null)
 								handler = HandleTask(input, taskCancellationToken);
-							}, null);
-						}
+							else
+							{
+								ExecutionContext.Run(executionContext, _ =>
+								{
+									handler = HandleTask(input, taskCancellationToken);
+								}, null);
+							}
 
-						var output = await handler.WithoutContextCapture();
-						taskCompleter.SetResult(output);
+							return handler;
+						}, taskCancellationToken).WithoutContextCapture();
 					}
-					catch (OperationCanceledException e) when (e.CancellationToken == taskCancellationToken)
+					catch (Exception)
 					{
-						taskCompleter.SetCanceled(taskCancellationToken);
-					}
-					catch (Exception e)
-					{
-						taskCompleter.SetException(e);
+						// Ignore, as it should be passed onto the inner task already
 					}
 				}
 			}
@@ -90,13 +82,25 @@ namespace CustomResources.Utils.Concepts.DataStructures
 
 		protected abstract Task<OutputT> HandleTask(InputT input, CancellationToken taskCancellationToken);
 
-		private record Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
+		private record struct Node(InputT Input, TaskCompletionSource<OutputT> TaskCompleter, ExecutionContext ExecutionContext, CancellationToken TaskCancellationToken);
+
+		private void CheckWorkerState()
+		{
+			if (!_workerTask.IsCompleted)
+				return;
+			if (_workerTask.IsFaulted)
+				throw new Exception($"{GetType().Name}: Cannot proceed because the worker task terminated due to an exception", _workerTask.Exception);
+			if (_alreadyDisposed.AsBool())
+				throw new OperationCanceledException($"{GetType().Name}: Cannot proceed because the queue has been completed");
+			else
+				throw new Exception($"{GetType().Name}: Cannot proceed because the queue has been incorrectly finished");		
+		}
 	}
 
 	public class CallbackTaskQueue<InputT, OutputT> : TaskQueue<InputT, OutputT>
 	{
 		private readonly Func<InputT, CancellationToken, Task<OutputT>> _callback;
-		public CallbackTaskQueue(Func<InputT, CancellationToken, Task<OutputT>> callback, CancellationToken cancellationToken = default) : base (cancellationToken)
+		public CallbackTaskQueue(Func<InputT, CancellationToken, Task<OutputT>> callback, CancellationToken cancellationToken = default) : base(cancellationToken)
 		{
 			_callback = callback;
 		}
@@ -105,5 +109,15 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		{
 			return _callback(input, taskCancellationToken);
 		}
+	}
+
+	public class CallbackTaskQueue<InputT> : CallbackTaskQueue<InputT, object /*Represents a void return type*/>
+	{
+		public CallbackTaskQueue(Func<InputT, CancellationToken, Task> callback, CancellationToken cancellationToken = default)
+			: base(async (input, taskToken) => { await callback(input, taskToken).WithoutContextCapture(); return null; }, cancellationToken)
+		{ }
+
+		public new Task Schedule(InputT input, CancellationToken cancellationToken = default) => base.Schedule(input, cancellationToken);
+
 	}
 }

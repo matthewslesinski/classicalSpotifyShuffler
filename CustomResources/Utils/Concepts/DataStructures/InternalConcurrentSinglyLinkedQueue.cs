@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using CustomResources.Utils.Extensions;
 using CustomResources.Utils.GeneralUtils;
 
 namespace CustomResources.Utils.Concepts.DataStructures
@@ -297,7 +296,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
             return (foundNode, foundItem);
         }
 
-        void IProducerConsumerCollection<T>.CopyTo(T[] array, int index) => this.As<ICollection<T>>().CopyTo(array, index);
+        void IProducerConsumerCollection<T>.CopyTo(T[] array, int index) => ((ICollection<T>) this).CopyTo(array, index);
 
         public T[] GetSnapshot() => ToArray();
         public T[] ToArray()

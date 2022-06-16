@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using CustomResources.Utils.Concepts;
+using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
 
 namespace CustomResources.Utils.GeneralUtils
@@ -62,11 +64,16 @@ namespace CustomResources.Utils.GeneralUtils
 			}
 		}
 
-		public static bool LoadOnce(ref bool isLoaded, object loadLock, Action loadAction)
+		public static bool IsFirstRequest(ref int requestSwitch) => !Interlocked.Exchange(ref requestSwitch, true.AsInt()).AsBool();
+		public static bool IsFirstRequest(ref Reference<bool> requestSwitch) => !Interlocked.Exchange(ref requestSwitch, true);
+		public static bool IsFirstRequest(MutableReference<bool> requestSwitch) => !requestSwitch.AtomicExchange(true);
+
+		// TODO Make these loading methods into a class
+		public static bool LoadOnceBlocking(ref bool isLoaded, object loadLock, Action loadAction)
 		{
 			if (!isLoaded)
 			{
-				lock(loadLock)
+				lock (loadLock)
 				{
 					if (!isLoaded)
 					{
@@ -79,27 +86,60 @@ namespace CustomResources.Utils.GeneralUtils
 			return false;
 		}
 
-		public static async Task<bool> LoadOnceAsync(Func<bool> isLoadedGetter, Action<bool> isLoadedSetter, object loadLock, Func<Task> loadAction)
+		public static Task<bool> LoadOnceAsync(ref Reference<bool> isLoaded, Func<Task> loadAction)
 		{
-			Task loadActionTask = null;
-			if (!isLoadedGetter())
+			if (IsFirstRequest(ref isLoaded))
 			{
-				lock (loadLock)
+				return loadAction().ContinueWith(_ => true);
+			}
+			return Task.FromResult(false);
+		}
+
+		public static Task<bool> LoadOnceBlockingAsync(ref TaskCompletionSource<bool> completionSource, Func<Task> loadAction)
+		{
+			if (completionSource == null && Interlocked.CompareExchange(ref completionSource, new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously), null) == null)
+			{
+				var source = completionSource;
+
+				async Task<bool> RunLoadAndCompleteTask()
 				{
-					if (!isLoadedGetter())
+					try
 					{
-						loadActionTask = loadAction();
-						isLoadedSetter(true);
+						await loadAction().WithoutContextCapture();
+						source.SetResult(false);
+						return true;
+					}
+					catch (OperationCanceledException e)
+					{
+						source.SetCanceled(e.CancellationToken);
+						throw;
+					}
+					catch (Exception e)
+					{
+						source.SetException(e);
+						throw;
 					}
 				}
+				return RunLoadAndCompleteTask();
 			}
-			if (loadActionTask != null)
-			{
-				await loadActionTask.WithoutContextCapture();
-				return true;
-			}
-			return false;
+			else
+				return completionSource.Task;
 		}
+
+		public static async Task<bool> LoadOnceBlockingAsync(MutableReference<bool> isLoaded, AsyncLockProvider @lock, Func<CancellationToken, Task> loadAction, CancellationToken cancellationToken = default)
+		{
+			using (await @lock.AcquireToken(cancellationToken).WithoutContextCapture())
+			{
+				if (!isLoaded)
+				{
+					await loadAction(cancellationToken).WithoutContextCapture();
+					isLoaded.Value = true;
+					return true;
+				}
+				return false;
+			}
+		}
+
 	}
 
 	public static class Ensure

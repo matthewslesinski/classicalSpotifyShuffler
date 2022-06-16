@@ -10,6 +10,8 @@ using System.IO;
 using Newtonsoft.Json;
 using ApplicationResources.Logging;
 using SpotifyProject.Configuration;
+using ApplicationResources.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 {
@@ -35,7 +37,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 		private static void LogByLevelWrapper(LogLevel logLevel, string msg) => Logger.Log(logLevel, msg);
 
 		private static void RecordTrackInfo(string outputLocation, IEnumerable<TrackLinkingInfoInput> trackInfos) =>
-			File.WriteAllLines(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)));
+			GlobalDependencies.Get<IDataStoreAccessor>().SaveAllLinesAsync(outputLocation, trackInfos.Select(trackInfo => JsonConvert.SerializeObject(trackInfo)), CachePolicy.PreferActual);
 	}
 
 	internal static class NativeMethods

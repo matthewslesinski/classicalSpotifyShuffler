@@ -16,45 +16,49 @@ using SpotifyProject.SpotifyUtils;
 using System.IO;
 using ApplicationResources.ApplicationUtils.Parameters;
 using SpotifyProject.Utils;
+using System.Threading;
+using CustomResources.Utils.Concepts.DataStructures;
 
 namespace SpotifyProjectTests.SpotifyApiTests
 {
 	public class SpotifyProjectTestBase : UnitTestBase
 	{
-		private readonly static object _lock = new object();
-		private static bool _isLoaded = false;
+		private static readonly AsyncLockProvider _lock = new();
+		private static readonly MutableReference<bool> _isLoaded = new(false);
 
 		[OneTimeSetUp]
-		public static void OneTimeSetUp__SpotifyProjectTestBase()
+		public static async Task OneTimeSetUp__SpotifyProjectTestBase()
 		{
-			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			Utils.LoadOnce(ref _isLoaded, _lock, () =>
+			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardConfigurationSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
+			await Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				Settings.RegisterSettings<SpotifySettings>();
 				TaskParameters.RegisterParameters<SpotifyParameters>();
-				LoadSettingsFiles(true, GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile);
-				Settings.Load();
-				LoadSettingsFiles(false, Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile));
-			});
+				await LoadSettingsFiles(true, settingsFiles).WithoutContextCapture();
+				await Settings.Load().WithoutContextCapture();
+				await LoadSettingsFiles(false, ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.PersonalDataDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile)).WithoutContextCapture();
+			}).WithoutContextCapture();
 		}
 	}
 
 	public class SpotifyTestBase : SpotifyProjectTestBase
 	{
-		private readonly static object _lock = new object();
-		private static bool _isLoaded = false;
+		private static readonly AsyncLockProvider _lock = new();
+		private static readonly MutableReference<bool> _isLoaded = new(false);
 		private static ISpotifyAccessor _globalSpotifyAccessor;
 		protected static ISpotifyAccessor SpotifyAccessor => _globalSpotifyAccessor;
 
 		[OneTimeSetUp]
-		public static async Task OneTimeSetUp__SpotifyTestBase()
+		public static Task OneTimeSetUp__SpotifyTestBase()
 		{
-			var settingsFiles = new[] { GeneralConstants.StandardSpotifyUnitTestSettingsFile, GeneralConstants.StandardSpotifySettingsFile };
-			await Utils.LoadOnceAsync(() => _isLoaded, isLoaded => _isLoaded = isLoaded, _lock, async () =>
+			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");
-				var client = await Authenticators.Authenticate(Authenticators.AuthorizationCodeAuthenticator);
-				_globalSpotifyAccessor = new SpotifyAccessorBase(client);
+				var authenticator = new SpotifyTestAccountAuthenticator();
+				var spotifyProvider = new StandardSpotifyProvider(authenticator);
+				await spotifyProvider.InitializeAsync().WithoutContextCapture();
+				await authenticator.Authenticate(CancellationToken.None).WithoutContextCapture();
+				_globalSpotifyAccessor = new SpotifyAccessorBase(spotifyProvider.Client);
 			});
 		}
 
@@ -66,6 +70,15 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			BachKeyboardWorks,
 			HilaryHahnIn27Pieces,
 			BachCantatas,
+			BrahmsSextets,
+			EnlishMusicForStrings,
+			MustTheDevilHaveAllTheGoodTunes,
+			KabalevskyCelloConcertos,
+			SibeliusAndNielsenViolinConcertos,
+			ProkofievSinfoniaConcertanteAndTchaikovskyRococo,
+			VeressTrioAndBartokPianoQuintet,
+			CarolineShawOrange,
+			NielsenCompleteSymphonies,
 		}
 
 		protected enum SampleArtists
@@ -78,7 +91,8 @@ namespace SpotifyProjectTests.SpotifyApiTests
 
 		protected enum SamplePlaylists
 		{
-			ImportedFromYoutube
+			ImportedFromYoutube,
+			Brahms
 		}
 
 		protected static IReadOnlyDictionary<SampleAlbums, string> SampleAlbumUris => _sampleAlbumUris;
@@ -89,6 +103,15 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			{ SampleAlbums.BrahmsSymphonies, "spotify:album:0kJBUtCkSBYRyc8Jiyyecz" },
 			{ SampleAlbums.BachKeyboardWorks, "spotify:album:1FfjKB0aGdGU52uQOuTA6I" },
 			{ SampleAlbums.HilaryHahnIn27Pieces, "spotify:album:7GiMQKT1Twq3MOVAGQekF7" },
+			{ SampleAlbums.BrahmsSextets, "spotify:album:4Kh7gIrJVphkM0XH1NCBK5" },
+			{ SampleAlbums.EnlishMusicForStrings, "spotify:album:61B2Rro2y5Wz8zHofmdpLO" },
+			{ SampleAlbums.KabalevskyCelloConcertos, "spotify:album:1PnevN3lMU2pX0T6Dekx2a" },
+			{ SampleAlbums.SibeliusAndNielsenViolinConcertos, "spotify:album:1DEQiy1FMxQltnFRMFyWC3" },
+			{ SampleAlbums.NielsenCompleteSymphonies, "spotify:album:1dOO94iC2dBaBYMUKx7k4K" },
+			{ SampleAlbums.MustTheDevilHaveAllTheGoodTunes, "spotify:album:6CymPaJZK7ZTz79sbCrqnb" },
+			{ SampleAlbums.ProkofievSinfoniaConcertanteAndTchaikovskyRococo, "spotify:album:3kKbCgSzqhIaYaIJDQHncg" },
+			{ SampleAlbums.VeressTrioAndBartokPianoQuintet, "spotify:album:2jl8aMvxO692tb8Jzkcrvm" },
+			{ SampleAlbums.CarolineShawOrange, "spotify:album:5d0tz2baP5WGhMzZvONcgU" },
 			{ SampleAlbums.BachCantatas, "spotify:album:46kDQc1UFEKI51yvavxdMm" }
 		};
 
@@ -113,6 +136,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 		private static readonly Dictionary<SamplePlaylists, string> _samplePlaylistUris = new Dictionary<SamplePlaylists, string>
 		{
 			{ SamplePlaylists.ImportedFromYoutube, "spotify:playlist:3EINXMmb4xyH0jLx8ZHgiC" },
+			{ SamplePlaylists.Brahms, "spotify:playlist:1UntiT6SRaIY0nMa5LZ8an" },
 		};
 
 		protected static IReadOnlyDictionary<SamplePlaylists, string> SamplePlaylistIds => _samplePlaylistUris

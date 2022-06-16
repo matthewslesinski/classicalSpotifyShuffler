@@ -198,7 +198,9 @@ namespace CustomResources.Utils.GeneralUtils
 			return 1;
 		}
 
-		private readonly static IDictionary<Type, Dictionary<string, Delegate>> _propertyGettersForTypes = new UniqueKeyDictionary<Type, Dictionary<string, Delegate>>();
+		private readonly static IDictionary<Type, Dictionary<string, Delegate>> _propertyGettersForTypes = new Dictionary<Type, Dictionary<string, Delegate>>();
+		// TODO Try with UniqueKeyDictionary
+		//private readonly static IDictionary<Type, Dictionary<string, Delegate>> _propertyGettersForTypes = new UniqueKeyDictionary<Type, Dictionary<string, Delegate>>();
 
 		private readonly static IDictionary<Type, ILookup<string, PropertyInfo>> _propertyInfosForTypes = new Dictionary<Type, ILookup<string, PropertyInfo>>();
 

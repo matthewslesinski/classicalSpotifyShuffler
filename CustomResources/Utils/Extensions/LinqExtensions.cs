@@ -221,7 +221,7 @@ namespace CustomResources.Utils.Extensions
 			sequence.Enumerate()
 				.GroupBy(pair => pair.item, pair => pair.index, equalityComparer ?? EqualityComparer<T>.Default)
 				.ToImmutableDictionary(group => group.Key, group => collectionCreator(group), equalityComparer ?? EqualityComparer<T>.Default);
-		
+
 		public static bool TryGetFirst<T>(this IEnumerable<T> sequence, out T result) => TryGetFirst(sequence, t => true, out result);
 		public static bool TryGetFirst<T>(this IEnumerable<T> sequence, Func<T, bool> predicate, out T result) => TryGetFirst(sequence, (T item, out T returnedItem) => {
 			if (predicate(item))
@@ -270,5 +270,113 @@ namespace CustomResources.Utils.Extensions
 		public static IEnumerable<(A first, B second, C third, D fourth, E fifth)> Zip<A, B, C, D, E>(this IEnumerable<A> sequence1, IEnumerable<B> sequence2, IEnumerable<C> sequence3, IEnumerable<D> sequence4, IEnumerable<E> sequence5) =>
 			sequence1.Zip(sequence2).Zip(sequence3, (firstTwo, third) => firstTwo.Append(third)).Zip(sequence4, (firstThree, fourth) => firstThree.Append(fourth)).Zip(sequence5, (firstFour, fifth) => firstFour.Append(fifth));
 
+		#region Async Linq Extensions
+
+		#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+		public static async IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IEnumerable<T> sequence)
+		{
+			foreach (var e in sequence)
+				yield return e;
+		}
+		#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+
+
+		public static Task<IAsyncEnumerable<T>> Each<T>(this IAsyncEnumerable<T> sequence, Action<T> action) =>
+			Each(sequence, t => { action(t); return Task.CompletedTask; });
+		public static async Task<IAsyncEnumerable<T>> Each<T>(this IAsyncEnumerable<T> sequence, Func<T, Task> action)
+		{
+			await foreach (var item in sequence.WithoutContextCapture())
+				await action(item).WithoutContextCapture();
+			return sequence;
+		}
+		public static Task<IAsyncEnumerable<T>> EachIndependently<T>(this IAsyncEnumerable<T> sequence, Action<T> action) =>
+			EachIndependently(sequence, t => { action(t); return Task.CompletedTask; });
+		public static async Task<IAsyncEnumerable<T>> EachIndependently<T>(this IAsyncEnumerable<T> sequence, Func<T, Task> action)
+		{
+			List<Exception> exceptions = null;
+			await foreach (var item in sequence.WithoutContextCapture())
+			{
+				try
+				{
+					await action(item).WithoutContextCapture();
+				}
+				catch (Exception e)
+				{
+					if (exceptions == null)
+						exceptions = new List<Exception>();
+					exceptions.Add(e);
+				}
+			}
+			if (exceptions != null)
+			{
+				var exception = exceptions.Count > 1 ? new AggregateException(exceptions) : exceptions.Single();
+				throw exception;
+			}
+			return sequence;
+		}
+
+		public static async IAsyncEnumerable<R> Select<T, R>(this IAsyncEnumerable<T> sequence, Func<T, R> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		{
+			await foreach (var e in sequence.WithoutContextCapture())
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				var result = selector(e);
+				yield return result;
+			}
+		}
+
+		public static async IAsyncEnumerable<R> SelectAsync<T, R>(this IAsyncEnumerable<T> sequence, Func<T, Task<R>> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		{
+			var mappedSequence = Select<T, Task<R>>(sequence, selector, cancellationToken);
+			await foreach (var task in mappedSequence.WithoutContextCapture())
+			{
+				yield return await task.WithoutContextCapture();
+			}
+		}
+
+		public static async IAsyncEnumerable<R> SelectAsync<T, R>(this IEnumerable<T> sequence, Func<T, Task<R>> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		{
+			foreach (var e in sequence)
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				yield return await selector(e).WithoutContextCapture();
+			}
+		}
+
+		public static async IAsyncEnumerable<T> Where<T>(this IAsyncEnumerable<T> sequence, Func<T, bool> predicate, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		{
+			await foreach (var e in sequence.WithoutContextCapture())
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				if (predicate(e))
+					yield return e;
+			}
+		}
+
+		public static IAsyncEnumerable<T> WhereAsync<T>(this IEnumerable<T> sequence, Func<T, Task<bool>> predicate, CancellationToken cancellationToken = default) =>
+			WhereAsync(sequence.AsAsyncEnumerable(), predicate, cancellationToken);
+
+		public static async IAsyncEnumerable<T> WhereAsync<T>(this IAsyncEnumerable<T> sequence, Func<T, Task<bool>> predicate, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		{
+			await foreach (var e in sequence.WithoutContextCapture())
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				if (await predicate(e).WithoutContextCapture())
+					yield return e;
+			}
+		}
+
+		public static async Task<List<T>> ToList<T>(this IAsyncEnumerable<T> sequence, CancellationToken cancellationToken = default)
+		{
+			var list = new List<T>();
+			await foreach (var e in sequence.WithoutContextCapture())
+			{
+				cancellationToken.ThrowIfCancellationRequested();
+				list.Add(e);
+			}
+			return list;
+		}
+
+		#endregion
 	}
 }

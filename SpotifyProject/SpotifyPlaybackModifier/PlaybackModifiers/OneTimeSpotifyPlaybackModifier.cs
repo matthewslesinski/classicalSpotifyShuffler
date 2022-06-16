@@ -9,7 +9,7 @@ namespace SpotifyProject.SpotifyPlaybackModifier.PlaybackModifiers
 {
 	public class OneTimeSpotifyPlaybackModifier<InputContextT, OutputContextT>
 		: SpotifyPlaybackModifier<InputContextT, OutputContextT>
-		where InputContextT : IOriginalPlaybackContext
+		where InputContextT : ISpotifyPlaybackContext
 		where OutputContextT : ISpotifyPlaybackContext
 	{
 		public OneTimeSpotifyPlaybackModifier(SpotifyConfiguration spotifyConfiguration, IPlaybackTransformation<InputContextT, OutputContextT> transformation,

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using ApplicationResources.ApplicationUtils;
 using ApplicationResources.Logging;
@@ -67,6 +68,7 @@ namespace SpotifyProject.SpotifyAdditions
 			{
 				while (_requestTracker.CheckCautionLevel(out var waitAtLeast) == CautionLevel.Waiting)
 				{
+					Logger.Verbose("Waiting {timespan} to send request because caution level is {cautionLevel}", waitAtLeast, CautionLevel.Waiting);
 					await Task.Delay(waitAtLeast, cancellationToken);
 					if (_alreadyDisposed == 1)
 						throw new OperationCanceledException($"The request has been cancelled due to the HTTP client being disposed: {request}");
@@ -223,8 +225,17 @@ namespace SpotifyProject.SpotifyAdditions
 			if (requestResult == RequestResult.FailedNotSent)
 				Interlocked.Decrement(ref _numOut);
 			else
+			{
 				_queue.Enqueue(requestNode, endTime);
-			_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				try
+				{
+					_stats.Record(requestNode.SendTime, endTime, requestResult, requestNode.NumOutAfterSent);
+				}
+				catch (Exception e)
+				{
+					Logger.Error("An error occurred while recording statistics for spotify requests: {exception}", e);
+				}
+			}
 		}
 
 		public CautionLevel CheckCautionLevel(out TimeSpan waitAtLeast)
@@ -310,7 +321,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public bool RemoveEarliestBefore(DateTime timestamp) => _orderedOldTimes.TryDequeueIf(queueContent => queueContent.ResponseReceivedTime <= timestamp, out _);
 
-		protected override bool Flush(Bag containerToFlush)
+		protected override Task<AdditionalFlushOptions> Flush(Bag containerToFlush, CancellationToken _ = default)
 		{
 			var newBufferBag = containerToFlush;
 
@@ -324,10 +335,16 @@ namespace SpotifyProject.SpotifyAdditions
 			foreach (var oldElement in elementsToAddToQueue)
 				_orderedOldTimes.Enqueue(oldElement);
 
-			return recentElements.Any();
+			return Task.FromResult(recentElements.Any() ? AdditionalFlushOptions.NeedsAdditionalFlush : AdditionalFlushOptions.NoAdditionalFlushNeeded);
 		}
 
 		protected override Bag CreateNewContainer() => new Bag();
+
+		protected override bool OnFlushFailed(Exception e)
+		{
+			Logger.Error("Failed to flush bag: {exception}", e);
+			return true;
+		}
 	}
 
 
@@ -352,7 +369,9 @@ namespace SpotifyProject.SpotifyAdditions
 		private readonly ICollection<QueueContent> _elements;
 		private long _minTicks = _startingTicks;
 
-		internal int ScheduledToBeCollected = 0;
+		internal int ScheduledToBeCollected = false.AsInt();
+
+		public bool IsReadyToBeFlushed { get; private set; }
 
 		internal DateTime MinSeen => new DateTime(Interlocked.Read(ref _minTicks));
 
@@ -369,29 +388,30 @@ namespace SpotifyProject.SpotifyAdditions
 				if (elementTicks > currTicks || Interlocked.CompareExchange(ref _minTicks, Math.Min(currTicks, elementTicks), currTicks) == currTicks)
 					break;
 			}
-
+			IsReadyToBeFlushed = true;
 			return;
 		}
 
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-		public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
-
 		public bool Update(QueueContent itemToFlush) { Add(itemToFlush); return true; }
 
-		public bool RequestFlush() => Interlocked.Exchange(ref ScheduledToBeCollected, 1) != 1;
+		public bool RequestFlush() => CustomResources.Utils.GeneralUtils.Utils.IsFirstRequest(ref ScheduledToBeCollected);
+
+		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		public IEnumerator<QueueContent> GetEnumerator() => _elements.GetEnumerator();
 	}
 
 	internal abstract class BaseLinearStatsTracker : TaskContainingDisposable, IRequestStatsTracker
 	{
-		protected static readonly CalculatedStats _startingStats = new CalculatedStats(0, 0, 0, 0);
-		private readonly CachedFile<CalculatedStats> _statsDataStore;
-		private readonly BlockingCollection<IRequestStatsTracker.StatsData> _statsUpdates;
+		protected static readonly CalculatedStats _startingStats = new CalculatedStats(1, 0, 0, 0);
+		private readonly CachedData<CalculatedStats> _statsDataStore;
+		private readonly Channel<IRequestStatsTracker.StatsData> _statsUpdates;
 
 		public BaseLinearStatsTracker()
 		{
 			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
-			_statsDataStore = new CachedJSONFile<CalculatedStats>(dataStoreFileName, CachedFile<CalculatedStats>.FileAccessType.SlightlyLongFlushing);
-			_statsUpdates = new BlockingCollection<IRequestStatsTracker.StatsData>();
+			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, fileAccessType: CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing,
+				useDefaultValue: true, defaultValue: _startingStats);
+			_statsUpdates = Channel.CreateUnbounded<IRequestStatsTracker.StatsData>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true });
 			_statsDataStore.OnValueLoaded += (loadedValue) => Logger.Verbose("{statsType}: Loaded rate limit stats from {loadedStats}", GetType().Name, loadedValue);
 			_statsDataStore.OnValueChanged += (oldValue, newValue) => Logger.Verbose("{statsType}: Updated rate limit stats from {oldStats} to {newStats}", GetType().Name, oldValue, newValue);
 			Run(DoCalculations);
@@ -401,25 +421,27 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public abstract int NumOutForHold { get; }
 
-		public void Record(IRequestStatsTracker.StatsData statsUpdate) => _statsUpdates.Add(statsUpdate);
+		public void Record(IRequestStatsTracker.StatsData statsUpdate) => _statsUpdates.Writer.TryWrite(statsUpdate);
 
 		protected abstract CalculatedStats CalculateNewStats(CalculatedStats oldStats, DateTime startTime, DateTime endTime, RequestResult result, int numOut);
 
 		protected CalculatedStats CurrentStats { get => _statsDataStore.CachedValue ?? _startingStats; set => _statsDataStore.CachedValue = value; }
 
+
 		protected override void DoDispose()
 		{
-			_statsUpdates.CompleteAdding();
+			_statsUpdates.Writer.Complete();
 			base.DoDispose();
-			_statsUpdates.Dispose();
 			_statsDataStore.Dispose();
 		}
 
-		private void DoCalculations()
+		private async Task DoCalculations(CancellationToken cancellationToken = default)
 		{
-			foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.GetConsumingEnumerable(StopToken))
+			if (!_statsDataStore.IsLoaded)
+				await _statsDataStore.Initialize().WithoutContextCapture();
+			await foreach(var (startTime, endTime, requestResult, numOut) in _statsUpdates.Reader.ReadAllAsync(cancellationToken).WithoutContextCapture())
 			{
-				if (_alreadyDisposed != 1)
+				if (!_alreadyDisposed.AsBool())
 				{
 					var newStats = CalculateNewStats(CurrentStats, startTime, endTime, requestResult, numOut);
 					CurrentStats = newStats;
@@ -435,14 +457,17 @@ namespace SpotifyProject.SpotifyAdditions
 
 	internal class NaiveStatsTracker : BaseLinearStatsTracker
 	{
+		private int? _minOutForCaution = Settings.TryGet<int>(SpotifySettings.APIRateLimitMinOutForCaution, out var foundValue) ? foundValue : null;
+
 		public override int NumOutForCaution
 		{
 			get
 			{
 				var currentStats = CurrentStats;
-				return currentStats.NumHits <= 0
+				var calculatedValue = currentStats.NumHits <= 0
 					? currentStats.MaxOutWithoutHit
 					: (currentStats.AverageOutWhenHit >> 1) + (currentStats.MaxOutWithoutHit >> 2);
+				return _minOutForCaution.HasValue ? Math.Max(_minOutForCaution.Value, calculatedValue) : calculatedValue;
 			}
 		}
 

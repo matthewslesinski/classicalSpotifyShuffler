@@ -4,9 +4,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4F590F57-6935-42A5-89F2-CB433F4466B6}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+		LICENSE = LICENSE
+		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProject", "SpotifyProject\SpotifyProject.csproj", "{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProjectCommandLine", "SpotifyProjectCommandLine\SpotifyProjectCommandLine.csproj", "{A8EAB317-0658-40C3-B4DC-D44CDEE0521F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProjectTests", "SpotifyProjectTests\SpotifyProjectTests.csproj", "{F8022386-1EDB-420B-9143-4E4DD5D204D3}"
 EndProject
@@ -15,6 +18,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationResources", "ApplicationResources\ApplicationResources.csproj", "{EECEE907-486B-42E6-88C5-B2E8118B37D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationResourcesTests", "ApplicationResourcesTests\ApplicationResourcesTests.csproj", "{1A4FA52A-6280-4980-8D41-3C8B4718A114}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpotifyProject", "SpotifyProject\SpotifyProject.csproj", "{7DF1033C-435E-4EF6-BE04-F7D998BFFD88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApplicationResources", "BlazorApplicationResources\BlazorApplicationResources.csproj", "{1C33C4B3-4AB4-47F9-B119-4C1DA337A3AC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassicalSpotifyShuffler", "ClassicalSpotifyShuffler\ClassicalSpotifyShuffler.csproj", "{F7F78B4D-AB17-48B9-8943-C216047B0527}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,5 +51,17 @@ Global
 		{1A4FA52A-6280-4980-8D41-3C8B4718A114}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A4FA52A-6280-4980-8D41-3C8B4718A114}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A4FA52A-6280-4980-8D41-3C8B4718A114}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DF1033C-435E-4EF6-BE04-F7D998BFFD88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DF1033C-435E-4EF6-BE04-F7D998BFFD88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DF1033C-435E-4EF6-BE04-F7D998BFFD88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DF1033C-435E-4EF6-BE04-F7D998BFFD88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C33C4B3-4AB4-47F9-B119-4C1DA337A3AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C33C4B3-4AB4-47F9-B119-4C1DA337A3AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C33C4B3-4AB4-47F9-B119-4C1DA337A3AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C33C4B3-4AB4-47F9-B119-4C1DA337A3AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7F78B4D-AB17-48B9-8943-C216047B0527}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7F78B4D-AB17-48B9-8943-C216047B0527}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7F78B4D-AB17-48B9-8943-C216047B0527}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7F78B4D-AB17-48B9-8943-C216047B0527}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

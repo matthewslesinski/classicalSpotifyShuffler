@@ -80,7 +80,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 	}
 
 	public class CollectionWrapper<T, WrappedElementT, CollectionT> : ReadOnlyCollectionWrapper<T, WrappedElementT, CollectionT>,
-		IGenericInternalCollection<T>, IInternalReadOnlyCollection<T>, ICollectionWrapper<WrappedElementT, CollectionT>
+		IInternalCollection<T>, ICollectionWrapper<WrappedElementT, CollectionT>
 		where CollectionT : ICollection<WrappedElementT>, IReadOnlyCollection<WrappedElementT>, ICollection
 	{
 		protected readonly Func<T, WrappedElementT> _mappingFunction;
@@ -210,7 +210,7 @@ namespace CustomResources.Utils.Concepts.DataStructures
 		public bool TryGetValue(K key, [MaybeNullWhen(false)] out V value)
 		{
 			var didFindValue = _wrappedCollection.TryGetValue(_keyMapper.Invoke(key), out var foundValue);
-			value = _valueTranslationFunc(foundValue);
+			value = didFindValue ? _valueTranslationFunc(foundValue) : default;
 			return didFindValue;
 		}
 

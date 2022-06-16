@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ApplicationResources.Setup;
 using CustomResources.Utils.Concepts.DataStructures;
 using CustomResources.Utils.Extensions;
@@ -10,12 +12,22 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 {
 	public class ParameterStore : SettingsStore
 	{
-		public ParameterStore(SettingsStore defaultValueProvider) : base(MemoryScope.AsyncLocal)
+		public ParameterStore() : base(MemoryScope.AsyncLocal)
+		{ }
+
+		public async Task AttachTo(SettingsStore defaultValueProvider, CancellationToken cancellationToken = default)
 		{
-			RegisterProvider(defaultValueProvider);
+			await RegisterProvider(defaultValueProvider, cancellationToken: cancellationToken).WithoutContextCapture();
 			defaultValueProvider.OnLoad += OnProviderLoaded;
 			if (defaultValueProvider.IsLoaded)
-				Load();
+				await Load(cancellationToken).WithoutContextCapture();
+		}
+
+		public static async Task<ParameterStore> DerivedFrom(SettingsStore defaultValueProvider)
+		{
+			var paramStore = new ParameterStore();
+			await paramStore.AttachTo(defaultValueProvider).WithoutContextCapture();
+			return paramStore;
 		}
 
 		protected override void OnNewSettingsAdded(IEnumerable<Enum> newSettings, Type enumType)
@@ -25,12 +37,14 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 			base.OnNewSettingsAdded(newSettings, enumType);
 		}
 
-		private void OnProviderLoaded(IEnumerable<Enum> loadedSettings)
+		private Task OnProviderLoaded(IEnumerable<Enum> loadedSettings, CancellationToken cancellationToken = default)
 		{
-			if (!IsLoaded)
-				Load();
-			else
-				OnSettingsReloaded(loadedSettings);
+			if (!_startedLoading)
+				return Load(cancellationToken);
+			else if (IsLoaded)
+				return OnSettingsReloaded(loadedSettings, cancellationToken);
+			// Do nothing in the else case because this is being called in the middle of a load
+			return Task.CompletedTask;
 		}
 
 		public ParameterBuilder GetBuilder() => new ParameterBuilder(this);
@@ -60,7 +74,5 @@ namespace ApplicationResources.ApplicationUtils.Parameters
 
 			public IDisposable Apply() => _paramStore.AddOverrides(paramsToSet.Select(kvp => (kvp.Key, kvp.Value)));
 		}
-
 	}
-
 }
