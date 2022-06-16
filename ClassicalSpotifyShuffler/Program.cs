@@ -22,7 +22,7 @@ await BlazorAppUtils.StartApp(
 	},
 	async () =>
 	{
-		var authorizationSettingsPath = Path.GetFullPath(Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.PersonalDataDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile));
+		var authorizationSettingsPath = ApplicationResources.Utils.GeneralUtils.GetAbsoluteCombinedPath(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.PersonalDataDirectory), GeneralConstants.SuggestedAuthorizationSettingsFile);
 		if (await GlobalDependencies.GlobalDependencyContainer.GetLocalDataStore().ExistsAsync(authorizationSettingsPath).WithoutContextCapture())
 			await Settings.RegisterProvider(new XmlSettingsProvider(authorizationSettingsPath)).WithoutContextCapture();
 		ServicePointManager.DefaultConnectionLimit = Settings.Get<int>(SpotifySettings.NumHTTPConnections);

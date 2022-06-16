@@ -408,7 +408,7 @@ namespace SpotifyProject.SpotifyAdditions
 
 		public BaseLinearStatsTracker()
 		{
-			var dataStoreFileName = Path.Combine(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
+			var dataStoreFileName = ApplicationResources.Utils.GeneralUtils.CombinePaths(Settings.Get<string>(BasicSettings.ProjectRootDirectory), Settings.Get<string>(SpotifySettings.APIRateLimitStatsFile));
 			_statsDataStore = new CachedJSONData<CalculatedStats>(dataStoreFileName, fileAccessType: CachedData<CalculatedStats>.FileAccessType.SlightlyLongFlushing,
 				useDefaultValue: true, defaultValue: _startingStats);
 			_statsUpdates = Channel.CreateUnbounded<IRequestStatsTracker.StatsData>(new UnboundedChannelOptions() { SingleReader = true, AllowSynchronousContinuations = true });

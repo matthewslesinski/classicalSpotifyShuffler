@@ -32,7 +32,7 @@ namespace ApplicationResources.Setup
 			{ BasicSettings.ConsoleLogLevel,                   new EnumSettingSpecification<LogLevel> { Default = LogLevel.Info } },
 			{ BasicSettings.OutputFileLogLevel,                new EnumSettingSpecification<LogLevel> { Default = LogLevel.Verbose } },
 			{ BasicSettings.MethodCallLogLevel,                new EnumSettingSpecification<LogLevel> { Default = LogLevel.Verbose } },
-			{ BasicSettings.ProjectRootDirectory,			   new StringSettingSpecification { ValueGetter = values => Path.GetFullPath(values.Single()), Default = Environment.CurrentDirectory } },
+			{ BasicSettings.ProjectRootDirectory,			   new StringSettingSpecification { ValueGetter = values => string.IsNullOrWhiteSpace(values.Single()) ? "" : Path.GetFullPath(values.Single()), Default = Environment.CurrentDirectory } },
 		};
 	}
 

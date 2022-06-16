@@ -2,5 +2,5 @@
 <Settings>
   <Setting name="ConsoleLogLevel">Info</Setting>
   <Setting name="LoggerConfigurationFile">NLog.config</Setting>
-  <Setting name="ProjectRootDirectory">.</Setting>
+  <Setting name="ProjectRootDirectory"></Setting>
 </Settings>
