@@ -37,16 +37,23 @@ namespace SpotifyProject.SpotifyPlaybackModifier.TrackLinking
 			indicesByLengthOrder.Each(index =>
 			{
 				var originalWorkName = wrappedLinkerChoices[index].Item2;
-				var newWorkName = originalWorkName;
-				string neighborWorkName;
-				if (index > 0 && newWorkName.Contains(neighborWorkName = wrappedLinkerChoices[index - 1].Item2))
-					newWorkName = neighborWorkName;
-				if (index < wrappedLinkerChoices.Length - 1 && newWorkName.Contains(neighborWorkName = wrappedLinkerChoices[index + 1].Item2))
-					newWorkName = neighborWorkName;
+				var newWorkName = GetBestWorkName(index, wrappedLinkerChoices);
 				if (!Equals(originalWorkName, newWorkName))
 					wrappedLinkerChoices[index] = (wrappedLinkerChoices[index].track, newWorkName);
 			});
 			return wrappedLinkerChoices.GroupBy(pair => new WorkNameKey(pair.Item2, pair.track.AlbumName, pair.track.AlbumUri), pair => pair.track);
+		}
+
+		private string GetBestWorkName(int index, (ITrackLinkingInfo<TrackT>, string)[] currentWorkNames)
+		{
+			var originalWorkName = currentWorkNames[index].Item2;
+			var newWorkName = originalWorkName;
+			string neighborWorkName;
+			if (index > 0 && newWorkName.Contains(neighborWorkName = currentWorkNames[index - 1].Item2))
+				newWorkName = neighborWorkName;
+			if (index < currentWorkNames.Length - 1 && newWorkName.Contains(neighborWorkName = currentWorkNames[index + 1].Item2))
+				newWorkName = neighborWorkName;
+			return newWorkName;
 		}
 	}
 }
