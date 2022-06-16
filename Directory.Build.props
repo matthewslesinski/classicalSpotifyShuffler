@@ -1,6 +1,6 @@
 <Project>
  <PropertyGroup>
-   <TargetFrameworkForProject>net7.0</TargetFrameworkForProject>
+   <TargetFrameworkForProject>net6.0</TargetFrameworkForProject>
    <UseMonoForCLI>false</UseMonoForCLI>
    <SelfContainedCLIPackage>true</SelfContainedCLIPackage>
    <RuntimeIdentifierForCLI>osx-x64</RuntimeIdentifierForCLI>
