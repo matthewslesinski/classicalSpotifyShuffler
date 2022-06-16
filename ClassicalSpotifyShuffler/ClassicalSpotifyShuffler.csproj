@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <PublishReadyToRun>true</PublishReadyToRun>
     <StaticWebAssetsMandatedDir>$(MSBuildProjectDirectory)/wwwroot/</StaticWebAssetsMandatedDir>
     <CustomCommands>
       <CustomCommands>
