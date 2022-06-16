@@ -92,10 +92,8 @@ else
             var clientSecret = await ui.RequestResponseAsync("Please provide the client secret").WithoutContextCapture();
             clientInfo = new ClientInfo { ClientId = clientId, ClientSecret = clientSecret };
         }
-        var redirectUriFound = TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out var redirectUri);
-        if (!redirectUriFound)
-            redirectUri = await ui.RequestResponseAsync("Please provide the redirect Uri").WithoutContextCapture();
-        return (!clientInfoResult.DidFind || !redirectUriFound, clientInfo, redirectUri);
+        var redirectUri = navManager.Uri;
+        return (!clientInfoResult.DidFind, clientInfo, redirectUri);
     }
 
     private async Task TryLogInFromCode()
