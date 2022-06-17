@@ -1,10 +1,64 @@
-﻿@page "/"
+﻿@inject IDataStoreAccessor files
+@inject ISpotifyAccountAuthenticator spotifyAuthenticator
+@inject NavigationManager navManager
+@page "/"
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Hello, everyone!</h1>
 
-Welcome to your new app.
+<p style="max-width: 800px">
+    Welcome to the Classical Spotify Shuffler app.
+    You can use it to play music from your spotify account's saved albums or playlists and/or save a playlist.
+    And crucially, when it plays a sequence of tracks and/or saves a playlist, the order of the tracks will be
+    shuffled while, for the most part (I use a pretty naive grouping algorithm), keeping tracks together if they
+    are movements of the same performance of a larger work. For example, you may seek to play an album of all of
+    Beethoven's symphonies. It will play them from your account, with the order of the symphonies randomized, but
+    each symphony will be played with all movements in a row.
+</p>
+<p style="max-width: 800px">
+    Note:
+    You must have a paid Spotify account to use this app, which you will need to log in with.
+    The first time you try to log in, or when you log in after clearing your browser's data for the site,
+    you may be prompted for a client ID and a client Secret, which I must provide you. Lastly, you may need to
+    grant the app access to your spotify account.
+</p>
+<p style="max-width: 800px">
+    Usage Notes:
+    If you attempt to shuffle your playback (this does not apply to only saving a playlist),
+    you must currently be playing music on some device from your Spotify account. The Shuffler page allows you to
+    select (selected items will be in yellow) content to play/add to playlist. Note that this was not designed
+    with UX in mind, so there may be plenty of flows or errors that aren't handled the best. Feel free to reach out
+    if you have any questions. Enjoy your listening!
+</p>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@if (!_skipHomeValue)
+{
+    <button class="btn btn-primary" @onclick="SaveSkipHome">Got it!</button>
+}
+
+
+@code
+{
+    private const string _skipHome = "skipHome";
+    private bool _skipHomeValue;
+
+    private Task SaveSkipHome()
+    {
+        _skipHomeValue = true;
+        return files.SaveAsync(_skipHome, true.ToString(), CachePolicy.AlwaysPreferCache);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Result<string> skipHomeResult;
+        _skipHomeValue = (skipHomeResult = await files.TryGetAsync(_skipHome, CachePolicy.AlwaysPreferCache).WithoutContextCapture()).DidFind
+            && bool.TryParse(skipHomeResult.FoundValue, out var skipHomeValue) && skipHomeValue;
+        if ((spotifyAuthenticator.IsLoggedIn || (await spotifyAuthenticator.TryImmediateLogIn().WithoutContextCapture()).Success)
+            && _skipHomeValue)
+        {
+            navManager.NavigateTo(navManager.BaseUri + "shuffle", false);
+        }
+    }
+}
 

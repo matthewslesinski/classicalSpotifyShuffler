@@ -110,7 +110,7 @@ else
             ClientInfo? clientInfo = null;
             string? redirectUri = null;
             if (clientInfoFileKeyFound && (clientInfoResult = await files.TryGetAsync(clientInfoPath, CachePolicy.PreferActual).WithoutContextCapture()).DidFind
-                && TaskParameters.TryGet<string>(SpotifyParameters.RedirectUri, out redirectUri))
+                && (redirectUri = navManager.GetUriWithQueryParameter("code", (string?) null)) != null)
             {
                 clientInfo = clientInfoResult.ResultValue.FromJsonString<ClientInfo>();
             }
@@ -120,6 +120,10 @@ else
                 clientInfo = source.ClientInfo;
                 redirectUri = source.RedirectUriString;
                 await files.SaveAsync(temporarySourceKey, null, CachePolicy.AlwaysPreferCache).WithoutContextCapture();
+            }
+            else
+            {
+                throw new ArgumentNullException("Attempting to log in with an authorization code but client information was not found", redirectUri == null ? nameof(redirectUri) : "clientInfo");
             }
             var authSource = new AuthorizationSource { ClientInfo = clientInfo, RedirectUriString = redirectUri, Scopes = SpotifyConstants.AllAuthenticationScopes };
             if (redirectUri != null && clientInfo != null && (await spotifyAuthenticator.LogIn(authSource).WithoutContextCapture()).Success)
