@@ -30,7 +30,7 @@ namespace SpotifyProjectCommandLine
 			}, () => GlobalDependencies.Initialize(args)
 						.AddGlobalService<IDataStoreAccessor, FileAccessor>()
 						.AddGlobalService<IUserInterface, ConsoleUserInterface>()
-						.AddImplementationForMultipleGlobalServices<SpotifyCommandLineAccountAuthenticator>(typeof(ISpotifyAccountAuthenticator), typeof(ISpotifyAuthenticator))
+						.AddImplementationForMultipleGlobalServices(new SpotifyCommandLinePKCEAuthenticator(), typeof(ISpotifyAccountAuthenticator), typeof(ISpotifyAuthenticator))
 						.AddGlobalService<ISpotifyService>(services => new StandardSpotifyProvider(services.GetSpotifyAuthCodeAuthenticator()))
 						.Build());
 		}

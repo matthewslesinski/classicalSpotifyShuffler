@@ -37,6 +37,8 @@ namespace SpotifyProject.Authentication
 		public string ClientId => ClientInfo.ClientId;
 		[JsonIgnore]
 		public string ClientSecret => ClientInfo.ClientSecret;
+		[JsonIgnore]
+		public AuthenticationType AuthType => ClientInfo.AuthType;
 
 		public override bool Equals(object obj)
 		{

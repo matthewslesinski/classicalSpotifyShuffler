@@ -115,6 +115,7 @@ namespace ApplicationResources.Services
 	{
 		string ClientId { get; }
 		string ClientSecret { get; }
+		AuthenticationType AuthType { get; }
 	}
 
 	public interface IAuthCodeArgs : IOAuthClientInfo
@@ -134,4 +135,10 @@ namespace ApplicationResources.Services
 		AuthArgsT AuthSource { get; }
 		AuthTokensT AuthTokens { get; }
 	}
+
+	public enum AuthenticationType
+	{
+		AuthorizationCodeFlow,
+		PKCE
+	};
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ApplicationResources.Services;
 using ApplicationResources.Setup;
 using CustomResources.Utils.GeneralUtils;
 using SpotifyAPI.Web;
@@ -17,6 +18,7 @@ namespace SpotifyProject.Configuration
 		ClientInfoPath,
 		TokenPath,
 		RedirectUri,
+		AuthenticationType,
 		DefaultToAlbumShuffle,
 		ArtistAlbumIncludeGroups,
 		MaintainCurrentlyPlaying,
@@ -56,7 +58,8 @@ namespace SpotifyProject.Configuration
 			{ SpotifyParameters.NumberOfRetriesForServerError,			new ConvertibleSettingSpecification<int> { Default = 10, Validator = v => v > 0 } },
 			{ SpotifyParameters.MaximumBatchSizeToReplaceInPlaylist,    new ConvertibleSettingSpecification<int> { Default = (int) (SpotifyConstants.PlaylistRequestBatchSize / 2.5), Validator = v => v >= 0 } },
 			{ SpotifyParameters.PlaylistRequestBatchSize,				new ConvertibleSettingSpecification<int> { Default = SpotifyConstants.PlaylistRequestBatchSize, Validator = v => v > 0 } },
-			{ SpotifyParameters.ArtistAlbumIncludeGroups,				new EnumSettingSpecification<ArtistsAlbumsRequest.IncludeGroups> { ValueGetter = values => values.Single()
+			{ SpotifyParameters.AuthenticationType,						new EnumSettingSpecification<AuthenticationType> { IsRequired = true } },
+			{ SpotifyParameters.ArtistAlbumIncludeGroups,               new EnumSettingSpecification<ArtistsAlbumsRequest.IncludeGroups> { ValueGetter = values => values.Single()
 																			.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(enumName => Enum.Parse<ArtistsAlbumsRequest.IncludeGroups>(enumName, true))
 																			.Aggregate((ArtistsAlbumsRequest.IncludeGroups)0, (group1, group2) => group1 | group2) } },
 		};
@@ -68,7 +71,8 @@ namespace SpotifyProject.Configuration
 		{
 			{ SpotifyParameters.ClientInfoPath,							new SingleValueOption { Flag = "-c|--clientInfoPath <CLIENT_INFO_PATH>", Desc = "The path (from the project root) for the file with the client id and secret for Spotify access" } },
 			{ SpotifyParameters.TokenPath,								new SingleValueOption { Flag = "-t|--tokenPath <TOKEN_PATH>", Desc = "The path (from the project root) for the file with access and refresh tokens for Spotify access" } },
-			{ SpotifyParameters.RedirectUri,							new SingleValueOption { Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri" } },
+			{ SpotifyParameters.RedirectUri,                            new SingleValueOption { Flag = "-r|--redirectUri <REDIRECT_URI>", Desc = "The path Spotify should use as a redirect Uri" } },
+			{ SpotifyParameters.AuthenticationType,                     new SingleValueOption { Flag = "-u|--authType <AUTH_TYPE>", Desc = "The type of authentication to use" } },
 			{ SpotifyParameters.DefaultToAlbumShuffle,					new NoValueOption     { Flag = "--defaultToAlbumShuffle", Desc = "Provide if shuffling the album should be used as a fallback" } },
 			{ SpotifyParameters.ArtistAlbumIncludeGroups,				new SingleValueOption { Flag = "-a|--artistAlbumIncludeGroups", Desc = "The types of albums to include when querying for artists' albums" } },
 			{ SpotifyParameters.MaintainCurrentlyPlaying,				new NoValueOption     { Flag = "--maintainCurrentlyPlaying", Desc = "Provide if playing from the current context should keep what's currently playing" } },
