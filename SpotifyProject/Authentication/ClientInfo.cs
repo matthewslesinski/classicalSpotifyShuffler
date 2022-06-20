@@ -10,5 +10,6 @@ namespace SpotifyProject.Authentication
 	{
 		public string ClientId { get; set; }
 		public string ClientSecret { get; set; }
+		public AuthenticationType AuthType { get; set; }
 	}
 }

@@ -6,9 +6,9 @@ using SpotifyAPI.Web;
 
 namespace SpotifyProject.Authentication
 {
-	public record AuthorizationCodeTokensWrapper : IOAuthTokens, IWrapper<AuthorizationCodeTokenResponse>
+	public record AuthorizationCodeTokensWrapper : IOAuthTokens, IWrapper<IRefreshableToken>
 	{
-		public AuthorizationCodeTokenResponse TokenResponse { get; set; }
+		public IRefreshableToken TokenResponse { get; set; }
 
 		[JsonIgnore]
 		public string AccessToken => TokenResponse?.AccessToken;
@@ -16,10 +16,7 @@ namespace SpotifyProject.Authentication
 		public string RefreshToken => TokenResponse?.RefreshToken;
 
 		[JsonIgnore]
-		public AuthorizationCodeTokenResponse WrappedObject => TokenResponse;
-
-		public static implicit operator AuthorizationCodeTokensWrapper(AuthorizationCodeTokenResponse tokenResponse) => new AuthorizationCodeTokensWrapper { TokenResponse = tokenResponse };
-		public static implicit operator AuthorizationCodeTokenResponse(AuthorizationCodeTokensWrapper tokenWrapper) => tokenWrapper?.TokenResponse;
+		public IRefreshableToken WrappedObject => TokenResponse;
 	}
 }
 

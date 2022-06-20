@@ -25,6 +25,8 @@ namespace SpotifyProject.Utils
 
 		public const string USMarket = "US";
 
+		public const string PKCECodeChallengeMethod = "S256";
+
 		public enum SpotifyElementType
 		{
 			Album,

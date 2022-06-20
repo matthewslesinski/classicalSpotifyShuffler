@@ -25,7 +25,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 				.Apply())
 			{
 
-				var authenticator = new SpotifyTestAccountAuthenticator();
+				var authenticator = new SpotifyTestAuthCodeAuthenticator();
 				var spotifyProvider = new StandardSpotifyProvider(authenticator);
 				await spotifyProvider.InitializeAsync().WithoutContextCapture();
 				await authenticator.Authenticate().WithoutContextCapture();

@@ -12,6 +12,7 @@ using CustomResources.Utils.Extensions;
 using Newtonsoft.Json;
 using SpotifyAPI.Web;
 using SpotifyProject.Configuration;
+using SpotifyProject.Utils;
 
 namespace SpotifyProject.Authentication
 {
@@ -44,24 +45,6 @@ namespace SpotifyProject.Authentication
 		public override Task<bool> GetIsLoggedIn(CancellationToken _ = default)
 		{
 			return Task.FromResult(_isLoggedIn);
-		}
-
-		protected override Uri DetermineLoginAddress(AuthorizationSource userInfo)
-		{
-			var loginRequest = new LoginRequest(userInfo.RedirectUri, userInfo.ClientId, LoginRequest.ResponseType.Code) { Scope = userInfo.Scopes };
-			return loginRequest.ToUri();
-		}
-
-		protected override Task<AuthorizationCodeTokensWrapper> AcquireTokens(AuthorizationSource userInfo, string authCode, CancellationToken cancellationToken = default) =>
-			new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(userInfo.ClientId, userInfo.ClientSecret, authCode, userInfo.RedirectUri), cancellationToken)
-				.Then(authTokens => new AuthorizationCodeTokensWrapper { TokenResponse = authTokens });
-
-		protected override Task<IAuthenticator> GetAuthenticatedOutputFromTokens(SessionDefinition sessionInfo, CancellationToken _ = default)
-		{
-			var authenticator = new AuthorizationCodeAuthenticator(sessionInfo.AuthSource.ClientId, sessionInfo.AuthSource.ClientSecret, sessionInfo.AuthTokens);
-			if (sessionInfo.SaveKey != null)
-				authenticator.TokenRefreshed += (sender, token) => PersistCurrentSession(sessionInfo);
-			return Task.FromResult<IAuthenticator>(authenticator);
 		}
 
 		protected override async Task<Result<SessionDefinition>> GetExistingSession(CancellationToken cancellationToken = default)
@@ -127,23 +110,62 @@ namespace SpotifyProject.Authentication
 				: null;
 	}
 
-	public class SpotifyCommandLineAccountAuthenticator : SpotifyAccountAuthenticator
+	public abstract class SpotifyPKCEAuthenticator : SpotifyAccountAuthenticator
 	{
-		protected override async Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		protected override Uri DetermineLoginAddress(AuthorizationSource userInfo)
 		{
-			var ui = this.AccessUserInterface();
+			var loginRequest = new LoginRequest(userInfo.RedirectUri, userInfo.ClientId, LoginRequest.ResponseType.Code)
+			{
+				CodeChallengeMethod = SpotifyConstants.PKCECodeChallengeMethod,
+				CodeChallenge = PKCEUtil.GenerateCodes(userInfo.ClientSecret).challenge,
+				Scope = userInfo.Scopes
+			};
+			return loginRequest.ToUri();
+		}
+
+		protected override Task<AuthorizationCodeTokensWrapper> AcquireTokens(AuthorizationSource userInfo, string authCode, CancellationToken cancellationToken = default) =>
+			new OAuthClient().RequestToken(new PKCETokenRequest(userInfo.ClientId, authCode, userInfo.RedirectUri, userInfo.ClientSecret), cancellationToken)
+					.Then(authTokens => new AuthorizationCodeTokensWrapper { TokenResponse = authTokens });
+
+		protected override Task<IAuthenticator> GetAuthenticatedOutputFromTokens(SessionDefinition sessionInfo, CancellationToken _ = default)
+		{
+			var pkceAuthenticator = new PKCEAuthenticator(sessionInfo.AuthSource.ClientId, sessionInfo.AuthTokens.TokenResponse as PKCETokenResponse);
+			if (sessionInfo.SaveKey != null)
+				pkceAuthenticator.TokenRefreshed += (sender, token) => PersistCurrentSession(sessionInfo);
+			return Task.FromResult<IAuthenticator>(pkceAuthenticator);
+		}
+	}
+
+	public abstract class SpotifyAuthCodeAuthenticator : SpotifyAccountAuthenticator
+	{
+		protected override Uri DetermineLoginAddress(AuthorizationSource userInfo)
+		{
+			var loginRequest = new LoginRequest(userInfo.RedirectUri, userInfo.ClientId, LoginRequest.ResponseType.Code) { Scope = userInfo.Scopes };
+			return loginRequest.ToUri();
+		}
+
+		protected override Task<AuthorizationCodeTokensWrapper> AcquireTokens(AuthorizationSource userInfo, string authCode, CancellationToken cancellationToken = default) =>
+			new OAuthClient().RequestToken(new AuthorizationCodeTokenRequest(userInfo.ClientId, userInfo.ClientSecret, authCode, userInfo.RedirectUri), cancellationToken)
+					.Then(authTokens => new AuthorizationCodeTokensWrapper { TokenResponse = authTokens });
+
+		protected override Task<IAuthenticator> GetAuthenticatedOutputFromTokens(SessionDefinition sessionInfo, CancellationToken _ = default)
+		{
+			var authCodeAuthenticator = new AuthorizationCodeAuthenticator(sessionInfo.AuthSource.ClientId, sessionInfo.AuthSource.ClientSecret, sessionInfo.AuthTokens.TokenResponse as AuthorizationCodeTokenResponse);
+			if (sessionInfo.SaveKey != null)
+				authCodeAuthenticator.TokenRefreshed += (sender, token) => PersistCurrentSession(sessionInfo);
+			return Task.FromResult<IAuthenticator>(authCodeAuthenticator);
+		}
+	}
+
+	public static class SpotifyComandLineAuthentication
+	{
+		public static async Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		{
+			var ui = GlobalDependencies.Get<IUserInterface>();
 			ui.NotifyUser($"Please go to the following address to login to Spotify: \n\n{loginUri}\n");
 			ui.NotifyUser("After logging in, please input the authorizationCode. This can be found in the address bar after redirection. It should be the code (everything) following the \"?code=\" portion of the URL");
 			var authorizationCode = await ui.RequestResponseAsync("Please input the authorizationCode: ").WithoutContextCapture();
 			return (authorizationCode != null ? new(authorizationCode) : Result<string>.Failure);
-		}
-	}
-
-	public class SpotifyTestAccountAuthenticator : SpotifyAccountAuthenticator
-	{
-		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
-		{
-			throw new InvalidOperationException("To authenticate in tests, a saved session must be provided");
 		}
 	}
 
@@ -152,4 +174,37 @@ namespace SpotifyProject.Authentication
 		[JsonIgnore]
 		public string SaveKey { get; set; }
 	}
+
+
+	#region Authenticator Implementations
+
+	public class SpotifyCommandLineAuthCodeAuthenticator : SpotifyAuthCodeAuthenticator
+	{
+		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default) =>
+			SpotifyComandLineAuthentication.RequestLoginFromUser(loginUri, cancellationToken);
+	}
+
+	public class SpotifyCommandLinePKCEAuthenticator : SpotifyPKCEAuthenticator
+	{
+		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default) =>
+			SpotifyComandLineAuthentication.RequestLoginFromUser(loginUri, cancellationToken);
+	}
+
+	public class SpotifyTestAuthCodeAuthenticator : SpotifyAuthCodeAuthenticator
+	{
+		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		{
+			throw new InvalidOperationException("To authenticate in tests, a saved session must be provided");
+		}
+	}
+
+	public class SpotifyTestPKCEAuthenticator : SpotifyAuthCodeAuthenticator
+	{
+		protected override Task<Result<string>> RequestLoginFromUser(Uri loginUri, CancellationToken cancellationToken = default)
+		{
+			throw new InvalidOperationException("To authenticate in tests, a saved session must be provided");
+		}
+	}
+
+	#endregion
 }
