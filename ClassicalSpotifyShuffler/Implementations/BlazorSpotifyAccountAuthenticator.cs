@@ -20,6 +20,7 @@ namespace ClassicalSpotifyShuffler.Implementations
 			if (code != null)
 				return Task.FromResult<Result<string>>(new(code));
 			navManager.NavigateTo(loginUri.ToString(), false);
+			// Should not be reached
 			return Task.FromResult(Result<string>.None);
 		}
 	}
