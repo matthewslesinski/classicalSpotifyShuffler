@@ -307,7 +307,7 @@ else
         int totalCount;
         if (currentFilter != null)
         {
-            items = Enumerable.Range(request.StartIndex, Math.Min(request.Count, currentFilter.Count - request.StartIndex)).Select(index => currentFilter[index]).ToList();
+            items = Enumerable.Range(request.StartIndex, (currentFilter.Count - request.StartIndex).Constrain(0, request.Count)).Select(index => currentFilter[index]).ToList();
             totalCount = currentFilter.Count;
         }
         else
