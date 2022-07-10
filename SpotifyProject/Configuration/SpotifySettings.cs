@@ -22,13 +22,15 @@ namespace SpotifyProject.Configuration
 		APIRateLimitStatsFile,
 		APIRateLimitMinOutForCaution,
 		PersonalDataDirectory,
-		TemporaryAuthorizationInfoKey
+		TemporaryAuthorizationInfoKey,
+		ClientId
 	}
 
 	public class SpotifySettingsSpecifications : IEnumExtensionProvider<SpotifySettings, ISettingSpecification>
 	{
 		public IReadOnlyDictionary<SpotifySettings, ISettingSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ISettingSpecification>
 		{
+			{ SpotifySettings.ClientId,							 new StringSettingSpecification() },
 			{ SpotifySettings.MetadataRecordFile,                new StringSettingSpecification() },
 			{ SpotifySettings.HTTPLoggerName,                    new StringSettingSpecification() },
 			{ SpotifySettings.PersonalDataDirectory,             new StringSettingSpecification() },
@@ -46,6 +48,7 @@ namespace SpotifyProject.Configuration
 	{
 		public IReadOnlyDictionary<SpotifySettings, ICommandLineSpecification> Specifications { get; } = new Dictionary<SpotifySettings, ICommandLineSpecification>
 		{
+			{ SpotifySettings.ClientId,						   new SingleValueOption { Flag = "-c|--clientId", Desc = "This application's client ID for using the Spotify API" } },
 			{ SpotifySettings.TrackQueueSizeLimit,             new SingleValueOption { Flag = "-q|--queueSizeLimit", Desc = "The cap on the number of tracks to send in a request to create a new queue" } },
 			{ SpotifySettings.APIRateLimitWindow,              new SingleValueOption { Flag = "--apiRateLimitWindow", Desc = "The number of milliseconds that the Spotify API keeps requests contributing towards the rate limit" } },
 			{ SpotifySettings.PersonalDataDirectory,           new SingleValueOption { Flag = "--personalDataDirectory", Desc = "The file directory where personal data files are stored" } },

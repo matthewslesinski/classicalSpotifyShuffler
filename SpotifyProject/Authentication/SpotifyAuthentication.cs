@@ -34,7 +34,7 @@ namespace SpotifyProject.Authentication
             {
                 ClientInfo = userInfo,
                 RedirectUriString = redirectUri,
-                Scopes = SpotifyConstants.AllAuthenticationScopes
+                Scopes = SpotifyConstants.AllAuthenticationScopes,
             };
             return this.As<IAuthenticationService<AuthorizationSource, IAuthenticator>>().LogIn(authorizationSource, cancellationToken);
         }

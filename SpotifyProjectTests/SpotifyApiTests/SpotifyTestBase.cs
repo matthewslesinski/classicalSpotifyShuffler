@@ -54,7 +54,7 @@ namespace SpotifyProjectTests.SpotifyApiTests
 			return Utils.LoadOnceBlockingAsync(_isLoaded, _lock, async (_) =>
 			{
 				Logger.Information("Loading Spotify Configuration for tests");
-				var authenticator = new SpotifyTestAccountAuthenticator();
+				var authenticator = new SpotifyTestAuthCodeAuthenticator();
 				var spotifyProvider = new StandardSpotifyProvider(authenticator);
 				await spotifyProvider.InitializeAsync().WithoutContextCapture();
 				await authenticator.Authenticate(CancellationToken.None).WithoutContextCapture();
